@@ -20,10 +20,12 @@ Built: the schema, the migrations, the job queue. Not built: ingestion, retrieva
 - Go 1.26
 - Docker
 - golangci-lint, for `make check`
+- Node.js 22.12 or later, for the commit hook
 
 ## Run
 
 ```sh
+npm install     # installs the commit hook
 cp .env.example .env
 make db-up      # PostgreSQL 17 with pgvector and pg_textsearch, on port 5433
 make migrate
@@ -35,6 +37,10 @@ make serve      # http://127.0.0.1:8080/healthz
 ```sh
 make check      # lint, tests, Docker checks
 ```
+
+## Commits
+
+Commit messages follow [Conventional Commits](https://www.conventionalcommits.org). A Git hook (Lefthook) checks each message with commitlint.
 
 ## Licence
 

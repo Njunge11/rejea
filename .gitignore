@@ -12,3 +12,6 @@
 .DS_Store
 .idea/
 .vscode/
+
+# Development tools (commit hooks)
+node_modules/

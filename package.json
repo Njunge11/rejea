@@ -1,0 +1,14 @@
+{
+  "name": "rejea",
+  "private": true,
+  "type": "module",
+  "description": "Development tools of the repository: the Git hooks and the commit message check.",
+  "devDependencies": {
+    "@commitlint/cli": "^21.2.4",
+    "@commitlint/config-conventional": "^21.2.4",
+    "lefthook": "^2.2.2"
+  },
+  "allowScripts": {
+    "lefthook@2.2.2": true
+  }
+}
