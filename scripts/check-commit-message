@@ -1,12 +1,16 @@
 #!/bin/sh
-# Checks that the first line of a commit message follows Conventional Commits:
+# Checks that the first line of a commit message follows Conventional Commits
+# 1.0.0 (https://www.conventionalcommits.org/en/v1.0.0/#specification):
 #
-#   type(scope): subject      for example   fix(parser): keep the order of blocks
+#   type(scope): description      for example   fix(parser): keep the order of blocks
+#
+# The types and the limits are those of @commitlint/config-conventional.
 #
 # The Git hook gives the message file as the argument. CI gives the message
 # on standard input.
 set -eu
 
+# type-enum of config-conventional.
 types='build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test'
 
 if [ $# -ge 1 ]; then
@@ -15,15 +19,18 @@ else
 	header=$(head -n 1)
 fi
 
-# Git writes the message of a merge commit.
+# Messages that Git writes. commitlint ignores them too.
 case "$header" in
-"Merge "*) exit 0 ;;
+"Merge "* | "Revert "* | "Reapply "* | "amend!"* | "fixup!"* | "squash!"*) exit 0 ;;
 esac
 
-# The type, an optional scope, an optional "!" for a breaking change, then a
-# subject that starts in lower case and has no full stop at its end.
-pattern="^($types)(\([a-z0-9][a-z0-9/-]*\))?!?: [^A-Z ].*[^. ]$"
+# The specification: a type, an optional scope in parentheses, an optional
+# "!", a colon and a space, then the description.
+# config-conventional: the description does not start with a capital letter
+# (subject-case) and does not end with a full stop (subject-full-stop).
+pattern="^($types)(\([^)]+\))?!?: [^A-Z ].*[^. ]$"
 
+# config-conventional: 100 characters at most (header-max-length).
 if [ "${#header}" -le 100 ] && printf '%s\n' "$header" | grep -Eq "$pattern"; then
 	exit 0
 fi
@@ -33,10 +40,11 @@ This commit message does not follow Conventional Commits:
 
   $header
 
-Write it as:   type(scope): subject
+Write it as:   type(scope): description
 Types:         $(printf '%s' "$types" | sed 's/|/, /g')
-Rules:         the scope is optional, the subject starts in lower case, has
-               no full stop at its end, and the line has 100 characters or less.
+Rules:         the scope is optional, the description starts in lower case
+               and has no full stop at its end, and the line has 100
+               characters or less.
 Example:       feat(upload): accept zip archives
 MESSAGE
 exit 1
