@@ -1,5 +1,6 @@
-# Git hooks. "npm install" installs them.
-commit-msg:
+# Git hooks. "lefthook install" installs them.
+pre-commit:
   commands:
-    commitlint:
-      run: npx --no -- commitlint --edit {1}
+    lint:
+      glob: "*.go"
+      run: make lint
