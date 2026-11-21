@@ -1,10 +1,15 @@
 #!/bin/sh
-# Checks that the first line of a commit message follows Conventional Commits
-# 1.0.0 (https://www.conventionalcommits.org/en/v1.0.0/#specification):
+# Checks a commit message against Conventional Commits 1.0.0
+# (https://www.conventionalcommits.org/en/v1.0.0/#specification):
 #
 #   type(scope): description      for example   fix(parser): keep the order of blocks
 #
-# The types and the limits are those of @commitlint/config-conventional.
+#   optional body, after one blank line
+#
+#   BREAKING CHANGE: optional footer
+#
+# The types and the limits of the first line are those of
+# @commitlint/config-conventional.
 #
 # The Git hook gives the message file as the argument. CI gives the message
 # on standard input.
@@ -14,37 +19,56 @@ set -eu
 types='build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test'
 
 if [ $# -ge 1 ]; then
-	header=$(head -n 1 "$1")
+	message=$(cat "$1")
 else
-	header=$(head -n 1)
+	message=$(cat)
 fi
+
+# Git removes the comment lines, and all lines from the scissors line of
+# "git commit --verbose". Remove them here too.
+message=$(printf '%s\n' "$message" | awk '/^# -+ >8 -+/ { exit } !/^#/')
+header=$(printf '%s\n' "$message" | sed -n 1p)
 
 # Messages that Git writes. commitlint ignores them too.
 case "$header" in
 "Merge "* | "Revert "* | "Reapply "* | "amend!"* | "fixup!"* | "squash!"*) exit 0 ;;
 esac
 
-# The specification: a type, an optional scope in parentheses, an optional
-# "!", a colon and a space, then the description.
-# config-conventional: the description does not start with a capital letter
-# (subject-case) and does not end with a full stop (subject-full-stop).
-pattern="^($types)(\([^)]+\))?!?: [^A-Z ].*[^. ]$"
-
-# config-conventional: 100 characters at most (header-max-length).
-if [ "${#header}" -le 100 ] && printf '%s\n' "$header" | grep -Eq "$pattern"; then
-	exit 0
-fi
-
-cat >&2 <<MESSAGE
+fail() {
+	cat >&2 <<MESSAGE
 This commit message does not follow Conventional Commits:
 
   $header
 
+Fault:         $1
 Write it as:   type(scope): description
 Types:         $(printf '%s' "$types" | sed 's/|/, /g')
-Rules:         the scope is optional, the description starts in lower case
-               and has no full stop at its end, and the line has 100
-               characters or less.
 Example:       feat(upload): accept zip archives
 MESSAGE
-exit 1
+	exit 1
+}
+
+# Rules 1, 4, 5 and 13 of the specification: a type, an optional scope in
+# parentheses, an optional "!", a colon and a space, then the description.
+# config-conventional: the description does not start with a capital letter
+# (subject-case) and does not end with a full stop (subject-full-stop).
+pattern="^($types)(\([^)]+\))?!?: [^A-Z ].*[^. ]$"
+if ! printf '%s\n' "$header" | grep -Eq "$pattern"; then
+	fail 'the first line must be "type(scope): description", with the description in lower case at its start and no full stop at its end'
+fi
+
+# config-conventional: 100 characters at most (header-max-length).
+if [ "${#header}" -gt 100 ]; then
+	fail "the first line has ${#header} characters, and the limit is 100"
+fi
+
+# Rule 6: the body begins one blank line after the description.
+if [ -n "$(printf '%s\n' "$message" | sed -n 2p)" ]; then
+	fail 'the second line must be blank: the body starts on the third line'
+fi
+
+# Rules 12 and 16: a breaking change footer is "BREAKING CHANGE: description"
+# or "BREAKING-CHANGE: description", in capital letters.
+if printf '%s\n' "$message" | grep -iE '^breaking[ -]change' | grep -vqE '^BREAKING[ -]CHANGE: [^ ]'; then
+	fail 'write the footer of a breaking change as "BREAKING CHANGE: description"'
+fi

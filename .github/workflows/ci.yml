@@ -42,7 +42,7 @@ jobs:
           fi
           failed=0
           for commit in $commits; do
-            git log -1 --format=%s "$commit" | scripts/check-commit-message || failed=1
+            git log -1 --format=%B "$commit" | scripts/check-commit-message || failed=1
           done
           exit "$failed"
 
