@@ -35,3 +35,7 @@ make serve      # http://127.0.0.1:8080/healthz
 ```sh
 make check      # lint, tests, Docker checks
 ```
+
+## Licence
+
+MIT
