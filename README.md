@@ -1,8 +1,19 @@
 # Rejea
 
-Rejea answers questions from an organization's PDF and Word files, with page citations.
+A document knowledge base: agentic retrieval-augmented generation (RAG) over PDF and Word files. Each answer cites its source blocks, down to the bounding box on the PDF page.
 
-In development. The database, the migrations and the job queue exist. Upload, search and answers do not.
+## Design
+
+- **Ingestion:** layout-aware OCR into blocks with bounding boxes, heading-based chunking, dense embeddings.
+- **Metadata extraction:** an LLM classifier assigns a document type and extracts its typed properties (JSON Schema), for exact filter queries.
+- **Hybrid retrieval:** BM25 and HNSW vector search, merged by reciprocal rank fusion, then a cross-encoder reranker.
+- **Graph retrieval:** HippoRAG 2. Entity and triple extraction at ingestion, Personalized PageRank at query time.
+- **Generation:** an LLM agent selects a retrieval tool per query and answers only from the retrieved chunks.
+- **Stack:** Go, PostgreSQL 17 with pgvector and pg_textsearch, River for background jobs.
+
+## Status
+
+Built: the schema, the migrations, the job queue. Not built: ingestion, retrieval, generation.
 
 ## Requirements
 
