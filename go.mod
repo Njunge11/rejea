@@ -2,6 +2,8 @@ module github.com/Njunge11/rejea
 
 go 1.26.0
 
+toolchain go1.26.11
+
 require (
 	github.com/jackc/pgx/v5 v5.13.0
 	github.com/pressly/goose/v3 v3.30.1

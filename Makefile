@@ -2,7 +2,7 @@
 -include .env
 export
 
-.PHONY: db-up db-down migrate serve test lint check
+.PHONY: db-up db-down migrate serve test lint vet docker-check check
 
 db-up: ## Build and start the database, and wait until it is healthy.
 	docker compose up -d --build --wait
@@ -22,7 +22,11 @@ test: ## Run all tests. The database must be up.
 lint: ## Check the format and the code.
 	golangci-lint run
 
-check: lint test ## Run each check of the project.
+vet: ## Find suspect code.
 	go vet ./...
+
+docker-check: ## Check the Dockerfile and the Compose file.
 	docker build --check docker/postgres
 	docker compose config --quiet
+
+check: lint vet test docker-check ## Run each check of the project. CI runs the same targets.
