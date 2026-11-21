@@ -1,6 +1,6 @@
 # Rejea
 
-A document knowledge base: agentic retrieval-augmented generation (RAG) over PDF and Word files. Each answer cites its source blocks, down to the bounding box on the PDF page.
+A RAG (retrieval-augmented generation) engine for PDF and Word documents, with hybrid and graph retrieval. Each answer cites its source blocks, down to the bounding box on the PDF page.
 
 ## Design
 
