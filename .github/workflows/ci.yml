@@ -22,10 +22,29 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0 # the job reads the history
           persist-credentials: false
-      - uses: webiny/action-conventional-commits@7f91b1595ca1951cdb671ddc9f07a49081ec5b69 # v1.4.2
-        with:
-          allowed-commit-types: "feat,fix,docs,style,refactor,test,build,perf,ci,chore,revert"
+      - name: Check the commit messages
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "$EVENT" = pull_request ]; then
+            commits=$(git rev-list "$BASE..$HEAD")
+          elif git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+            commits=$(git rev-list "$BEFORE..$AFTER")
+          else
+            # BEFORE is not in the history after a forced push.
+            commits=$AFTER
+          fi
+          failed=0
+          for commit in $commits; do
+            git log -1 --format=%s "$commit" | scripts/check-commit-message || failed=1
+          done
+          exit "$failed"
 
   lint:
     runs-on: ubuntu-latest

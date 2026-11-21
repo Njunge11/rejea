@@ -20,12 +20,12 @@ Built: the schema, the migrations, the job queue. Not built: ingestion, retrieva
 - Go 1.26
 - Docker
 - golangci-lint, for `make check`
-- Lefthook, for the pre-commit hook
+- Lefthook, for the Git hooks
 
 ## Run
 
 ```sh
-lefthook install   # the pre-commit hook runs the lint
+lefthook install   # hooks: lint before a commit, check of the commit message
 cp .env.example .env
 make db-up      # PostgreSQL 17 with pgvector and pg_textsearch, on port 5433
 make migrate
@@ -40,7 +40,7 @@ make check      # lint, tests, Docker checks
 
 ## Commits
 
-Commit messages follow [Conventional Commits](https://www.conventionalcommits.org). CI checks each commit.
+Commit messages follow [Conventional Commits](https://www.conventionalcommits.org). A Git hook checks the message before the commit, and CI checks each pushed commit with the same script.
 
 ## Licence
 

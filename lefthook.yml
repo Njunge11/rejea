@@ -4,3 +4,8 @@ pre-commit:
     lint:
       glob: "*.go"
       run: make lint
+
+commit-msg:
+  commands:
+    conventional-commit:
+      run: scripts/check-commit-message {1}

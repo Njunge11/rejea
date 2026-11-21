@@ -1,0 +1,42 @@
+#!/bin/sh
+# Checks that the first line of a commit message follows Conventional Commits:
+#
+#   type(scope): subject      for example   fix(parser): keep the order of blocks
+#
+# The Git hook gives the message file as the argument. CI gives the message
+# on standard input.
+set -eu
+
+types='build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test'
+
+if [ $# -ge 1 ]; then
+	header=$(head -n 1 "$1")
+else
+	header=$(head -n 1)
+fi
+
+# Git writes the message of a merge commit.
+case "$header" in
+"Merge "*) exit 0 ;;
+esac
+
+# The type, an optional scope, an optional "!" for a breaking change, then a
+# subject that starts in lower case and has no full stop at its end.
+pattern="^($types)(\([a-z0-9][a-z0-9/-]*\))?!?: [^A-Z ].*[^. ]$"
+
+if [ "${#header}" -le 100 ] && printf '%s\n' "$header" | grep -Eq "$pattern"; then
+	exit 0
+fi
+
+cat >&2 <<MESSAGE
+This commit message does not follow Conventional Commits:
+
+  $header
+
+Write it as:   type(scope): subject
+Types:         $(printf '%s' "$types" | sed 's/|/, /g')
+Rules:         the scope is optional, the subject starts in lower case, has
+               no full stop at its end, and the line has 100 characters or less.
+Example:       feat(upload): accept zip archives
+MESSAGE
+exit 1
