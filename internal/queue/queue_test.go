@@ -2,6 +2,7 @@ package queue_test
 
 import (
 	"context"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -47,7 +48,7 @@ func TestClientRunsJob(t *testing.T) {
 	river.AddWorker(workers, worker)
 
 	const jobTimeout = 10 * time.Minute
-	client, err := queue.NewClient(pool, workers, jobTimeout)
+	client, err := queue.NewClient(pool, slog.New(slog.DiscardHandler), workers, jobTimeout)
 	if err != nil {
 		t.Fatal(err)
 	}

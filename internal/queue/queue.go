@@ -3,6 +3,7 @@
 package queue
 
 import (
+	"log/slog"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -18,10 +19,11 @@ const maxWorkers = 1
 // NewClient makes the River client of the one queue. A job that runs longer
 // than jobTimeout is cancelled: the default of River is 1 minute, which is
 // too short to parse a large file. River refuses to start a client that has
-// no worker.
-func NewClient(pool *pgxpool.Pool, workers *river.Workers, jobTimeout time.Duration) (*river.Client[pgx.Tx], error) {
+// no worker. River logs through logger.
+func NewClient(pool *pgxpool.Pool, logger *slog.Logger, workers *river.Workers, jobTimeout time.Duration) (*river.Client[pgx.Tx], error) {
 	return river.NewClient(riverpgxv5.New(pool), &river.Config{
 		JobTimeout: jobTimeout,
+		Logger:     logger,
 		Queues: map[string]river.QueueConfig{
 			river.QueueDefault: {MaxWorkers: maxWorkers},
 		},

@@ -4,6 +4,7 @@ package server
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net"
 	"net/http"
 	"time"
@@ -15,12 +16,13 @@ type Pinger interface {
 }
 
 // NewHandler makes the routes of the service.
-func NewHandler(db Pinger) http.Handler {
+func NewHandler(db Pinger, logger *slog.Logger) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 		defer cancel()
 		if err := db.Ping(ctx); err != nil {
+			logger.ErrorContext(ctx, "database ping failed", "err", err)
 			http.Error(w, "the database does not answer", http.StatusServiceUnavailable)
 			return
 		}
@@ -31,10 +33,12 @@ func NewHandler(db Pinger) http.Handler {
 
 // Run serves handler on the listener until ctx is cancelled. Then it lets
 // the open requests finish, for 10 seconds at most.
-func Run(ctx context.Context, listener net.Listener, handler http.Handler) error {
+func Run(ctx context.Context, listener net.Listener, handler http.Handler, logger *slog.Logger) error {
 	srv := &http.Server{
 		Handler:           handler,
 		ReadHeaderTimeout: 10 * time.Second,
+		// The errors that net/http finds in a connection or a handler.
+		ErrorLog: slog.NewLogLogger(logger.Handler(), slog.LevelError),
 	}
 	failed := make(chan error, 1)
 	go func() { failed <- srv.Serve(listener) }()
@@ -44,6 +48,7 @@ func Run(ctx context.Context, listener net.Listener, handler http.Handler) error
 		return err
 	case <-ctx.Done():
 	}
+	logger.Info("http server shutting down")
 	shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(shutdownCtx); err != nil {
