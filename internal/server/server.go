@@ -34,9 +34,14 @@ func NewHandler(db Pinger, logger *slog.Logger) http.Handler {
 // Run serves handler on the listener until ctx is cancelled. Then it lets
 // the open requests finish, for 10 seconds at most.
 func Run(ctx context.Context, listener net.Listener, handler http.Handler, logger *slog.Logger) error {
+	// A net/http server has no timeouts by default. Without them, a slow or
+	// silent client holds a connection open for as long as it wants.
 	srv := &http.Server{
 		Handler:           handler,
-		ReadHeaderTimeout: 10 * time.Second,
+		ReadHeaderTimeout: 10 * time.Second, // to read the request headers
+		ReadTimeout:       30 * time.Second, // to read the full request
+		WriteTimeout:      30 * time.Second, // to write the response
+		IdleTimeout:       5 * time.Minute,  // to wait for the next request on a kept connection
 		// The errors that net/http finds in a connection or a handler.
 		ErrorLog: slog.NewLogLogger(logger.Handler(), slog.LevelError),
 	}
