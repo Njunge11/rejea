@@ -36,6 +36,13 @@ type Config struct {
 	S3Region string
 	// UploadURLLife is the time for which an upload URL can start an upload.
 	UploadURLLife time.Duration
+	// MaxUploadFiles is the largest number of files in one request for
+	// upload URLs.
+	MaxUploadFiles int
+	// MaxFileBytes is the largest size of one uploaded file.
+	MaxFileBytes int64
+	// MaxRequestBytes is the largest size of the JSON body of a request.
+	MaxRequestBytes int64
 }
 
 const (
@@ -44,6 +51,9 @@ const (
 	defaultJobTimeout     = 60 * time.Minute
 	defaultJobMaxAttempts = 8
 	defaultUploadURLLife  = time.Hour
+	defaultMaxUploadFiles = 100
+	defaultMaxFileBytes   = 1 << 30 // 1 GiB
+	defaultMaxReqBytes    = 1 << 20 // 1 MiB
 )
 
 // Load reads the configuration through getenv, which has the signature of
@@ -73,26 +83,31 @@ func Load(getenv func(string) string) (Config, error) {
 	default:
 		return Config{}, fmt.Errorf("REJEA_LOG_FORMAT: %q is not text or json", format)
 	}
+	// A count has 32 bits, so that it fits an int on each platform. A size
+	// in bytes has 64 bits.
 	for _, setting := range []struct {
-		name  string
-		value *int
-		def   int
+		name string
+		bits int
+		def  int64
+		set  func(int64)
 	}{
-		{"REJEA_FILE_WORKERS", &cfg.FileWorkers, defaultWorkers},
-		{"REJEA_PARSE_WORKERS", &cfg.ParseWorkers, defaultWorkers},
-		{"REJEA_INDEX_WORKERS", &cfg.IndexWorkers, defaultWorkers},
-		{"REJEA_JOB_MAX_ATTEMPTS", &cfg.JobMaxAttempts, defaultJobMaxAttempts},
+		{"REJEA_FILE_WORKERS", 32, defaultWorkers, func(n int64) { cfg.FileWorkers = int(n) }},
+		{"REJEA_PARSE_WORKERS", 32, defaultWorkers, func(n int64) { cfg.ParseWorkers = int(n) }},
+		{"REJEA_INDEX_WORKERS", 32, defaultWorkers, func(n int64) { cfg.IndexWorkers = int(n) }},
+		{"REJEA_JOB_MAX_ATTEMPTS", 32, defaultJobMaxAttempts, func(n int64) { cfg.JobMaxAttempts = int(n) }},
+		{"REJEA_MAX_UPLOAD_FILES", 32, defaultMaxUploadFiles, func(n int64) { cfg.MaxUploadFiles = int(n) }},
+		{"REJEA_MAX_FILE_BYTES", 64, defaultMaxFileBytes, func(n int64) { cfg.MaxFileBytes = n }},
+		{"REJEA_MAX_REQUEST_BYTES", 64, defaultMaxReqBytes, func(n int64) { cfg.MaxRequestBytes = n }},
 	} {
-		*setting.value = setting.def
-		text := getenv(setting.name)
-		if text == "" {
-			continue
+		n := setting.def
+		if text := getenv(setting.name); text != "" {
+			var err error
+			n, err = strconv.ParseInt(text, 10, setting.bits)
+			if err != nil || n < 1 {
+				return Config{}, fmt.Errorf("%s: %q is not a whole number of 1 or more", setting.name, text)
+			}
 		}
-		n, err := strconv.Atoi(text)
-		if err != nil || n < 1 {
-			return Config{}, fmt.Errorf("%s: %q is not a whole number of 1 or more", setting.name, text)
-		}
-		*setting.value = n
+		setting.set(n)
 	}
 	for _, setting := range []struct {
 		name  string

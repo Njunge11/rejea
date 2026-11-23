@@ -8,13 +8,28 @@ import (
 	"net"
 	"net/http"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/Njunge11/rejea/internal/storage"
 )
+
+// Config is the limits of the HTTP API.
+type Config struct {
+	// MaxUploadFiles is the largest number of files in one request for
+	// upload URLs.
+	MaxUploadFiles int
+	// MaxFileBytes is the largest size of one uploaded file.
+	MaxFileBytes int64
+	// MaxRequestBytes is the largest size of the JSON body of a request.
+	MaxRequestBytes int64
+}
 
 // NewHandler makes the handler of the service: the routes, with one log
 // line for each request.
-func NewHandler(db Pinger, logger *slog.Logger) http.Handler {
+func NewHandler(logger *slog.Logger, pool *pgxpool.Pool, store *storage.Store, cfg Config) http.Handler {
 	mux := http.NewServeMux()
-	addRoutes(mux, logger, db)
+	addRoutes(mux, logger, pool, store, cfg)
 	return logRequests(logger, mux)
 }
 

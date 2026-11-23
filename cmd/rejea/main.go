@@ -18,6 +18,7 @@ import (
 	"github.com/Njunge11/rejea/internal/config"
 	"github.com/Njunge11/rejea/internal/database"
 	"github.com/Njunge11/rejea/internal/server"
+	"github.com/Njunge11/rejea/internal/storage"
 )
 
 func main() {
@@ -59,12 +60,27 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 		return err
 	}
 
+	store, err := storage.New(ctx, storage.Config{
+		Bucket:        cfg.S3Bucket,
+		Region:        cfg.S3Region,
+		UploadURLLife: cfg.UploadURLLife,
+		MaxFileBytes:  cfg.MaxFileBytes,
+	})
+	if err != nil {
+		return err
+	}
+	handler := server.NewHandler(logger, pool, store, server.Config{
+		MaxUploadFiles:  cfg.MaxUploadFiles,
+		MaxFileBytes:    cfg.MaxFileBytes,
+		MaxRequestBytes: cfg.MaxRequestBytes,
+	})
+
 	listener, err := net.Listen("tcp", cfg.HTTPAddr)
 	if err != nil {
 		return err
 	}
 	logger.Info("http server listening", "addr", listener.Addr().String())
-	return server.Run(ctx, listener, server.NewHandler(pool, logger), logger)
+	return server.Run(ctx, listener, handler, logger)
 }
 
 // newLogger makes the one logger of the service. Each part that logs gets it

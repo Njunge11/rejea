@@ -13,8 +13,14 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
-// maxUploadURLLife is the longest life that S3 gives a presigned URL.
-const maxUploadURLLife = 7 * 24 * time.Hour
+// The limits of S3.
+const (
+	// maxUploadURLLife is the longest life of a presigned URL.
+	maxUploadURLLife = 7 * 24 * time.Hour
+	// maxPutBytes is the largest object that one PUT request can send. The
+	// S3 documentation says "5 GB".
+	maxPutBytes = 5_000_000_000
+)
 
 // Config is the settings of the file storage.
 type Config struct {
@@ -23,6 +29,8 @@ type Config struct {
 	Region string
 	// UploadURLLife is the time for which an upload URL can start an upload.
 	UploadURLLife time.Duration
+	// MaxFileBytes is the largest file that a client can upload.
+	MaxFileBytes int64
 }
 
 // Store reads and writes the files in the bucket.
@@ -42,6 +50,10 @@ func New(ctx context.Context, cfg Config) (*Store, error) {
 	if cfg.UploadURLLife <= 0 || cfg.UploadURLLife > maxUploadURLLife {
 		return nil, fmt.Errorf("the life of an upload URL is %s: S3 permits more than zero and at most %s",
 			cfg.UploadURLLife, maxUploadURLLife)
+	}
+	if cfg.MaxFileBytes < 1 || cfg.MaxFileBytes > maxPutBytes {
+		return nil, fmt.Errorf("the largest file is %d bytes: S3 permits 1 to %d bytes in one upload request",
+			cfg.MaxFileBytes, int64(maxPutBytes))
 	}
 	awsCfg, err := config.LoadDefaultConfig(ctx,
 		config.WithRegion(cfg.Region),

@@ -3,6 +3,10 @@ package server
 import (
 	"log/slog"
 	"net/http"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/Njunge11/rejea/internal/storage"
 )
 
 // addRoutes adds each route of the service to mux. All routes are here, so
@@ -11,6 +15,7 @@ import (
 // For a path or a method that has no route, http.ServeMux answers 404 or
 // 405 with a plain text body. That answer stays: RFC 9457 says that a plain
 // status code is sufficient when the status tells the full problem.
-func addRoutes(mux *http.ServeMux, logger *slog.Logger, db Pinger) {
-	mux.Handle(healthPattern, handle(logger, health(db)))
+func addRoutes(mux *http.ServeMux, logger *slog.Logger, pool *pgxpool.Pool, store *storage.Store, cfg Config) {
+	mux.Handle(healthPattern, handle(logger, health(pool)))
+	mux.Handle("POST /documents", handle(logger, createDocuments(pool, store, cfg)))
 }

@@ -48,11 +48,13 @@ These points are not in the plan. Each one is settled before its item starts.
   - AWS: the IAM role `rejea-service`, with `s3:GetObject` and `s3:PutObject` on the objects of the bucket and no more.
   - Proof: a file goes up through a presigned URL and comes back with the same hash.
 
-- [ ] **5. Endpoint: ask for upload URLs**
-  - One presigned URL for each file. One `documents` row for each file, with status `uploading`, the optional metadata, and the system id in `uploaded_by`.
+- [x] **5. Endpoint: ask for upload URLs**
+  - `POST /documents` with a list of files (name, size in bytes, optional metadata). It answers `201` with one presigned URL for each file.
+  - One `documents` row for each file, with status `uploading`, the metadata, and the system id in `uploaded_by`.
   - Accepts PDF, Word, zip and tar.
-  - One way to read a JSON request: a size limit, no unknown fields, one object, and a clear answer for each fault. It comes here because this endpoint is the first that reads a body.
-  - Settings with defaults: files in one request (100), size of one file (1 GB). The life of a URL is a setting of item 4.
+  - One way to read a JSON request: a size limit, no unknown fields, one object, and a clear answer for each fault.
+  - Settings with defaults: files in one request (100), size of one file (1 GiB), size of a JSON body (1 MiB).
+  - `rejea serve` makes the file storage at its start.
   - Proof: a request for 3 files gives 3 URLs and 3 rows. A request over a limit is refused.
 
 - [ ] **6. File worker: hash and duplicate check**

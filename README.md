@@ -34,7 +34,7 @@ make serve      # http://127.0.0.1:8080/healthz
 
 ## File storage
 
-The files are in an S3 bucket. `make migrate` and `make test` do not need it.
+The files are in an S3 bucket. `make serve` needs it. `make migrate` and `make test` do not.
 
 - Set `REJEA_S3_BUCKET` and `REJEA_S3_REGION` in `.env`.
 - The service gets its AWS credentials from the default sources of the AWS SDK. Give it an IAM role, not the access key of a user.
