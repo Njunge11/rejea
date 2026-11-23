@@ -24,7 +24,6 @@ These points are not in the plan. Each one is settled before its item starts.
 - **D.** The property schemas of the document types `sop`, `guide` and `technical`. The plan has an example for `sop` only. Needed at item 36.
 - **E.** The columns of the graph tables. The plan says "following HippoRAG 2". Needed at item 39.
 - **F.** The image resolution of a rendered page. Needed at item 16.
-- **G.** How a test reaches S3 in CI. GitHub's machines have no AWS access. No test uses S3 yet, so this point is open until the first such test.
 
 ## Upload (plan steps 1 and 2)
 
