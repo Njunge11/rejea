@@ -14,6 +14,9 @@ import (
 
 // Config is the limits of the work on a file.
 type Config struct {
+	// FailureSaveTimeout is the time that the database gets to save the
+	// failure of a document.
+	FailureSaveTimeout time.Duration
 	// UploadMaxAge is the longest time that a document can have the status
 	// uploading. After it, the document fails.
 	UploadMaxAge time.Duration

@@ -65,14 +65,7 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 		return err
 	}
 
-	store, err := storage.New(ctx, logger, storage.Config{
-		Bucket:        cfg.S3Bucket,
-		Region:        cfg.S3Region,
-		UploadURLLife: cfg.UploadURLLife,
-		MaxFileBytes:  cfg.MaxFileBytes,
-		ReadTimeout:   cfg.S3ReadTimeout,
-		RangeBytes:    cfg.S3RangeBytes,
-	})
+	store, err := storage.New(ctx, logger, cfg.Storage)
 	if err != nil {
 		return err
 	}
@@ -81,24 +74,9 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 	// River takes no new job and waits for the jobs in work.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	failureRule := []rivertype.Middleware{ingest.FailureRule(pool, logger, cfg.FailureSaveTimeout)}
-	ingestCfg := ingest.Config{
-		UploadMaxAge:        cfg.UploadMaxAge,
-		UploadCheckInterval: cfg.UploadCheckInterval,
-		MaxFileBytes:        cfg.MaxFileBytes,
-		MaxArchiveFiles:     cfg.MaxArchiveFiles,
-		MaxUnpackedBytes:    cfg.MaxUnpackedBytes,
-		MaxArchiveListBytes: cfg.MaxArchiveListBytes,
-	}
-	workers := ingest.Workers(pool, store, logger, ingestCfg)
-	jobs, err := queue.NewClient(pool, logger, workers, failureRule, ingest.Schedule(ingestCfg), queue.Config{
-		FileWorkers:  cfg.FileWorkers,
-		ParseWorkers: cfg.ParseWorkers,
-		IndexWorkers: cfg.IndexWorkers,
-		JobTimeout:   cfg.JobTimeout,
-		MaxAttempts:  cfg.JobMaxAttempts,
-		StopTimeout:  cfg.JobStopTimeout,
-	})
+	failureRule := []rivertype.Middleware{ingest.FailureRule(pool, logger, cfg.Ingest.FailureSaveTimeout)}
+	workers := ingest.Workers(pool, store, logger, cfg.Ingest)
+	jobs, err := queue.NewClient(pool, logger, workers, failureRule, ingest.Schedule(cfg.Ingest), cfg.Queue)
 	if err != nil {
 		return err
 	}
@@ -111,29 +89,18 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 		// not obey gets the shutdown timeout, then the service stops.
 		select {
 		case <-jobs.Stopped():
-		case <-time.After(cfg.JobStopTimeout + cfg.ShutdownTimeout):
+		case <-time.After(cfg.Queue.StopTimeout + cfg.Server.ShutdownTimeout):
 			logger.Error("the jobs did not stop in time")
 		}
 	}()
-	serverCfg := server.Config{
-		ReadHeaderTimeout: cfg.HTTPReadHeaderTimeout,
-		ReadTimeout:       cfg.HTTPReadTimeout,
-		WriteTimeout:      cfg.HTTPWriteTimeout,
-		IdleTimeout:       cfg.HTTPIdleTimeout,
-		ShutdownTimeout:   cfg.ShutdownTimeout,
-		HealthTimeout:     cfg.HealthTimeout,
-		MaxUploadFiles:    cfg.MaxUploadFiles,
-		MaxFileBytes:      cfg.MaxFileBytes,
-		MaxRequestBytes:   cfg.MaxRequestBytes,
-	}
-	handler := server.NewHandler(logger, pool, store, jobs, serverCfg)
+	handler := server.NewHandler(logger, pool, store, jobs, cfg.Server)
 
 	listener, err := net.Listen("tcp", cfg.HTTPAddr)
 	if err != nil {
 		return err
 	}
 	logger.Info("http server listening", "addr", listener.Addr().String())
-	return server.Run(ctx, listener, handler, logger, serverCfg)
+	return server.Run(ctx, listener, handler, logger, cfg.Server)
 }
 
 // newLogger makes the one logger of the service. Each part that logs gets it

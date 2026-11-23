@@ -5,11 +5,20 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"math"
+	"slices"
 	"strconv"
+	"strings"
 	"time"
+
+	"github.com/Njunge11/rejea/internal/ingest"
+	"github.com/Njunge11/rejea/internal/queue"
+	"github.com/Njunge11/rejea/internal/server"
+	"github.com/Njunge11/rejea/internal/storage"
 )
 
-// Config is the configuration of the service.
+// Config is the configuration of the service. Each part of the service
+// declares its own settings, and Config has one field for each part.
 type Config struct {
 	// DatabaseURL is the connection URL of the PostgreSQL database.
 	DatabaseURL string
@@ -20,188 +29,168 @@ type Config struct {
 	// LogJSON is true when each log line is a JSON object. If not, a line is
 	// text for a person to read.
 	LogJSON bool
-	// FileWorkers, ParseWorkers and IndexWorkers are the numbers of jobs that
-	// each queue runs at the same time.
-	FileWorkers  int
-	ParseWorkers int
-	IndexWorkers int
-	// JobTimeout is the longest time that one attempt of a job can run.
-	JobTimeout time.Duration
-	// JobMaxAttempts is the number of times that a job runs before it fails
-	// with no new attempt.
-	JobMaxAttempts int
-	// S3Bucket is the name of the S3 bucket of the files and S3Region is its
-	// AWS Region. The migrate command does not use them.
-	S3Bucket string
-	S3Region string
-	// UploadURLLife is the time for which an upload URL can start an upload.
-	UploadURLLife time.Duration
-	// MaxUploadFiles is the largest number of files in one request for
-	// upload URLs.
-	MaxUploadFiles int
-	// MaxFileBytes is the largest size of one uploaded file.
-	MaxFileBytes int64
-	// MaxRequestBytes is the largest size of the JSON body of a request.
-	MaxRequestBytes int64
-	// The time limits of the HTTP server.
-	HTTPReadHeaderTimeout time.Duration // to read the request headers
-	HTTPReadTimeout       time.Duration // to read the full request
-	HTTPWriteTimeout      time.Duration // to write the response
-	HTTPIdleTimeout       time.Duration // to wait for the next request on a kept connection
-	// ShutdownTimeout is the time that open requests get to finish when
-	// the service stops.
-	ShutdownTimeout time.Duration
-	// HealthTimeout is the time that the database gets to answer the
-	// health check.
-	HealthTimeout time.Duration
-	// JobStopTimeout is the time that the jobs in work get to finish when
-	// the service stops. After it, the jobs are cancelled.
-	JobStopTimeout time.Duration
-	// S3ReadTimeout is the longest time that a connection to S3 can be
-	// silent before a read fails.
-	S3ReadTimeout time.Duration
-	// FailureSaveTimeout is the time that the database gets to save the
-	// failure of a document.
-	FailureSaveTimeout time.Duration
-	// MaxArchiveFiles is the largest number of PDF and Word files in one
-	// archive.
-	MaxArchiveFiles int
-	// MaxUnpackedBytes is the largest size of the content of one archive
-	// when it is unpacked.
-	MaxUnpackedBytes int64
-	// MaxArchiveListBytes is the largest size of the list of the files in
-	// one zip. The service keeps this list in memory.
-	MaxArchiveListBytes int64
-	// S3RangeBytes is the size of one piece when the service reads a file
-	// from S3 in pieces.
-	S3RangeBytes int64
-	// UploadMaxAge is the longest time that a document can wait for the
-	// confirm of its upload. After it, the document fails.
-	UploadMaxAge time.Duration
-	// UploadCheckInterval is the time between two looks for such documents.
-	UploadCheckInterval time.Duration
+
+	Storage storage.Config
+	Queue   queue.Config
+	Ingest  ingest.Config
+	Server  server.Config
 }
-
-const (
-	defaultHTTPAddr       = "127.0.0.1:8080"
-	defaultWorkers        = 1
-	defaultJobTimeout     = 60 * time.Minute
-	defaultJobMaxAttempts = 8
-	defaultUploadURLLife  = time.Hour
-	defaultMaxUploadFiles = 100
-	defaultMaxFileBytes   = 1 << 30 // 1 GiB
-	defaultMaxReqBytes    = 1 << 20 // 1 MiB
-
-	defaultMaxArchiveFiles     = 1000
-	defaultMaxUnpackedBytes    = 1_000_000_000 // 1 GB
-	defaultMaxArchiveListBytes = 16 << 20      // 16 MiB
-	defaultS3RangeBytes        = 8 << 20       // 8 MiB
-
-	defaultHTTPReadHeaderTimeout = 10 * time.Second
-	defaultHTTPReadTimeout       = 30 * time.Second
-	defaultHTTPWriteTimeout      = 30 * time.Second
-	defaultHTTPIdleTimeout       = 5 * time.Minute
-	defaultShutdownTimeout       = 10 * time.Second
-	defaultHealthTimeout         = 2 * time.Second
-	defaultJobStopTimeout        = 10 * time.Second
-	defaultS3ReadTimeout         = time.Minute
-	defaultFailureSaveTimeout    = 10 * time.Second
-	defaultUploadMaxAge          = 24 * time.Hour
-	defaultUploadCheckInterval   = time.Hour
-)
 
 // Load reads the configuration through getenv, which has the signature of
 // os.Getenv.
+//
+// Each setting is one line: its field, its name in the environment and its
+// default. A value that is not set gets the default. Load reads all the
+// settings before it returns, so its error names each value that is wrong,
+// and not only the first.
 func Load(getenv func(string) string) (Config, error) {
+	env := &environment{getenv: getenv}
+
+	// The largest size of one file is a limit of three parts.
+	maxFileBytes := env.size("REJEA_MAX_FILE_BYTES", 1<<30) // 1 GiB
+
 	cfg := Config{
-		DatabaseURL: getenv("DATABASE_URL"),
-		HTTPAddr:    defaultHTTPAddr,
-		S3Bucket:    getenv("REJEA_S3_BUCKET"),
-		S3Region:    getenv("REJEA_S3_REGION"),
-	}
-	if cfg.DatabaseURL == "" {
-		return Config{}, errors.New("DATABASE_URL is not set")
-	}
-	if addr := getenv("REJEA_HTTP_ADDR"); addr != "" {
-		cfg.HTTPAddr = addr
-	}
-	if level := getenv("REJEA_LOG_LEVEL"); level != "" {
-		if err := cfg.LogLevel.UnmarshalText([]byte(level)); err != nil {
-			return Config{}, fmt.Errorf("REJEA_LOG_LEVEL: %q is not debug, info, warn or error", level)
-		}
-	}
-	switch format := getenv("REJEA_LOG_FORMAT"); format {
-	case "", "text":
-	case "json":
-		cfg.LogJSON = true
-	default:
-		return Config{}, fmt.Errorf("REJEA_LOG_FORMAT: %q is not text or json", format)
-	}
-	// A count has 32 bits, so that it fits an int on each platform. A size
-	// in bytes has 64 bits.
-	for _, setting := range []struct {
-		name string
-		bits int
-		def  int64
-		set  func(int64)
-	}{
-		{"REJEA_FILE_WORKERS", 32, defaultWorkers, func(n int64) { cfg.FileWorkers = int(n) }},
-		{"REJEA_PARSE_WORKERS", 32, defaultWorkers, func(n int64) { cfg.ParseWorkers = int(n) }},
-		{"REJEA_INDEX_WORKERS", 32, defaultWorkers, func(n int64) { cfg.IndexWorkers = int(n) }},
-		{"REJEA_JOB_MAX_ATTEMPTS", 32, defaultJobMaxAttempts, func(n int64) { cfg.JobMaxAttempts = int(n) }},
-		{"REJEA_MAX_UPLOAD_FILES", 32, defaultMaxUploadFiles, func(n int64) { cfg.MaxUploadFiles = int(n) }},
-		{"REJEA_MAX_FILE_BYTES", 64, defaultMaxFileBytes, func(n int64) { cfg.MaxFileBytes = n }},
-		{"REJEA_MAX_REQUEST_BYTES", 64, defaultMaxReqBytes, func(n int64) { cfg.MaxRequestBytes = n }},
-		{"REJEA_MAX_ARCHIVE_FILES", 32, defaultMaxArchiveFiles, func(n int64) { cfg.MaxArchiveFiles = int(n) }},
-		{"REJEA_MAX_UNPACKED_BYTES", 64, defaultMaxUnpackedBytes, func(n int64) { cfg.MaxUnpackedBytes = n }},
-		{"REJEA_MAX_ARCHIVE_LIST_BYTES", 64, defaultMaxArchiveListBytes, func(n int64) { cfg.MaxArchiveListBytes = n }},
-		{"REJEA_S3_RANGE_BYTES", 64, defaultS3RangeBytes, func(n int64) { cfg.S3RangeBytes = n }},
-	} {
-		n := setting.def
-		if text := getenv(setting.name); text != "" {
-			var err error
-			n, err = strconv.ParseInt(text, 10, setting.bits)
-			if err != nil || n < 1 {
-				return Config{}, fmt.Errorf("%s: %q is not a whole number of 1 or more", setting.name, text)
-			}
-		}
-		setting.set(n)
-	}
-	for _, setting := range []struct {
-		name  string
-		value *time.Duration
-		def   time.Duration
-	}{
-		{"REJEA_JOB_TIMEOUT", &cfg.JobTimeout, defaultJobTimeout},
-		{"REJEA_UPLOAD_URL_LIFE", &cfg.UploadURLLife, defaultUploadURLLife},
-		{"REJEA_HTTP_READ_HEADER_TIMEOUT", &cfg.HTTPReadHeaderTimeout, defaultHTTPReadHeaderTimeout},
-		{"REJEA_HTTP_READ_TIMEOUT", &cfg.HTTPReadTimeout, defaultHTTPReadTimeout},
-		{"REJEA_HTTP_WRITE_TIMEOUT", &cfg.HTTPWriteTimeout, defaultHTTPWriteTimeout},
-		{"REJEA_HTTP_IDLE_TIMEOUT", &cfg.HTTPIdleTimeout, defaultHTTPIdleTimeout},
-		{"REJEA_SHUTDOWN_TIMEOUT", &cfg.ShutdownTimeout, defaultShutdownTimeout},
-		{"REJEA_HEALTH_TIMEOUT", &cfg.HealthTimeout, defaultHealthTimeout},
-		{"REJEA_JOB_STOP_TIMEOUT", &cfg.JobStopTimeout, defaultJobStopTimeout},
-		{"REJEA_S3_READ_TIMEOUT", &cfg.S3ReadTimeout, defaultS3ReadTimeout},
-		{"REJEA_FAILURE_SAVE_TIMEOUT", &cfg.FailureSaveTimeout, defaultFailureSaveTimeout},
-		{"REJEA_UPLOAD_MAX_AGE", &cfg.UploadMaxAge, defaultUploadMaxAge},
-		{"REJEA_UPLOAD_CHECK_INTERVAL", &cfg.UploadCheckInterval, defaultUploadCheckInterval},
-	} {
-		*setting.value = setting.def
-		text := getenv(setting.name)
-		if text == "" {
-			continue
-		}
-		d, err := time.ParseDuration(text)
-		if err != nil || d <= 0 {
-			return Config{}, fmt.Errorf("%s: %q is not a time of more than zero, such as 60m", setting.name, text)
-		}
-		*setting.value = d
+		DatabaseURL: env.required("DATABASE_URL"),
+		HTTPAddr:    env.text("REJEA_HTTP_ADDR", "127.0.0.1:8080"),
+		LogLevel:    env.logLevel("REJEA_LOG_LEVEL"),
+		LogJSON:     env.oneOf("REJEA_LOG_FORMAT", "text", "json") == "json",
+		Storage: storage.Config{
+			// The migrate command does not use the bucket, so these two
+			// have no default and are not required here.
+			Bucket:        env.text("REJEA_S3_BUCKET", ""),
+			Region:        env.text("REJEA_S3_REGION", ""),
+			UploadURLLife: env.duration("REJEA_UPLOAD_URL_LIFE", time.Hour),
+			MaxFileBytes:  maxFileBytes,
+			ReadTimeout:   env.duration("REJEA_S3_READ_TIMEOUT", time.Minute),
+			RangeBytes:    env.size("REJEA_S3_RANGE_BYTES", 8<<20), // 8 MiB
+		},
+		Queue: queue.Config{
+			FileWorkers:  env.count("REJEA_FILE_WORKERS", 1),
+			ParseWorkers: env.count("REJEA_PARSE_WORKERS", 1),
+			IndexWorkers: env.count("REJEA_INDEX_WORKERS", 1),
+			JobTimeout:   env.duration("REJEA_JOB_TIMEOUT", 60*time.Minute),
+			MaxAttempts:  env.count("REJEA_JOB_MAX_ATTEMPTS", 8),
+			StopTimeout:  env.duration("REJEA_JOB_STOP_TIMEOUT", 10*time.Second),
+		},
+		Ingest: ingest.Config{
+			FailureSaveTimeout:  env.duration("REJEA_FAILURE_SAVE_TIMEOUT", 10*time.Second),
+			UploadMaxAge:        env.duration("REJEA_UPLOAD_MAX_AGE", 24*time.Hour),
+			UploadCheckInterval: env.duration("REJEA_UPLOAD_CHECK_INTERVAL", time.Hour),
+			MaxFileBytes:        maxFileBytes,
+			MaxArchiveFiles:     env.count("REJEA_MAX_ARCHIVE_FILES", 1000),
+			MaxUnpackedBytes:    env.size("REJEA_MAX_UNPACKED_BYTES", 1_000_000_000), // 1 GB
+			MaxArchiveListBytes: env.size("REJEA_MAX_ARCHIVE_LIST_BYTES", 16<<20),    // 16 MiB
+		},
+		Server: server.Config{
+			ReadHeaderTimeout: env.duration("REJEA_HTTP_READ_HEADER_TIMEOUT", 10*time.Second),
+			ReadTimeout:       env.duration("REJEA_HTTP_READ_TIMEOUT", 30*time.Second),
+			WriteTimeout:      env.duration("REJEA_HTTP_WRITE_TIMEOUT", 30*time.Second),
+			IdleTimeout:       env.duration("REJEA_HTTP_IDLE_TIMEOUT", 5*time.Minute),
+			ShutdownTimeout:   env.duration("REJEA_SHUTDOWN_TIMEOUT", 10*time.Second),
+			HealthTimeout:     env.duration("REJEA_HEALTH_TIMEOUT", 2*time.Second),
+			MaxUploadFiles:    env.count("REJEA_MAX_UPLOAD_FILES", 100),
+			MaxFileBytes:      maxFileBytes,
+			MaxRequestBytes:   env.size("REJEA_MAX_REQUEST_BYTES", 1<<20), // 1 MiB
+		},
 	}
 	// A client can start its upload until the upload URL ends. A document
 	// that fails before that time fails with an upload in work.
-	if cfg.UploadMaxAge <= cfg.UploadURLLife {
-		return Config{}, fmt.Errorf("REJEA_UPLOAD_MAX_AGE (%s) must be longer than REJEA_UPLOAD_URL_LIFE (%s)",
-			cfg.UploadMaxAge, cfg.UploadURLLife)
+	if cfg.Ingest.UploadMaxAge <= cfg.Storage.UploadURLLife {
+		env.fault("REJEA_UPLOAD_MAX_AGE (%s) must be longer than REJEA_UPLOAD_URL_LIFE (%s)",
+			cfg.Ingest.UploadMaxAge, cfg.Storage.UploadURLLife)
+	}
+	if err := errors.Join(env.faults...); err != nil {
+		return Config{}, err
 	}
 	return cfg, nil
+}
+
+// environment reads settings of each type and keeps each fault that it
+// finds. The caller reads all the settings and then looks at the faults one
+// time, as the errWriter of the Go blog post "Errors are values" does.
+type environment struct {
+	getenv func(string) string
+	faults []error
+}
+
+func (e *environment) fault(format string, args ...any) {
+	e.faults = append(e.faults, fmt.Errorf(format, args...))
+}
+
+// text reads a setting that can be any text.
+func (e *environment) text(name, def string) string {
+	if value := e.getenv(name); value != "" {
+		return value
+	}
+	return def
+}
+
+// required reads a setting that has no default.
+func (e *environment) required(name string) string {
+	value := e.getenv(name)
+	if value == "" {
+		e.fault("%s is not set", name)
+	}
+	return value
+}
+
+// oneOf reads a setting that has a fixed list of values. The first value
+// is the default.
+func (e *environment) oneOf(name string, values ...string) string {
+	value := e.text(name, values[0])
+	if !slices.Contains(values, value) {
+		e.fault("%s: %q is not %s", name, value, strings.Join(values, " or "))
+		return values[0]
+	}
+	return value
+}
+
+// logLevel reads a log level. The default is info.
+func (e *environment) logLevel(name string) slog.Level {
+	var level slog.Level
+	if value := e.getenv(name); value != "" {
+		if err := level.UnmarshalText([]byte(value)); err != nil {
+			e.fault("%s: %q is not debug, info, warn or error", name, value)
+		}
+	}
+	return level
+}
+
+// count reads a whole number of 1 or more that fits an int on each
+// platform.
+func (e *environment) count(name string, def int) int {
+	return int(e.whole(name, int64(def), math.MaxInt32))
+}
+
+// size reads a number of bytes, 1 or more.
+func (e *environment) size(name string, def int64) int64 {
+	return e.whole(name, def, math.MaxInt64)
+}
+
+func (e *environment) whole(name string, def, largest int64) int64 {
+	value := e.getenv(name)
+	if value == "" {
+		return def
+	}
+	n, err := strconv.ParseInt(value, 10, 64)
+	if err != nil || n < 1 || n > largest {
+		e.fault("%s: %q is not a whole number of 1 or more", name, value)
+		return def
+	}
+	return n
+}
+
+// duration reads a time of more than zero, in the format of
+// time.ParseDuration.
+func (e *environment) duration(name string, def time.Duration) time.Duration {
+	value := e.getenv(name)
+	if value == "" {
+		return def
+	}
+	d, err := time.ParseDuration(value)
+	if err != nil || d <= 0 {
+		e.fault("%s: %q is not a time of more than zero, such as 60m", name, value)
+		return def
+	}
+	return d
 }
