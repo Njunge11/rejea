@@ -49,7 +49,7 @@ func TestClientRunsJob(t *testing.T) {
 	river.AddWorker(workers, worker)
 
 	const jobTimeout = 10 * time.Minute
-	client, err := queue.NewClient(pool, slog.New(slog.DiscardHandler), workers, nil, queue.Config{
+	client, err := queue.NewClient(pool, slog.New(slog.DiscardHandler), workers, nil, nil, queue.Config{
 		FileWorkers:  1,
 		ParseWorkers: 1,
 		IndexWorkers: 1,

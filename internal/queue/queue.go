@@ -20,6 +20,10 @@ const (
 	File  = "file"  // download, hash, duplicate check, unpack an archive
 	Parse = "parse" // render the pages, parse
 	Index = "index" // classify, chunk, embed, graph
+	// Maintenance has the jobs that River adds at a fixed interval to keep
+	// the data clean. Such a job is one short database statement, so the
+	// queue has one worker.
+	Maintenance = "maintenance"
 )
 
 // Config is the settings of the queues.
@@ -54,15 +58,26 @@ func (FileArgs) Kind() string { return "file" }
 // InsertOpts puts the job in the file queue.
 func (FileArgs) InsertOpts() river.InsertOpts { return river.InsertOpts{Queue: File} }
 
-// NewClient makes the River client of the three queues. River refuses to
-// start a client that has no worker. River logs through logger. Each job
-// runs inside the middleware.
-func NewClient(pool *pgxpool.Pool, logger *slog.Logger, workers *river.Workers, middleware []rivertype.Middleware, cfg Config) (*river.Client[pgx.Tx], error) {
+// ExpireUploadsArgs is the job that fails the uploads that no client
+// confirmed. River adds it at a fixed interval.
+type ExpireUploadsArgs struct{}
+
+// Kind is the name of the job in the database.
+func (ExpireUploadsArgs) Kind() string { return "expire_uploads" }
+
+// InsertOpts puts the job in the maintenance queue.
+func (ExpireUploadsArgs) InsertOpts() river.InsertOpts { return river.InsertOpts{Queue: Maintenance} }
+
+// NewClient makes the River client of the queues. River refuses to start a
+// client that has no worker. River logs through logger. Each job runs
+// inside the middleware. River adds the periodic jobs at their intervals.
+func NewClient(pool *pgxpool.Pool, logger *slog.Logger, workers *river.Workers, middleware []rivertype.Middleware, periodic []*river.PeriodicJob, cfg Config) (*river.Client[pgx.Tx], error) {
 	return river.NewClient(riverpgxv5.New(pool), &river.Config{
-		JobTimeout:  cfg.JobTimeout,
-		Logger:      logger,
-		MaxAttempts: cfg.MaxAttempts,
-		Middleware:  middleware,
+		JobTimeout:   cfg.JobTimeout,
+		Logger:       logger,
+		MaxAttempts:  cfg.MaxAttempts,
+		Middleware:   middleware,
+		PeriodicJobs: periodic,
 		// When the context of Start is cancelled, River takes no new job
 		// and waits this long for the jobs in work.
 		SoftStopTimeout: cfg.StopTimeout,
@@ -70,6 +85,8 @@ func NewClient(pool *pgxpool.Pool, logger *slog.Logger, workers *river.Workers, 
 			File:  {MaxWorkers: cfg.FileWorkers},
 			Parse: {MaxWorkers: cfg.ParseWorkers},
 			Index: {MaxWorkers: cfg.IndexWorkers},
+
+			Maintenance: {MaxWorkers: 1},
 		},
 		Workers: workers,
 	})

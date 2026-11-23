@@ -132,8 +132,7 @@ func confirmUpload(pool *pgxpool.Pool, store *storage.Store, jobs *river.Client[
 		if err != nil {
 			return err
 		}
-		switch state.Status {
-		case database.StatusUploading:
+		if state.Status == database.StatusUploading {
 			inStorage, err := store.Exists(ctx, state.StorageKey)
 			if err != nil {
 				return err
@@ -147,7 +146,9 @@ func confirmUpload(pool *pgxpool.Pool, store *storage.Store, jobs *river.Client[
 			err = pgx.BeginFunc(ctx, pool, func(tx pgx.Tx) error {
 				confirmed, err := database.ConfirmUpload(ctx, tx, id)
 				if err != nil || !confirmed {
-					// A different request confirmed the document first.
+					// The status changed after the read: a different
+					// request confirmed the document, or the document
+					// failed because it was too old.
 					return err
 				}
 				if _, err := jobs.InsertTx(ctx, tx, queue.FileArgs{DocumentID: id}, nil); err != nil {
@@ -158,8 +159,13 @@ func confirmUpload(pool *pgxpool.Pool, store *storage.Store, jobs *river.Client[
 			if err != nil {
 				return err
 			}
-			state.Status = database.StatusUploaded
-		case database.StatusFailed:
+			// The answer has the status that the document has now.
+			state, err = database.GetFileState(ctx, pool, id)
+			if err != nil {
+				return err
+			}
+		}
+		if state.Status == database.StatusFailed {
 			return &apiError{
 				status: http.StatusConflict,
 				detail: "The document has the status failed. Ask for a new upload URL.",

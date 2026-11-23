@@ -82,13 +82,16 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	failureRule := []rivertype.Middleware{ingest.FailureRule(pool, logger, cfg.FailureSaveTimeout)}
-	workers := ingest.Workers(pool, store, logger, ingest.Config{
+	ingestCfg := ingest.Config{
+		UploadMaxAge:        cfg.UploadMaxAge,
+		UploadCheckInterval: cfg.UploadCheckInterval,
 		MaxFileBytes:        cfg.MaxFileBytes,
 		MaxArchiveFiles:     cfg.MaxArchiveFiles,
 		MaxUnpackedBytes:    cfg.MaxUnpackedBytes,
 		MaxArchiveListBytes: cfg.MaxArchiveListBytes,
-	})
-	jobs, err := queue.NewClient(pool, logger, workers, failureRule, queue.Config{
+	}
+	workers := ingest.Workers(pool, store, logger, ingestCfg)
+	jobs, err := queue.NewClient(pool, logger, workers, failureRule, ingest.Schedule(ingestCfg), queue.Config{
 		FileWorkers:  cfg.FileWorkers,
 		ParseWorkers: cfg.ParseWorkers,
 		IndexWorkers: cfg.IndexWorkers,

@@ -75,6 +75,11 @@ type Config struct {
 	// S3RangeBytes is the size of one piece when the service reads a file
 	// from S3 in pieces.
 	S3RangeBytes int64
+	// UploadMaxAge is the longest time that a document can wait for the
+	// confirm of its upload. After it, the document fails.
+	UploadMaxAge time.Duration
+	// UploadCheckInterval is the time between two looks for such documents.
+	UploadCheckInterval time.Duration
 }
 
 const (
@@ -101,6 +106,8 @@ const (
 	defaultJobStopTimeout        = 10 * time.Second
 	defaultS3ReadTimeout         = time.Minute
 	defaultFailureSaveTimeout    = 10 * time.Second
+	defaultUploadMaxAge          = 24 * time.Hour
+	defaultUploadCheckInterval   = time.Hour
 )
 
 // Load reads the configuration through getenv, which has the signature of
@@ -176,6 +183,8 @@ func Load(getenv func(string) string) (Config, error) {
 		{"REJEA_JOB_STOP_TIMEOUT", &cfg.JobStopTimeout, defaultJobStopTimeout},
 		{"REJEA_S3_READ_TIMEOUT", &cfg.S3ReadTimeout, defaultS3ReadTimeout},
 		{"REJEA_FAILURE_SAVE_TIMEOUT", &cfg.FailureSaveTimeout, defaultFailureSaveTimeout},
+		{"REJEA_UPLOAD_MAX_AGE", &cfg.UploadMaxAge, defaultUploadMaxAge},
+		{"REJEA_UPLOAD_CHECK_INTERVAL", &cfg.UploadCheckInterval, defaultUploadCheckInterval},
 	} {
 		*setting.value = setting.def
 		text := getenv(setting.name)
@@ -187,6 +196,12 @@ func Load(getenv func(string) string) (Config, error) {
 			return Config{}, fmt.Errorf("%s: %q is not a time of more than zero, such as 60m", setting.name, text)
 		}
 		*setting.value = d
+	}
+	// A client can start its upload until the upload URL ends. A document
+	// that fails before that time fails with an upload in work.
+	if cfg.UploadMaxAge <= cfg.UploadURLLife {
+		return Config{}, fmt.Errorf("REJEA_UPLOAD_MAX_AGE (%s) must be longer than REJEA_UPLOAD_URL_LIFE (%s)",
+			cfg.UploadMaxAge, cfg.UploadURLLife)
 	}
 	return cfg, nil
 }

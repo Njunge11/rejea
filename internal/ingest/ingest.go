@@ -4,6 +4,7 @@ package ingest
 
 import (
 	"log/slog"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
@@ -13,6 +14,11 @@ import (
 
 // Config is the limits of the work on a file.
 type Config struct {
+	// UploadMaxAge is the longest time that a document can have the status
+	// uploading. After it, the document fails.
+	UploadMaxAge time.Duration
+	// UploadCheckInterval is the time between two looks for such documents.
+	UploadCheckInterval time.Duration
 	// MaxFileBytes is the largest size of one file.
 	MaxFileBytes int64
 	// MaxArchiveFiles is the largest number of PDF and Word files in one
@@ -30,5 +36,6 @@ type Config struct {
 func Workers(pool *pgxpool.Pool, store *storage.Store, logger *slog.Logger, cfg Config) *river.Workers {
 	workers := river.NewWorkers()
 	river.AddWorker(workers, &fileWorker{pool: pool, store: store, logger: logger, cfg: cfg})
+	river.AddWorker(workers, &expireWorker{pool: pool, store: store, logger: logger, maxAge: cfg.UploadMaxAge})
 	return workers
 }

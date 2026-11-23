@@ -88,9 +88,11 @@ These points are not in the plan. Each one is settled before its item starts.
   - AWS: the role gets `s3:DeleteObject` and `s3:AbortMultipartUpload`.
   - Proof: a 50-file zip gives 50 rows and 50 jobs. An archive over a limit fails with its reason.
 
-- [ ] **10. Job: fail uploads that were never confirmed**
-  - A periodic job sets `failed` on a row that stays `uploading` too long.
-  - Setting with default: the age limit (24 hours).
+- [x] **10. Job: fail uploads that were never confirmed**
+  - A periodic job of River sets `failed` on a row that stays `uploading` too long, and removes its file from S3 if the client sent one.
+  - River adds the job at a fixed interval and at each start of the service. With many copies of the service, only the leader adds it.
+  - The job runs in its own queue, `maintenance`.
+  - Settings with defaults: the age limit (24 hours), the interval (1 hour). The age limit must be longer than the life of an upload URL, or the service does not start.
   - Proof: an old `uploading` row becomes `failed`. A new one does not change.
 
 - [ ] **11. Endpoints: status**

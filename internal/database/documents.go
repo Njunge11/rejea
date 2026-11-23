@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -179,4 +180,26 @@ func SaveUnpacked(ctx context.Context, tx pgx.Tx, archive uuid.UUID, files []Unp
 		return nil, fmt.Errorf("mark the archive %s as unpacked: %w", archive, err)
 	}
 	return added, nil
+}
+
+// FailOldUploads gives the status failed to each document that has the
+// status uploading for longer than maxAge: no client confirmed its upload.
+// The clock is the clock of the database, which also set the time of each
+// row. It gives the storage keys of these documents, and it runs in the
+// transaction of the caller, which removes the files.
+func FailOldUploads(ctx context.Context, tx pgx.Tx, maxAge time.Duration) ([]string, error) {
+	rows, err := tx.Query(ctx,
+		`update documents set status = $1, error = $2
+		 where status = $3 and created_at < now() - make_interval(secs => $4)
+		 returning storage_key`,
+		StatusFailed, fmt.Sprintf("the client did not confirm the upload in %s", maxAge), StatusUploading, maxAge.Seconds(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("fail the old uploads: %w", err)
+	}
+	keys, err := pgx.CollectRows(rows, pgx.RowTo[string])
+	if err != nil {
+		return nil, fmt.Errorf("fail the old uploads: %w", err)
+	}
+	return keys, nil
 }
