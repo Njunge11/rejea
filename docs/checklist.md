@@ -1,10 +1,10 @@
 # Build checklist
 
-Each item is one pull request. Build them in sequence. Tick the box in the same pull request.
+Each item is one change, pushed to `main`. Build them in sequence. Tick the box in the same change.
 
 Sources: the plan ("Document Knowledge Base: Implementation Plan", 10 build steps), the agreed ingest design (three queues, failure and retry flow), and the code in this repository on 2026-11-22.
 
-Rule of each pull request: `make check` passes, CI is green, and the item has its own proof.
+Rule of each item: `make check` passes, CI is green, and the item has its own proof.
 
 ## Built already
 
@@ -32,9 +32,9 @@ These points are not in the plan. Each one is settled before its item starts.
   - New migration `00003`: column `documents.parent_id`, and `unpacked` in the list of statuses.
   - Proof: `rejea migrate` runs on an empty database.
 
-- [ ] **2. Three queues**
+- [x] **2. Three queues**
   - Queues `file`, `parse` and `index` in place of the one queue.
-  - Settings with defaults: worker count of each queue (parse starts at 1), job time limit (60 minutes), maximum attempts (8).
+  - Settings with defaults: worker count of each queue (each starts at 1), job time limit (60 minutes), maximum attempts (8).
   - Proof: a test job runs through each queue.
 
 - [ ] **3. HTTP base**

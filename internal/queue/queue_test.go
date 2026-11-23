@@ -43,12 +43,19 @@ func TestClientRunsJob(t *testing.T) {
 	ctx := context.Background()
 	pool := testdb.New(t)
 
-	worker := &addTypeWorker{pool: pool, timeLeft: make(chan time.Duration, 1)}
+	queues := []string{queue.File, queue.Parse, queue.Index}
+	worker := &addTypeWorker{pool: pool, timeLeft: make(chan time.Duration, len(queues))}
 	workers := river.NewWorkers()
 	river.AddWorker(workers, worker)
 
 	const jobTimeout = 10 * time.Minute
-	client, err := queue.NewClient(pool, slog.New(slog.DiscardHandler), workers, jobTimeout)
+	client, err := queue.NewClient(pool, slog.New(slog.DiscardHandler), workers, queue.Config{
+		FileWorkers:  1,
+		ParseWorkers: 1,
+		IndexWorkers: 1,
+		JobTimeout:   jobTimeout,
+		MaxAttempts:  8,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -66,39 +73,49 @@ func TestClientRunsJob(t *testing.T) {
 		}
 	})
 
-	// The job is added in a transaction, as the upload path will add it with
-	// the document row.
-	tx, err := pool.Begin(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := client.InsertTx(ctx, tx, addTypeArgs{ID: "sop"}, nil); err != nil {
-		t.Fatal(err)
-	}
-	if err := tx.Commit(ctx); err != nil {
-		t.Fatal(err)
-	}
-
-	select {
-	case event := <-events:
-		if event.Kind != river.EventKindJobCompleted {
-			t.Fatalf("job ended as %s: %v", event.Kind, event.Job.Errors)
+	// One job goes through each queue. The row that it writes has the name
+	// of its queue.
+	for _, name := range queues {
+		// The job is added in a transaction, as the upload path will add it
+		// with the document row.
+		tx, err := pool.Begin(ctx)
+		if err != nil {
+			t.Fatal(err)
 		}
-	case <-time.After(10 * time.Second):
-		t.Fatal("the job did not run in 10 seconds")
-	}
+		if _, err := client.InsertTx(ctx, tx, addTypeArgs{ID: name}, &river.InsertOpts{Queue: name}); err != nil {
+			t.Fatal(err)
+		}
+		if err := tx.Commit(ctx); err != nil {
+			t.Fatal(err)
+		}
 
-	var rows int
-	if err := pool.QueryRow(ctx, `select count(*) from doc_types where id = 'sop'`).Scan(&rows); err != nil {
-		t.Fatal(err)
-	}
-	if rows != 1 {
-		t.Errorf("rows written by the job: got %d, want 1", rows)
-	}
+		select {
+		case event := <-events:
+			if event.Kind != river.EventKindJobCompleted {
+				t.Fatalf("job ended as %s: %v", event.Kind, event.Job.Errors)
+			}
+			if event.Job.Queue != name {
+				t.Errorf("queue of the job: got %q, want %q", event.Job.Queue, name)
+			}
+			if event.Job.MaxAttempts != 8 {
+				t.Errorf("attempts that the job can have: got %d, want 8", event.Job.MaxAttempts)
+			}
+		case <-time.After(10 * time.Second):
+			t.Fatalf("the job of the queue %q did not run in 10 seconds", name)
+		}
 
-	// River cancels a job after 1 minute by default. The client must give
-	// the job the timeout that the caller set.
-	if left := <-worker.timeLeft; left <= time.Minute || left > jobTimeout {
-		t.Errorf("time that the job had: got %s, want more than 1m and at most %s", left, jobTimeout)
+		var rows int
+		if err := pool.QueryRow(ctx, `select count(*) from doc_types where id = $1`, name).Scan(&rows); err != nil {
+			t.Fatal(err)
+		}
+		if rows != 1 {
+			t.Errorf("rows written by the job of the queue %q: got %d, want 1", name, rows)
+		}
+
+		// River cancels a job after 1 minute by default. The client must
+		// give the job the timeout that the caller set.
+		if left := <-worker.timeLeft; left <= time.Minute || left > jobTimeout {
+			t.Errorf("time that the job had: got %s, want more than 1m and at most %s", left, jobTimeout)
+		}
 	}
 }

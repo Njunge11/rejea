@@ -12,20 +12,41 @@ import (
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 )
 
-// maxWorkers is the number of jobs that run at the same time. The parser is
-// a local model that takes one file at a time.
-const maxWorkers = 1
+// The queues. Each queue has one kind of work and its own workers, so a
+// slow kind of work does not stop the other kinds.
+const (
+	File  = "file"  // download, hash, duplicate check, unpack an archive
+	Parse = "parse" // render the pages, parse
+	Index = "index" // classify, chunk, embed, graph
+)
 
-// NewClient makes the River client of the one queue. A job that runs longer
-// than jobTimeout is cancelled: the default of River is 1 minute, which is
-// too short to parse a large file. River refuses to start a client that has
-// no worker. River logs through logger.
-func NewClient(pool *pgxpool.Pool, logger *slog.Logger, workers *river.Workers, jobTimeout time.Duration) (*river.Client[pgx.Tx], error) {
+// Config is the settings of the queues.
+type Config struct {
+	// FileWorkers, ParseWorkers and IndexWorkers are the numbers of jobs
+	// that each queue runs at the same time.
+	FileWorkers  int
+	ParseWorkers int
+	IndexWorkers int
+	// JobTimeout is the longest time that one attempt of a job can run. The
+	// default of River is 1 minute, which is too short to parse a large
+	// file.
+	JobTimeout time.Duration
+	// MaxAttempts is the number of times that a job runs before it fails
+	// with no new attempt.
+	MaxAttempts int
+}
+
+// NewClient makes the River client of the three queues. River refuses to
+// start a client that has no worker. River logs through logger.
+func NewClient(pool *pgxpool.Pool, logger *slog.Logger, workers *river.Workers, cfg Config) (*river.Client[pgx.Tx], error) {
 	return river.NewClient(riverpgxv5.New(pool), &river.Config{
-		JobTimeout: jobTimeout,
-		Logger:     logger,
+		JobTimeout:  cfg.JobTimeout,
+		Logger:      logger,
+		MaxAttempts: cfg.MaxAttempts,
 		Queues: map[string]river.QueueConfig{
-			river.QueueDefault: {MaxWorkers: maxWorkers},
+			File:  {MaxWorkers: cfg.FileWorkers},
+			Parse: {MaxWorkers: cfg.ParseWorkers},
+			Index: {MaxWorkers: cfg.IndexWorkers},
 		},
 		Workers: workers,
 	})
