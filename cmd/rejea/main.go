@@ -71,6 +71,7 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 		UploadURLLife: cfg.UploadURLLife,
 		MaxFileBytes:  cfg.MaxFileBytes,
 		ReadTimeout:   cfg.S3ReadTimeout,
+		RangeBytes:    cfg.S3RangeBytes,
 	})
 	if err != nil {
 		return err
@@ -81,7 +82,13 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	failureRule := []rivertype.Middleware{ingest.FailureRule(pool, logger, cfg.FailureSaveTimeout)}
-	jobs, err := queue.NewClient(pool, logger, ingest.Workers(pool, store, logger), failureRule, queue.Config{
+	workers := ingest.Workers(pool, store, logger, ingest.Config{
+		MaxFileBytes:        cfg.MaxFileBytes,
+		MaxArchiveFiles:     cfg.MaxArchiveFiles,
+		MaxUnpackedBytes:    cfg.MaxUnpackedBytes,
+		MaxArchiveListBytes: cfg.MaxArchiveListBytes,
+	})
+	jobs, err := queue.NewClient(pool, logger, workers, failureRule, queue.Config{
 		FileWorkers:  cfg.FileWorkers,
 		ParseWorkers: cfg.ParseWorkers,
 		IndexWorkers: cfg.IndexWorkers,

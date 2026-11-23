@@ -19,6 +19,9 @@ const (
 	// StatusUploaded is the status after the client confirmed the upload.
 	// The work on the file starts from here.
 	StatusUploaded = "uploaded"
+	// StatusUnpacked is the status of an archive after each file in it
+	// became a document of its own. The work on the archive stops there.
+	StatusUnpacked = "unpacked"
 	// StatusDuplicate is the status of a file that has the same content as
 	// a file of a different document. Its work stops there.
 	StatusDuplicate = "duplicate"
@@ -125,4 +128,50 @@ func ConfirmUpload(ctx context.Context, tx pgx.Tx, id uuid.UUID) (bool, error) {
 		return false, fmt.Errorf("confirm the upload of the document %s: %w", id, err)
 	}
 	return tag.RowsAffected() == 1, nil
+}
+
+// UnpackedFile is a file that came out of an archive and is in the file
+// storage.
+type UnpackedFile struct {
+	ID         uuid.UUID
+	Filename   string
+	StorageKey string
+	// Hash is the hash of the content.
+	Hash string
+}
+
+// SaveUnpacked adds one document for each file that came out of an archive
+// and gives the archive the status unpacked. Each document points to the
+// archive and gets its uploader and its metadata. A file with the same
+// content as the file of a different document becomes a duplicate, as in
+// SetFileHash. SaveUnpacked gives the IDs of the documents that are not
+// duplicates: these need a file job. It runs in the transaction of the
+// caller, which adds the jobs in the same transaction.
+func SaveUnpacked(ctx context.Context, tx pgx.Tx, archive uuid.UUID, files []UnpackedFile) ([]uuid.UUID, error) {
+	const insert = `
+		insert into documents (id, uploaded_by, filename, storage_key, metadata, status, parent_id, file_hash)
+		select $2, uploaded_by, $3, $4, metadata, $5, id, $6 from documents where id = $1
+		on conflict (file_hash) do nothing`
+	var added []uuid.UUID
+	for _, file := range files {
+		tag, err := tx.Exec(ctx, insert, archive, file.ID, file.Filename, file.StorageKey, StatusUploaded, file.Hash)
+		if err != nil {
+			return nil, fmt.Errorf("add the document of %q from the archive %s: %w", file.Filename, archive, err)
+		}
+		if tag.RowsAffected() == 1 {
+			added = append(added, file.ID)
+			continue
+		}
+		// A different document has this hash. A null hash conflicts with
+		// no row.
+		_, err = tx.Exec(ctx, insert, archive, file.ID, file.Filename, file.StorageKey, StatusDuplicate, nil)
+		if err != nil {
+			return nil, fmt.Errorf("add the duplicate document of %q from the archive %s: %w", file.Filename, archive, err)
+		}
+	}
+	_, err := tx.Exec(ctx, `update documents set status = $2 where id = $1`, archive, StatusUnpacked)
+	if err != nil {
+		return nil, fmt.Errorf("mark the archive %s as unpacked: %w", archive, err)
+	}
+	return added, nil
 }

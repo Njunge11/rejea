@@ -63,6 +63,18 @@ type Config struct {
 	// FailureSaveTimeout is the time that the database gets to save the
 	// failure of a document.
 	FailureSaveTimeout time.Duration
+	// MaxArchiveFiles is the largest number of PDF and Word files in one
+	// archive.
+	MaxArchiveFiles int
+	// MaxUnpackedBytes is the largest size of the content of one archive
+	// when it is unpacked.
+	MaxUnpackedBytes int64
+	// MaxArchiveListBytes is the largest size of the list of the files in
+	// one zip. The service keeps this list in memory.
+	MaxArchiveListBytes int64
+	// S3RangeBytes is the size of one piece when the service reads a file
+	// from S3 in pieces.
+	S3RangeBytes int64
 }
 
 const (
@@ -74,6 +86,11 @@ const (
 	defaultMaxUploadFiles = 100
 	defaultMaxFileBytes   = 1 << 30 // 1 GiB
 	defaultMaxReqBytes    = 1 << 20 // 1 MiB
+
+	defaultMaxArchiveFiles     = 1000
+	defaultMaxUnpackedBytes    = 1_000_000_000 // 1 GB
+	defaultMaxArchiveListBytes = 16 << 20      // 16 MiB
+	defaultS3RangeBytes        = 8 << 20       // 8 MiB
 
 	defaultHTTPReadHeaderTimeout = 10 * time.Second
 	defaultHTTPReadTimeout       = 30 * time.Second
@@ -128,6 +145,10 @@ func Load(getenv func(string) string) (Config, error) {
 		{"REJEA_MAX_UPLOAD_FILES", 32, defaultMaxUploadFiles, func(n int64) { cfg.MaxUploadFiles = int(n) }},
 		{"REJEA_MAX_FILE_BYTES", 64, defaultMaxFileBytes, func(n int64) { cfg.MaxFileBytes = n }},
 		{"REJEA_MAX_REQUEST_BYTES", 64, defaultMaxReqBytes, func(n int64) { cfg.MaxRequestBytes = n }},
+		{"REJEA_MAX_ARCHIVE_FILES", 32, defaultMaxArchiveFiles, func(n int64) { cfg.MaxArchiveFiles = int(n) }},
+		{"REJEA_MAX_UNPACKED_BYTES", 64, defaultMaxUnpackedBytes, func(n int64) { cfg.MaxUnpackedBytes = n }},
+		{"REJEA_MAX_ARCHIVE_LIST_BYTES", 64, defaultMaxArchiveListBytes, func(n int64) { cfg.MaxArchiveListBytes = n }},
+		{"REJEA_S3_RANGE_BYTES", 64, defaultS3RangeBytes, func(n int64) { cfg.S3RangeBytes = n }},
 	} {
 		n := setting.def
 		if text := getenv(setting.name); text != "" {

@@ -79,9 +79,13 @@ These points are not in the plan. Each one is settled before its item starts.
   - AWS: the role gets `s3:ListBucket`, so that S3 can tell a missing file from a refused request.
   - Proof: a confirm starts the file worker. A confirm of a file that is not in S3 is refused.
 
-- [ ] **9. File worker: unpack archives**
-  - A zip or a tar gets the status `unpacked`. Each file inside gets a `documents` row with `parent_id`, and its own job in the `file` queue.
-  - Settings with defaults: files in one archive (1,000), unpacked size (1 GB).
+- [x] **9. File worker: unpack archives**
+  - A zip, a tar or a tar.gz gets the status `unpacked`. Each PDF and Word file inside gets a `documents` row with `parent_id`, its hash, and its own job in the `file` queue. A file inside with the same content as a different document gets the status `duplicate`.
+  - The service uses no disk. It reads a zip from S3 in pieces, and a tar as one stream. It sends each file inside to S3 as a stream.
+  - Other entries are skipped: folders, links, hidden files, other file types, and an archive in an archive.
+  - An archive over a limit, a damaged archive, an encrypted zip, and an archive with no PDF or Word file fail at once with the reason. The service then removes the files that it sent to S3.
+  - Settings with defaults: files in one archive (1,000), unpacked size (1 GB), size of the file list of a zip (16 MiB), size of one piece of a read from S3 (8 MiB).
+  - AWS: the role gets `s3:DeleteObject` and `s3:AbortMultipartUpload`.
   - Proof: a 50-file zip gives 50 rows and 50 jobs. An archive over a limit fails with its reason.
 
 - [ ] **10. Job: fail uploads that were never confirmed**

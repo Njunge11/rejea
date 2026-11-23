@@ -7,11 +7,14 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"slices"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/transfermanager"
+	transfertypes "github.com/aws/aws-sdk-go-v2/feature/s3/transfermanager/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/smithy-go/logging"
@@ -39,14 +42,34 @@ type Config struct {
 	// before a read fails. Each byte that arrives starts the time again,
 	// so a slow download that moves does not fail.
 	ReadTimeout time.Duration
+	// RangeBytes is the size of one piece when the service reads a file in
+	// pieces.
+	RangeBytes int64
 }
 
 // Store reads and writes the files in the bucket.
 type Store struct {
 	bucket        string
 	uploadURLLife time.Duration
+	rangeBytes    int64
 	client        *s3.Client
 	presign       *s3.PresignClient
+	transfer      *transfermanager.Client
+}
+
+// Fault is an error of the file storage or of the network. The content of
+// the file is not its cause, so a new attempt can succeed.
+type Fault struct{ err error }
+
+func (f *Fault) Error() string { return f.err.Error() }
+
+// Unwrap gives the error that the AWS SDK returned.
+func (f *Fault) Unwrap() error { return f.err }
+
+// IsFault tells if an error is a Fault or has a Fault as its cause.
+func IsFault(err error) bool {
+	_, ok := errors.AsType[*Fault](err)
+	return ok
 }
 
 // New makes a Store. The AWS credentials come from the default sources of
@@ -66,6 +89,9 @@ func New(ctx context.Context, logger *slog.Logger, cfg Config) (*Store, error) {
 	}
 	if cfg.ReadTimeout <= 0 {
 		return nil, fmt.Errorf("the S3 read timeout is %s: it must be more than zero", cfg.ReadTimeout)
+	}
+	if cfg.RangeBytes < 1 {
+		return nil, fmt.Errorf("the size of one piece of a file is %d bytes: it must be 1 or more", cfg.RangeBytes)
 	}
 	awsCfg, err := config.LoadDefaultConfig(ctx,
 		config.WithRegion(cfg.Region),
@@ -106,8 +132,14 @@ func New(ctx context.Context, logger *slog.Logger, cfg Config) (*Store, error) {
 	return &Store{
 		bucket:        cfg.Bucket,
 		uploadURLLife: cfg.UploadURLLife,
+		rangeBytes:    cfg.RangeBytes,
 		client:        client,
 		presign:       s3.NewPresignClient(client),
+		transfer: transfermanager.New(client, func(o *transfermanager.Options) {
+			// The context of a job that ran out of time is cancelled, but
+			// the parts of its upload must be removed from S3 all the same.
+			o.FailTimeout = cfg.ReadTimeout
+		}),
 	}, nil
 }
 
@@ -127,15 +159,50 @@ func (s *Store) UploadURL(ctx context.Context, key string, size int64) (string, 
 }
 
 // Download gives the content of a file as a stream. The caller closes it.
+// An error of the stream is a Fault.
 func (s *Store) Download(ctx context.Context, key string) (io.ReadCloser, error) {
 	object, err := s.client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(key),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("download %q: %w", key, err)
+		return nil, &Fault{fmt.Errorf("download %q: %w", key, err)}
 	}
-	return object.Body, nil
+	return &download{ReadCloser: object.Body, key: key}, nil
+}
+
+// download is the stream of a file. It marks each error as a Fault.
+type download struct {
+	io.ReadCloser
+
+	key string
+}
+
+func (d *download) Read(p []byte) (int, error) {
+	n, err := d.ReadCloser.Read(p)
+	if err != nil && !errors.Is(err, io.EOF) {
+		err = &Fault{fmt.Errorf("read %q: %w", d.key, err)}
+	}
+	return n, err
+}
+
+// Upload sends a stream to the bucket as the file with the key. The length
+// of the stream is not known at the start, so a large stream goes to S3 in
+// parts, from memory, with no copy on a disk. An error is a Fault, also
+// when the stream itself failed: the caller knows the errors of its stream.
+func (s *Store) Upload(ctx context.Context, key string, content io.Reader) error {
+	_, err := s.transfer.UploadObject(ctx, &transfermanager.UploadObjectInput{
+		Bucket: aws.String(s.bucket),
+		Key:    aws.String(key),
+		Body:   content,
+		// One checksum for the full file, also when the file went in parts.
+		// The AWS SDK can then check each later download of the file.
+		ChecksumType: transfertypes.ChecksumTypeFullObject,
+	})
+	if err != nil {
+		return &Fault{fmt.Errorf("upload %q: %w", key, err)}
+	}
+	return nil
 }
 
 // Exists tells if the bucket has a file with the key. S3 can tell a file
@@ -153,4 +220,32 @@ func (s *Store) Exists(ctx context.Context, key string) (bool, error) {
 		return false, nil
 	}
 	return false, fmt.Errorf("look for %q: %w", key, err)
+}
+
+// maxDeleteKeys is the largest number of files that one delete request of
+// S3 can name.
+const maxDeleteKeys = 1000
+
+// Delete removes the files with the keys from the bucket. It is not an
+// error when a file is not there.
+func (s *Store) Delete(ctx context.Context, keys []string) error {
+	for batch := range slices.Chunk(keys, maxDeleteKeys) {
+		objects := make([]types.ObjectIdentifier, len(batch))
+		for i, key := range batch {
+			objects[i] = types.ObjectIdentifier{Key: aws.String(key)}
+		}
+		result, err := s.client.DeleteObjects(ctx, &s3.DeleteObjectsInput{
+			Bucket: aws.String(s.bucket),
+			Delete: &types.Delete{Objects: objects, Quiet: aws.Bool(true)},
+		})
+		if err != nil {
+			return &Fault{fmt.Errorf("delete %d files: %w", len(batch), err)}
+		}
+		if len(result.Errors) > 0 {
+			first := result.Errors[0]
+			return &Fault{fmt.Errorf("delete %d files: S3 refused %d, the first is %q: %s",
+				len(batch), len(result.Errors), aws.ToString(first.Key), aws.ToString(first.Message))}
+		}
+	}
+	return nil
 }

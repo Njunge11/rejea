@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"path"
 	"strings"
 	"unicode"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/riverqueue/river"
 
 	"github.com/Njunge11/rejea/internal/database"
+	"github.com/Njunge11/rejea/internal/ingest"
 	"github.com/Njunge11/rejea/internal/queue"
 	"github.com/Njunge11/rejea/internal/storage"
 )
@@ -72,7 +72,7 @@ func createDocuments(pool *pgxpool.Pool, store *storage.Store, cfg Config) endpo
 			}
 			// The key has the id, not the name of the file, so each
 			// character in a file name is safe.
-			key := "documents/" + id.String() + "/original" + fileType(file.Filename)
+			key := "documents/" + id.String() + "/original" + ingest.Ending(file.Filename)
 			url, err := store.UploadURL(r.Context(), key, file.Size)
 			if err != nil {
 				return err
@@ -194,8 +194,8 @@ func (request createDocumentsRequest) faults(cfg Config) []fault {
 			faults = append(faults, fault{Detail: "Give the name of the file.", Pointer: at + "filename"})
 		case strings.ContainsFunc(file.Filename, unicode.IsControl):
 			faults = append(faults, fault{Detail: "The name of the file has a control character.", Pointer: at + "filename"})
-		case fileType(file.Filename) == "":
-			faults = append(faults, fault{Detail: "The file must be a .pdf, .docx, .doc, .zip or .tar file.", Pointer: at + "filename"})
+		case ingest.Ending(file.Filename) == "":
+			faults = append(faults, fault{Detail: "The file must be a " + ingest.FileTypes + " file.", Pointer: at + "filename"})
 		}
 		switch {
 		case file.Size < 1:
@@ -211,16 +211,6 @@ func (request createDocumentsRequest) faults(cfg Config) []fault {
 		}
 	}
 	return faults
-}
-
-// fileType gives the ending of a file name in lower case when the service
-// accepts that type of file. If not, it gives "".
-func fileType(filename string) string {
-	switch ending := strings.ToLower(path.Ext(filename)); ending {
-	case ".pdf", ".docx", ".doc", ".zip", ".tar":
-		return ending
-	}
-	return ""
 }
 
 // hasNUL tells if a decoded JSON value has a NUL character in a string or
