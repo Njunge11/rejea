@@ -43,6 +43,17 @@ type Config struct {
 	MaxFileBytes int64
 	// MaxRequestBytes is the largest size of the JSON body of a request.
 	MaxRequestBytes int64
+	// The time limits of the HTTP server.
+	HTTPReadHeaderTimeout time.Duration // to read the request headers
+	HTTPReadTimeout       time.Duration // to read the full request
+	HTTPWriteTimeout      time.Duration // to write the response
+	HTTPIdleTimeout       time.Duration // to wait for the next request on a kept connection
+	// ShutdownTimeout is the time that open requests get to finish when
+	// the service stops.
+	ShutdownTimeout time.Duration
+	// HealthTimeout is the time that the database gets to answer the
+	// health check.
+	HealthTimeout time.Duration
 }
 
 const (
@@ -54,6 +65,13 @@ const (
 	defaultMaxUploadFiles = 100
 	defaultMaxFileBytes   = 1 << 30 // 1 GiB
 	defaultMaxReqBytes    = 1 << 20 // 1 MiB
+
+	defaultHTTPReadHeaderTimeout = 10 * time.Second
+	defaultHTTPReadTimeout       = 30 * time.Second
+	defaultHTTPWriteTimeout      = 30 * time.Second
+	defaultHTTPIdleTimeout       = 5 * time.Minute
+	defaultShutdownTimeout       = 10 * time.Second
+	defaultHealthTimeout         = 2 * time.Second
 )
 
 // Load reads the configuration through getenv, which has the signature of
@@ -116,6 +134,12 @@ func Load(getenv func(string) string) (Config, error) {
 	}{
 		{"REJEA_JOB_TIMEOUT", &cfg.JobTimeout, defaultJobTimeout},
 		{"REJEA_UPLOAD_URL_LIFE", &cfg.UploadURLLife, defaultUploadURLLife},
+		{"REJEA_HTTP_READ_HEADER_TIMEOUT", &cfg.HTTPReadHeaderTimeout, defaultHTTPReadHeaderTimeout},
+		{"REJEA_HTTP_READ_TIMEOUT", &cfg.HTTPReadTimeout, defaultHTTPReadTimeout},
+		{"REJEA_HTTP_WRITE_TIMEOUT", &cfg.HTTPWriteTimeout, defaultHTTPWriteTimeout},
+		{"REJEA_HTTP_IDLE_TIMEOUT", &cfg.HTTPIdleTimeout, defaultHTTPIdleTimeout},
+		{"REJEA_SHUTDOWN_TIMEOUT", &cfg.ShutdownTimeout, defaultShutdownTimeout},
+		{"REJEA_HEALTH_TIMEOUT", &cfg.HealthTimeout, defaultHealthTimeout},
 	} {
 		*setting.value = setting.def
 		text := getenv(setting.name)

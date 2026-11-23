@@ -69,18 +69,25 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 	if err != nil {
 		return err
 	}
-	handler := server.NewHandler(logger, pool, store, server.Config{
-		MaxUploadFiles:  cfg.MaxUploadFiles,
-		MaxFileBytes:    cfg.MaxFileBytes,
-		MaxRequestBytes: cfg.MaxRequestBytes,
-	})
+	serverCfg := server.Config{
+		ReadHeaderTimeout: cfg.HTTPReadHeaderTimeout,
+		ReadTimeout:       cfg.HTTPReadTimeout,
+		WriteTimeout:      cfg.HTTPWriteTimeout,
+		IdleTimeout:       cfg.HTTPIdleTimeout,
+		ShutdownTimeout:   cfg.ShutdownTimeout,
+		HealthTimeout:     cfg.HealthTimeout,
+		MaxUploadFiles:    cfg.MaxUploadFiles,
+		MaxFileBytes:      cfg.MaxFileBytes,
+		MaxRequestBytes:   cfg.MaxRequestBytes,
+	}
+	handler := server.NewHandler(logger, pool, store, serverCfg)
 
 	listener, err := net.Listen("tcp", cfg.HTTPAddr)
 	if err != nil {
 		return err
 	}
 	logger.Info("http server listening", "addr", listener.Addr().String())
-	return server.Run(ctx, listener, handler, logger)
+	return server.Run(ctx, listener, handler, logger, serverCfg)
 }
 
 // newLogger makes the one logger of the service. Each part that logs gets it

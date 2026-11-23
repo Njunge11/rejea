@@ -14,10 +14,10 @@ type Pinger interface {
 	Ping(ctx context.Context) error
 }
 
-// health answers "ok" when the database answers in 2 seconds.
-func health(db Pinger) endpoint {
+// health answers "ok" when the database answers before the timeout.
+func health(db Pinger, timeout time.Duration) endpoint {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+		ctx, cancel := context.WithTimeout(r.Context(), timeout)
 		defer cancel()
 		if err := db.Ping(ctx); err != nil {
 			return &apiError{

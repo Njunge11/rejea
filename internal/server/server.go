@@ -14,8 +14,22 @@ import (
 	"github.com/Njunge11/rejea/internal/storage"
 )
 
-// Config is the limits of the HTTP API.
+// Config is the limits of the HTTP server and of its API.
 type Config struct {
+	// The time limits of the server. A net/http server has none by default.
+	// Without them, a slow or silent client holds a connection open for as
+	// long as it wants.
+	ReadHeaderTimeout time.Duration // to read the request headers
+	ReadTimeout       time.Duration // to read the full request
+	WriteTimeout      time.Duration // to write the response
+	IdleTimeout       time.Duration // to wait for the next request on a kept connection
+	// ShutdownTimeout is the time that open requests get to finish when
+	// the server stops.
+	ShutdownTimeout time.Duration
+	// HealthTimeout is the time that the database gets to answer the
+	// health check.
+	HealthTimeout time.Duration
+
 	// MaxUploadFiles is the largest number of files in one request for
 	// upload URLs.
 	MaxUploadFiles int
@@ -34,16 +48,14 @@ func NewHandler(logger *slog.Logger, pool *pgxpool.Pool, store *storage.Store, c
 }
 
 // Run serves handler on the listener until ctx is cancelled. Then it lets
-// the open requests finish, for 10 seconds at most.
-func Run(ctx context.Context, listener net.Listener, handler http.Handler, logger *slog.Logger) error {
-	// A net/http server has no timeouts by default. Without them, a slow or
-	// silent client holds a connection open for as long as it wants.
+// the open requests finish, for cfg.ShutdownTimeout at most.
+func Run(ctx context.Context, listener net.Listener, handler http.Handler, logger *slog.Logger, cfg Config) error {
 	srv := &http.Server{
 		Handler:           handler,
-		ReadHeaderTimeout: 10 * time.Second, // to read the request headers
-		ReadTimeout:       30 * time.Second, // to read the full request
-		WriteTimeout:      30 * time.Second, // to write the response
-		IdleTimeout:       5 * time.Minute,  // to wait for the next request on a kept connection
+		ReadHeaderTimeout: cfg.ReadHeaderTimeout,
+		ReadTimeout:       cfg.ReadTimeout,
+		WriteTimeout:      cfg.WriteTimeout,
+		IdleTimeout:       cfg.IdleTimeout,
 		// The errors that net/http finds in a connection or a handler.
 		ErrorLog: slog.NewLogLogger(logger.Handler(), slog.LevelError),
 	}
@@ -56,7 +68,7 @@ func Run(ctx context.Context, listener net.Listener, handler http.Handler, logge
 	case <-ctx.Done():
 	}
 	logger.Info("http server shutting down")
-	shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), cfg.ShutdownTimeout)
 	defer cancel()
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		return err

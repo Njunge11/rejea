@@ -16,6 +16,6 @@ import (
 // 405 with a plain text body. That answer stays: RFC 9457 says that a plain
 // status code is sufficient when the status tells the full problem.
 func addRoutes(mux *http.ServeMux, logger *slog.Logger, pool *pgxpool.Pool, store *storage.Store, cfg Config) {
-	mux.Handle(healthPattern, handle(logger, health(pool)))
+	mux.Handle(healthPattern, handle(logger, health(pool, cfg.HealthTimeout)))
 	mux.Handle("POST /documents", handle(logger, createDocuments(pool, store, cfg)))
 }
