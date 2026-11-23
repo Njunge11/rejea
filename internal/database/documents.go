@@ -88,8 +88,13 @@ func GetFileState(ctx context.Context, pool *pgxpool.Pool, id uuid.UUID) (FileSt
 
 // FailDocument gives a document the status failed and the reason. It
 // reports false when the document does not exist.
+//
+// The document loses its file hash. If it kept the hash, the same file in
+// a new upload became a duplicate of a document that failed, and the user
+// had no way to get the file into the service.
 func FailDocument(ctx context.Context, pool *pgxpool.Pool, id uuid.UUID, reason string) (bool, error) {
-	tag, err := pool.Exec(ctx, `update documents set status = $2, error = $3 where id = $1`, id, StatusFailed, reason)
+	tag, err := pool.Exec(ctx,
+		`update documents set status = $2, error = $3, file_hash = null where id = $1`, id, StatusFailed, reason)
 	if err != nil {
 		return false, fmt.Errorf("mark the document %s as failed: %w", id, err)
 	}
