@@ -30,6 +30,12 @@ type Config struct {
 	// JobMaxAttempts is the number of times that a job runs before it fails
 	// with no new attempt.
 	JobMaxAttempts int
+	// S3Bucket is the name of the S3 bucket of the files and S3Region is its
+	// AWS Region. The migrate command does not use them.
+	S3Bucket string
+	S3Region string
+	// UploadURLLife is the time for which an upload URL can start an upload.
+	UploadURLLife time.Duration
 }
 
 const (
@@ -37,6 +43,7 @@ const (
 	defaultWorkers        = 1
 	defaultJobTimeout     = 60 * time.Minute
 	defaultJobMaxAttempts = 8
+	defaultUploadURLLife  = time.Hour
 )
 
 // Load reads the configuration through getenv, which has the signature of
@@ -45,6 +52,8 @@ func Load(getenv func(string) string) (Config, error) {
 	cfg := Config{
 		DatabaseURL: getenv("DATABASE_URL"),
 		HTTPAddr:    defaultHTTPAddr,
+		S3Bucket:    getenv("REJEA_S3_BUCKET"),
+		S3Region:    getenv("REJEA_S3_REGION"),
 	}
 	if cfg.DatabaseURL == "" {
 		return Config{}, errors.New("DATABASE_URL is not set")
@@ -85,13 +94,24 @@ func Load(getenv func(string) string) (Config, error) {
 		}
 		*setting.value = n
 	}
-	cfg.JobTimeout = defaultJobTimeout
-	if text := getenv("REJEA_JOB_TIMEOUT"); text != "" {
-		timeout, err := time.ParseDuration(text)
-		if err != nil || timeout <= 0 {
-			return Config{}, fmt.Errorf("REJEA_JOB_TIMEOUT: %q is not a time of more than zero, such as 60m", text)
+	for _, setting := range []struct {
+		name  string
+		value *time.Duration
+		def   time.Duration
+	}{
+		{"REJEA_JOB_TIMEOUT", &cfg.JobTimeout, defaultJobTimeout},
+		{"REJEA_UPLOAD_URL_LIFE", &cfg.UploadURLLife, defaultUploadURLLife},
+	} {
+		*setting.value = setting.def
+		text := getenv(setting.name)
+		if text == "" {
+			continue
 		}
-		cfg.JobTimeout = timeout
+		d, err := time.ParseDuration(text)
+		if err != nil || d <= 0 {
+			return Config{}, fmt.Errorf("%s: %q is not a time of more than zero, such as 60m", setting.name, text)
+		}
+		*setting.value = d
 	}
 	return cfg, nil
 }

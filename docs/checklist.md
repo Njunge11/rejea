@@ -24,7 +24,7 @@ These points are not in the plan. Each one is settled before its item starts.
 - **D.** The property schemas of the document types `sop`, `guide` and `technical`. The plan has an example for `sop` only. Needed at item 36.
 - **E.** The columns of the graph tables. The plan says "following HippoRAG 2". Needed at item 39.
 - **F.** The image resolution of a rendered page. Needed at item 16.
-- **G.** How a test reaches S3 in CI. GitHub's machines have no AWS access. Needed at item 4.
+- **G.** How a test reaches S3 in CI. GitHub's machines have no AWS access. No test uses S3 yet, so this point is open until the first such test.
 
 ## Upload (plan steps 1 and 2)
 
@@ -43,17 +43,17 @@ These points are not in the plan. Each one is settled before its item starts.
   - One log line for each request.
   - Proof: `/healthz` and an unknown path give the correct answers and log lines.
 
-- [ ] **4. File storage**
-  - Package `storage`: make a presigned upload URL, download a file as a stream.
-  - Config reads the bucket and the region.
-  - AWS: an identity for the service with the least access it needs.
+- [x] **4. File storage**
+  - Package `storage`: make a presigned upload URL, download a file as a stream. The size of the file is part of the signature.
+  - Config reads the bucket, the region and the life of an upload URL (1 hour).
+  - AWS: the IAM role `rejea-service`, with `s3:GetObject` and `s3:PutObject` on the objects of the bucket and no more.
   - Proof: a file goes up through a presigned URL and comes back with the same hash.
 
 - [ ] **5. Endpoint: ask for upload URLs**
   - One presigned URL for each file. One `documents` row for each file, with status `uploading`, the optional metadata, and the system id in `uploaded_by`.
   - Accepts PDF, Word, zip and tar.
   - One way to read a JSON request: a size limit, no unknown fields, one object, and a clear answer for each fault. It comes here because this endpoint is the first that reads a body.
-  - Settings with defaults: files in one request (100), size of one file (1 GB), life of a URL (1 hour).
+  - Settings with defaults: files in one request (100), size of one file (1 GB). The life of a URL is a setting of item 4.
   - Proof: a request for 3 files gives 3 URLs and 3 rows. A request over a limit is refused.
 
 - [ ] **6. File worker: hash and duplicate check**

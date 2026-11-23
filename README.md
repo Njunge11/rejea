@@ -32,6 +32,25 @@ make migrate
 make serve      # http://127.0.0.1:8080/healthz
 ```
 
+## File storage
+
+The files are in an S3 bucket. `make migrate` and `make test` do not need it.
+
+- Set `REJEA_S3_BUCKET` and `REJEA_S3_REGION` in `.env`.
+- The service gets its AWS credentials from the default sources of the AWS SDK. Give it an IAM role, not the access key of a user.
+- The role needs two actions on the objects of the bucket, and no more: `s3:GetObject` and `s3:PutObject`.
+- On a developer machine, make an AWS profile that assumes the role, and name it in `AWS_PROFILE`:
+
+```ini
+[profile rejea]
+role_arn = arn:aws:iam::<account id>:role/<role name>
+source_profile = <a profile that can assume the role>
+region = <the region of the bucket>
+duration_seconds = 43200
+```
+
+S3 refuses an upload URL when the credentials that signed it are expired. Thus the session (`duration_seconds`) must be longer than `REJEA_UPLOAD_URL_LIFE`. The service does not start if it is not.
+
 ## Check
 
 ```sh
