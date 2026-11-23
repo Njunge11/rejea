@@ -10,25 +10,12 @@ import (
 	"time"
 )
 
-// Pinger tells if the database answers. A *pgxpool.Pool is a Pinger.
-type Pinger interface {
-	Ping(ctx context.Context) error
-}
-
-// NewHandler makes the routes of the service.
+// NewHandler makes the handler of the service: the routes, with one log
+// line for each request.
 func NewHandler(db Pinger, logger *slog.Logger) http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
-		defer cancel()
-		if err := db.Ping(ctx); err != nil {
-			logger.ErrorContext(ctx, "database ping failed", "err", err)
-			http.Error(w, "the database does not answer", http.StatusServiceUnavailable)
-			return
-		}
-		_, _ = w.Write([]byte("ok\n"))
-	})
-	return mux
+	addRoutes(mux, logger, db)
+	return logRequests(logger, mux)
 }
 
 // Run serves handler on the listener until ctx is cancelled. Then it lets

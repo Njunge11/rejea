@@ -37,9 +37,9 @@ These points are not in the plan. Each one is settled before its item starts.
   - Settings with defaults: worker count of each queue (each starts at 1), job time limit (60 minutes), maximum attempts (8).
   - Proof: a test job runs through each queue.
 
-- [ ] **3. HTTP base**
-  - All routes in one file. One way to read a JSON request and to write a JSON answer.
-  - The error package: one way to turn an error into an HTTP answer.
+- [x] **3. HTTP base**
+  - All routes in one file. One way to write a JSON answer.
+  - One way to turn an error into an HTTP answer, in the `server` package. The body is the problem details object of RFC 9457.
   - One log line for each request.
   - Proof: `/healthz` and an unknown path give the correct answers and log lines.
 
@@ -52,6 +52,7 @@ These points are not in the plan. Each one is settled before its item starts.
 - [ ] **5. Endpoint: ask for upload URLs**
   - One presigned URL for each file. One `documents` row for each file, with status `uploading`, the optional metadata, and the system id in `uploaded_by`.
   - Accepts PDF, Word, zip and tar.
+  - One way to read a JSON request: a size limit, no unknown fields, one object, and a clear answer for each fault. It comes here because this endpoint is the first that reads a body.
   - Settings with defaults: files in one request (100), size of one file (1 GB), life of a URL (1 hour).
   - Proof: a request for 3 files gives 3 URLs and 3 rows. A request over a limit is refused.
 
