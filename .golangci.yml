@@ -3,3 +3,66 @@ version: "2"
 formatters:
   enable:
     - gofumpt
+
+linters:
+  enable:
+    - depguard
+    - forbidigo
+  settings:
+    # The layers: entry point (server, ingest) -> service (documents) ->
+    # repository (database). Each rule names what a layer cannot import.
+    depguard:
+      rules:
+        server:
+          list-mode: lax
+          files: ["**/internal/server/*.go", "!$test"]
+          deny:
+            - {pkg: "github.com/Njunge11/rejea/internal/database", desc: "a handler calls the package documents, not the database"}
+            - {pkg: "github.com/Njunge11/rejea/internal/storage", desc: "a handler calls the package documents, not the file storage"}
+            - {pkg: "github.com/Njunge11/rejea/internal/queue", desc: "a handler calls the package documents, which adds the jobs"}
+            - {pkg: "github.com/Njunge11/rejea/internal/ingest", desc: "a handler calls the package documents, not a worker"}
+            - {pkg: "github.com/jackc/pgx/v5$", desc: "a handler runs no query and no transaction: call the package documents"}
+            - {pkg: "github.com/jackc/pgx/v5/pgconn", desc: "a handler reads no database error: call the package documents"}
+            - {pkg: "github.com/riverqueue/river", desc: "a handler adds no job: call the package documents"}
+        ingest:
+          list-mode: lax
+          files: ["**/internal/ingest/*.go", "!$test"]
+          deny:
+            - {pkg: "github.com/Njunge11/rejea/internal/database", desc: "a worker calls the package documents, not the database"}
+            - {pkg: "github.com/Njunge11/rejea/internal/server", desc: "a worker does not use the HTTP server"}
+            - {pkg: "github.com/jackc/pgx/v5", desc: "a worker runs no query and no transaction: call the package documents"}
+            - {pkg: "net/http$", desc: "a worker does no HTTP work"}
+        documents:
+          list-mode: lax
+          files: ["**/internal/documents/*.go", "!$test"]
+          deny:
+            - {pkg: "net/http$", desc: "the rules know nothing about HTTP: return an error type, and the server makes the answer"}
+            - {pkg: "github.com/Njunge11/rejea/internal/server", desc: "the rules do not use an entry point"}
+            - {pkg: "github.com/Njunge11/rejea/internal/ingest", desc: "the rules do not use an entry point"}
+        database:
+          list-mode: lax
+          files: ["**/internal/database/*.go", "!$test"]
+          deny:
+            - {pkg: "github.com/Njunge11/rejea/internal/", desc: "the database package reads and writes rows only, and uses no other part of the service"}
+            - {pkg: "net/http$", desc: "the database package does no HTTP work"}
+        parts:
+          list-mode: lax
+          files: ["**/internal/storage/*.go", "**/internal/queue/*.go", "!$test"]
+          deny:
+            - {pkg: "github.com/Njunge11/rejea/internal/", desc: "this package is a base part: it uses no other part of the service"}
+    forbidigo:
+      analyze-types: true
+      forbid:
+        - pattern: ^(pgx\.(Tx|Conn|Batch)|pgxpool\.(Pool|Conn|Tx)|database\.DB)\.(Exec|Query|QueryRow|SendBatch|CopyFrom|Queue)$
+          msg: "only the package database runs a query: add a function there and call it"
+  exclusions:
+    rules:
+      # The package database is the one place for queries. A test can read
+      # the database to check a result.
+      - path: internal/database/
+        linters: [forbidigo]
+      - path: _test\.go$
+        linters: [forbidigo]
+      # The helper that makes a database for each test.
+      - path: internal/testdb/
+        linters: [forbidigo]
