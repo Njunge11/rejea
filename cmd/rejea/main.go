@@ -116,7 +116,7 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 		MaxFileBytes:      cfg.MaxFileBytes,
 		MaxRequestBytes:   cfg.MaxRequestBytes,
 	}
-	handler := server.NewHandler(logger, pool, store, serverCfg)
+	handler := server.NewHandler(logger, pool, store, jobs, serverCfg)
 
 	listener, err := net.Listen("tcp", cfg.HTTPAddr)
 	if err != nil {

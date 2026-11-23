@@ -38,7 +38,7 @@ The files are in an S3 bucket. `make serve` needs it. `make migrate` and `make t
 
 - Set `REJEA_S3_BUCKET` and `REJEA_S3_REGION` in `.env`.
 - The service gets its AWS credentials from the default sources of the AWS SDK. Give it an IAM role, not the access key of a user.
-- The role needs two actions on the objects of the bucket, and no more: `s3:GetObject` and `s3:PutObject`.
+- The role needs three actions, and no more: `s3:GetObject` and `s3:PutObject` on the objects of the bucket, and `s3:ListBucket` on the bucket. With `s3:ListBucket`, S3 answers 404 for a file that is not there. Without it, S3 answers 403, and the service cannot tell a missing file from a refused request.
 - On a developer machine, make an AWS profile that assumes the role, and name it in `AWS_PROFILE`:
 
 ```ini

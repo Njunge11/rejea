@@ -13,6 +13,7 @@ import (
 	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/smithy-go/logging"
 )
 
@@ -135,4 +136,21 @@ func (s *Store) Download(ctx context.Context, key string) (io.ReadCloser, error)
 		return nil, fmt.Errorf("download %q: %w", key, err)
 	}
 	return object.Body, nil
+}
+
+// Exists tells if the bucket has a file with the key. S3 can tell a file
+// that is not there from a request that it refuses only when the
+// credentials have the s3:ListBucket permission.
+func (s *Store) Exists(ctx context.Context, key string) (bool, error) {
+	_, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{
+		Bucket: aws.String(s.bucket),
+		Key:    aws.String(key),
+	})
+	if err == nil {
+		return true, nil
+	}
+	if _, notFound := errors.AsType[*types.NotFound](err); notFound {
+		return false, nil
+	}
+	return false, fmt.Errorf("look for %q: %w", key, err)
 }

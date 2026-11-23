@@ -16,6 +16,9 @@ const (
 	// StatusUploading is the status from the request for the upload URL
 	// until the client confirms the upload.
 	StatusUploading = "uploading"
+	// StatusUploaded is the status after the client confirmed the upload.
+	// The work on the file starts from here.
+	StatusUploaded = "uploaded"
 	// StatusDuplicate is the status of a file that has the same content as
 	// a file of a different document. Its work stops there.
 	StatusDuplicate = "duplicate"
@@ -107,4 +110,19 @@ func SetFileHash(ctx context.Context, pool *pgxpool.Pool, id uuid.UUID, hash str
 		return false, fmt.Errorf("mark the document %s as a duplicate: %w", id, err)
 	}
 	return true, nil
+}
+
+// ConfirmUpload moves a document from the status uploading to the status
+// uploaded. It reports false when the document is not in the status
+// uploading, and then it changes nothing. It runs in the transaction of
+// the caller, which adds the file job in the same transaction.
+func ConfirmUpload(ctx context.Context, tx pgx.Tx, id uuid.UUID) (bool, error) {
+	tag, err := tx.Exec(ctx,
+		`update documents set status = $2 where id = $1 and status = $3`,
+		id, StatusUploaded, StatusUploading,
+	)
+	if err != nil {
+		return false, fmt.Errorf("confirm the upload of the document %s: %w", id, err)
+	}
+	return tag.RowsAffected() == 1, nil
 }

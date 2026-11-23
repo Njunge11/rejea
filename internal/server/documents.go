@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"path"
@@ -8,9 +9,12 @@ import (
 	"unicode"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/riverqueue/river"
 
 	"github.com/Njunge11/rejea/internal/database"
+	"github.com/Njunge11/rejea/internal/queue"
 	"github.com/Njunge11/rejea/internal/storage"
 )
 
@@ -96,6 +100,79 @@ func createDocuments(pool *pgxpool.Pool, store *storage.Store, cfg Config) endpo
 		}
 		return writeJSON(w, http.StatusCreated, createDocumentsResponse{Documents: created})
 	}
+}
+
+// documentStatus is the answer of an endpoint that changes one document.
+type documentStatus struct {
+	ID     uuid.UUID `json:"id"`
+	Status string    `json:"status"`
+}
+
+// confirmUpload is called by the client after it sent the file to the
+// upload URL. It gives the document the status uploaded and adds the file
+// job, both in one transaction: a document is never uploaded with no job,
+// and a job never exists for a document that is not uploaded.
+//
+// The answer is 202 Accepted, because the work on the file continues after
+// the answer. The Location header has the place of the status.
+//
+// A second confirm of the same document changes nothing and gets the same
+// answer, so a client can send the request again after a network fault.
+func confirmUpload(pool *pgxpool.Pool, store *storage.Store, jobs *river.Client[pgx.Tx]) endpoint {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		ctx := r.Context()
+		id, err := uuid.Parse(r.PathValue("id"))
+		if err != nil {
+			return noDocument()
+		}
+		state, err := database.GetFileState(ctx, pool, id)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return noDocument()
+		}
+		if err != nil {
+			return err
+		}
+		switch state.Status {
+		case database.StatusUploading:
+			inStorage, err := store.Exists(ctx, state.StorageKey)
+			if err != nil {
+				return err
+			}
+			if !inStorage {
+				return &apiError{
+					status: http.StatusConflict,
+					detail: "The file is not in the storage. Send the file to its upload URL, then confirm.",
+				}
+			}
+			err = pgx.BeginFunc(ctx, pool, func(tx pgx.Tx) error {
+				confirmed, err := database.ConfirmUpload(ctx, tx, id)
+				if err != nil || !confirmed {
+					// A different request confirmed the document first.
+					return err
+				}
+				if _, err := jobs.InsertTx(ctx, tx, queue.FileArgs{DocumentID: id}, nil); err != nil {
+					return fmt.Errorf("add the file job of the document %s: %w", id, err)
+				}
+				return nil
+			})
+			if err != nil {
+				return err
+			}
+			state.Status = database.StatusUploaded
+		case database.StatusFailed:
+			return &apiError{
+				status: http.StatusConflict,
+				detail: "The document has the status failed. Ask for a new upload URL.",
+			}
+		}
+		w.Header().Set("Location", "/documents/"+id.String())
+		return writeJSON(w, http.StatusAccepted, documentStatus{ID: id, Status: state.Status})
+	}
+}
+
+// noDocument is the answer for an id that is not the id of a document.
+func noDocument() *apiError {
+	return &apiError{status: http.StatusNotFound, detail: "No document has this id."}
 }
 
 // faults finds each fault in the request.

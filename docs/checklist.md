@@ -73,8 +73,10 @@ These points are not in the plan. Each one is settled before its item starts.
   - Setting with default: time to save a failure (10 seconds).
   - Proof: a job that always fails ends as `failed` with its reason. A job that fails once succeeds on the second attempt.
 
-- [ ] **8. Endpoint: confirm an upload**
-  - Sets the status `uploaded` and adds the file job to the `file` queue in one transaction.
+- [x] **8. Endpoint: confirm an upload**
+  - `POST /documents/{id}/confirm` sets the status `uploaded` and adds the file job to the `file` queue in one transaction. It answers `202` with the place of the status.
+  - A second confirm of the same document changes nothing and gets the same answer.
+  - AWS: the role gets `s3:ListBucket`, so that S3 can tell a missing file from a refused request.
   - Proof: a confirm starts the file worker. A confirm of a file that is not in S3 is refused.
 
 - [ ] **9. File worker: unpack archives**

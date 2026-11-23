@@ -9,7 +9,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/riverqueue/river"
 
 	"github.com/Njunge11/rejea/internal/storage"
 )
@@ -40,10 +42,10 @@ type Config struct {
 }
 
 // NewHandler makes the handler of the service: the routes, with one log
-// line for each request.
-func NewHandler(logger *slog.Logger, pool *pgxpool.Pool, store *storage.Store, cfg Config) http.Handler {
+// line for each request. The endpoints add their jobs through jobs.
+func NewHandler(logger *slog.Logger, pool *pgxpool.Pool, store *storage.Store, jobs *river.Client[pgx.Tx], cfg Config) http.Handler {
 	mux := http.NewServeMux()
-	addRoutes(mux, logger, pool, store, cfg)
+	addRoutes(mux, logger, pool, store, jobs, cfg)
 	return logRequests(logger, mux)
 }
 
