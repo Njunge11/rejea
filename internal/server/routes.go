@@ -21,4 +21,5 @@ func addRoutes(mux *http.ServeMux, logger *slog.Logger, pool *pgxpool.Pool, docs
 	mux.Handle("GET /documents", handle(logger, listDocuments(docs)))
 	mux.Handle("GET /documents/{id}", handle(logger, getDocument(docs)))
 	mux.Handle("POST /documents/{id}/confirm", handle(logger, confirmUpload(docs)))
+	mux.Handle("POST /documents/{id}/retry", handle(logger, retryDocument(docs)))
 }

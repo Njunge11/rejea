@@ -183,6 +183,15 @@ func ClearFileHash(ctx context.Context, db DB, id uuid.UUID) error {
 	return nil
 }
 
+// ClearError removes the text of the error of a document.
+func ClearError(ctx context.Context, db DB, id uuid.UUID) error {
+	_, err := db.Exec(ctx, `update documents set error = null where id = $1`, id)
+	if err != nil {
+		return fmt.Errorf("remove the error of the document %s: %w", id, err)
+	}
+	return nil
+}
+
 // SetStatus gives a document a status.
 func SetStatus(ctx context.Context, db DB, id uuid.UUID, status string) error {
 	_, err := db.Exec(ctx, `update documents set status = $2 where id = $1`, id, status)

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 	"time"
@@ -82,12 +83,24 @@ type documentStatus struct {
 // The answer is 202 Accepted, because the work on the file continues after
 // the answer. The Location header has the place of the status.
 func confirmUpload(docs *documents.Service) endpoint {
+	return startWork(docs.ConfirmUpload)
+}
+
+// retryDocument is called by the client to run a failed document again.
+// The answer has the same form as the answer of confirmUpload.
+func retryDocument(docs *documents.Service) endpoint {
+	return startWork(docs.Retry)
+}
+
+// startWork makes the endpoint of a call that starts the work on one
+// document. The answer is 202 Accepted with the place of the status.
+func startWork(start func(ctx context.Context, id uuid.UUID) (status string, err error)) endpoint {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		id, err := pathID(r)
 		if err != nil {
 			return err
 		}
-		status, err := docs.ConfirmUpload(r.Context(), id)
+		status, err := start(r.Context(), id)
 		if err != nil {
 			return err
 		}

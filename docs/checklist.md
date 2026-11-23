@@ -100,7 +100,7 @@ These points are not in the plan. Each one is settled before its item starts.
   - `GET /documents`: the list, with a `status` filter (`?status=failed`).
   - Proof: each answer agrees with the rows in the database.
 
-- [ ] **12. Endpoint: retry**
+- [x] **12. Endpoint: retry**
   - `POST /documents/{id}/retry` puts the job of a failed file back in its queue. It answers `202 Accepted` with a link to the status.
   - Proof: a failed file runs again after the call. A file that is not failed is refused.
 
