@@ -13,7 +13,7 @@ A RAG (retrieval-augmented generation) engine for PDF and Word documents, with h
 
 ## Status
 
-Built: the schema, the migrations, the job queues, upload URLs, the confirm of an upload, the file hash, the duplicate check, the failure rule, the unpack of archives (zip, tar, tar.gz), the job that fails old uploads, the status of one document and of the list of documents, and the retry of a failed document. Not built: the rest of ingestion, retrieval, generation.
+Built: the schema, the migrations, the job queues, upload URLs, the confirm of an upload, the file hash, the duplicate check, the failure rule, the unpack of archives (zip, tar, tar.gz), the job that fails old uploads, the status of one document and of the list of documents, the retry of a failed document, and the parser service. Not built: the rest of ingestion, retrieval, generation.
 
 ## Requirements
 
@@ -31,6 +31,17 @@ make db-up      # PostgreSQL 17 with pgvector and pg_textsearch, on port 5433
 make migrate
 make serve      # http://127.0.0.1:8080/healthz
 ```
+
+## Parser
+
+The parser turns a page image into blocks: each with its box, its type and its text. It is PaddleOCR-VL-1.6, and it runs on Apple Silicon only: the vision model runs on the GPU through MLX.
+
+```sh
+make parser-install   # two Python 3.12 environments, 2.2 GB
+make parser           # http://127.0.0.1:8112/layout-parsing; the first start downloads 2.1 GB of models
+```
+
+On an M2 Pro with 16 GB, a page takes 12 to 40 seconds and the service uses 3 GB of memory.
 
 ## File storage
 

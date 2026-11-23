@@ -4,6 +4,9 @@
 # Build output
 /bin/
 
+# The Python environments of the parser service
+/parser/.venv-*/
+
 # Test and coverage output
 *.test
 *.out

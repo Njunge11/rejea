@@ -116,9 +116,13 @@ These points are not in the plan. Each one is settled before its item starts.
 
 ## Parse (plan step 3)
 
-- [ ] **15. Parser service**
+- [x] **15. Parser service**
   - PaddleOCR and MLX-VLM in a Python virtual environment, with a command that starts the service.
   - Proof: one KNBS table page comes back with block boxes. Record the time for one page on this Mac.
+  - Measured on this Mac (M2 Pro, 16 GB), PaddleOCR-VL-1.6, 2026-11-23:
+    - A page with two paragraphs and a table of 18 rows (consumer prices, March 2026, page 10): 12 seconds. All 126 numbers agree with the text in the PDF, at 144 and at 216 DPI.
+    - A page with one turned table of 23 columns (GDP, first quarter 2026, page 11): 40 seconds at 216 DPI, and all 578 numbers agree. At 144 DPI it takes 32 seconds, and 108 numbers are missing and 21 are wrong.
+    - Memory: 2.0 GB for the MLX server and 0.9 GB for the parse API. Start with the models on the disk: 20 seconds.
 
 - [ ] **16. Parse worker: render pages** (needs point F)
   - Render each PDF page to an image with PDFium, store it in S3, save `pages` (image key, width, height) and `page_count`.
