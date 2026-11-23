@@ -16,7 +16,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/Njunge11/rejea/internal/database"
+	"github.com/Njunge11/rejea/internal/documents"
 	"github.com/Njunge11/rejea/internal/storage"
 )
 
@@ -69,13 +69,14 @@ func permanent(err error) bool {
 // It never uses a name from the archive as a path. A name is text for the
 // filename column only, and the service makes each storage key.
 type unpacker struct {
-	ctx    context.Context //nolint:containedctx // One unpacker does the work of one job.
-	store  *storage.Store
-	cfg    Config
-	prefix string // the start of the storage key of each file
+	ctx   context.Context //nolint:containedctx // One unpacker does the work of one job.
+	store *storage.Store
+	cfg   Config
+	// archive is the ID of the document of the archive.
+	archive uuid.UUID
 
 	bytes int64 // the bytes that came out of the archive
-	files []database.UnpackedFile
+	files []documents.UnpackedFile
 }
 
 func (u *unpacker) tooManyFiles() error {
@@ -88,17 +89,15 @@ func (u *unpacker) tooManyBytes() error {
 
 // unpack takes the files out of the archive of a document. With an error,
 // it gives the files that it sent to the file storage before the error.
-func (w *fileWorker) unpack(ctx context.Context, id uuid.UUID, key string) ([]database.UnpackedFile, error) {
+func (w *fileWorker) unpack(ctx context.Context, id uuid.UUID, key string) ([]documents.UnpackedFile, error) {
 	u := &unpacker{
-		ctx:   ctx,
-		store: w.store,
-		cfg:   w.cfg,
-		// A new attempt makes the same keys, so it writes over the files
-		// of the attempt before it and leaves no file with no document.
-		prefix: "documents/" + id.String() + "/files/",
+		ctx:     ctx,
+		store:   w.store,
+		cfg:     w.cfg,
+		archive: id,
 	}
 	var err error
-	switch Ending(key) {
+	switch documents.Ending(key) {
 	case ".zip":
 		err = u.zip(key)
 	case ".tar":
@@ -220,11 +219,7 @@ func (u *unpacker) add(name string, content io.Reader) error {
 	if len(u.files) == u.cfg.MaxArchiveFiles {
 		return u.tooManyFiles()
 	}
-	id, err := uuid.NewV7()
-	if err != nil {
-		return fmt.Errorf("make the ID of a document: %w", err)
-	}
-	key := fmt.Sprintf("%s%d%s", u.prefix, len(u.files), Ending(name))
+	key := documents.InnerKey(u.archive, len(u.files), name)
 	sum := sha256.New()
 	var size int64
 	stream := &recorder{source: io.TeeReader(&meter{
@@ -241,8 +236,7 @@ func (u *unpacker) add(name string, content io.Reader) error {
 		}
 		return err
 	}
-	u.files = append(u.files, database.UnpackedFile{
-		ID:         id,
+	u.files = append(u.files, documents.UnpackedFile{
 		Filename:   name,
 		StorageKey: key,
 		Hash:       hex.EncodeToString(sum.Sum(nil)),
@@ -292,7 +286,7 @@ func cleanName(name string) string {
 // same ending for each file, and these are not documents. An archive in an
 // archive is not kept.
 func wanted(name string) bool {
-	if endingFrom(name, documentEndings) == "" {
+	if !documents.IsDocumentFile(name) {
 		return false
 	}
 	for part := range strings.SplitSeq(name, "/") {

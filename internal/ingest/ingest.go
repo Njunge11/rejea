@@ -6,9 +6,9 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 
+	"github.com/Njunge11/rejea/internal/documents"
 	"github.com/Njunge11/rejea/internal/storage"
 )
 
@@ -17,10 +17,8 @@ type Config struct {
 	// FailureSaveTimeout is the time that the database gets to save the
 	// failure of a document.
 	FailureSaveTimeout time.Duration
-	// UploadMaxAge is the longest time that a document can have the status
-	// uploading. After it, the document fails.
-	UploadMaxAge time.Duration
-	// UploadCheckInterval is the time between two looks for such documents.
+	// UploadCheckInterval is the time between two looks for the uploads
+	// that no client confirmed.
 	UploadCheckInterval time.Duration
 	// MaxFileBytes is the largest size of one file.
 	MaxFileBytes int64
@@ -35,10 +33,12 @@ type Config struct {
 	MaxArchiveListBytes int64
 }
 
-// Workers gives River the worker of each kind of job.
-func Workers(pool *pgxpool.Pool, store *storage.Store, logger *slog.Logger, cfg Config) *river.Workers {
+// Workers gives River the worker of each kind of job. A worker does the
+// work on the file and calls docs for each rule and each change of a
+// document.
+func Workers(docs *documents.Service, store *storage.Store, logger *slog.Logger, cfg Config) *river.Workers {
 	workers := river.NewWorkers()
-	river.AddWorker(workers, &fileWorker{pool: pool, store: store, logger: logger, cfg: cfg})
-	river.AddWorker(workers, &expireWorker{pool: pool, store: store, logger: logger, maxAge: cfg.UploadMaxAge})
+	river.AddWorker(workers, &fileWorker{docs: docs, store: store, logger: logger, cfg: cfg})
+	river.AddWorker(workers, &expireWorker{docs: docs, logger: logger})
 	return workers
 }

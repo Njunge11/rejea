@@ -11,11 +11,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 
-	"github.com/Njunge11/rejea/internal/database"
+	"github.com/Njunge11/rejea/internal/documents"
 	"github.com/Njunge11/rejea/internal/queue"
 	"github.com/Njunge11/rejea/internal/storage"
 )
@@ -25,43 +23,42 @@ import (
 type fileWorker struct {
 	river.WorkerDefaults[queue.FileArgs]
 
-	pool   *pgxpool.Pool
+	docs   *documents.Service
 	store  *storage.Store
 	logger *slog.Logger
 	cfg    Config
 }
 
 // Work does two stages. The first stage computes the hash of the file and
-// saves it: a file with the same content as the file of a different
-// document becomes a duplicate. The second stage is for an archive only:
-// each PDF and Word file in it becomes a document of its own, with its own
-// file job.
+// records it. The second stage is for an archive only: it takes each PDF
+// and Word file out of the archive and records them. The package documents
+// has the rules for the hash and for the files of an archive.
 //
 // An error makes River run the job again after a wait. A new attempt skips
 // each stage that is complete.
 func (w *fileWorker) Work(ctx context.Context, job *river.Job[queue.FileArgs]) error {
 	start := time.Now()
 	id := job.Args.DocumentID
-	state, err := database.GetFileState(ctx, w.pool, id)
-	if errors.Is(err, pgx.ErrNoRows) {
+	doc, err := w.docs.Get(ctx, id)
+	if errors.Is(err, documents.ErrNotFound) {
 		// A new attempt cannot find a document that does not exist.
 		return river.JobCancel(fmt.Errorf("the document %s does not exist", id))
 	}
 	if err != nil {
 		return err
 	}
-	if state.Status == database.StatusDuplicate || state.Status == database.StatusUnpacked {
+	if doc.Status == documents.StatusDuplicate || doc.Status == documents.StatusUnpacked {
 		w.logger.DebugContext(ctx, "file job skipped: each stage is complete", "document", id)
 		return nil
 	}
-	if state.Hashed {
+	if doc.FileHash != "" {
 		w.logger.DebugContext(ctx, "file hash stage skipped: it is complete", "document", id)
 	} else {
-		hash, size, err := w.hash(ctx, state.StorageKey)
+		hash, size, err := w.hash(ctx, doc.StorageKey)
 		if err != nil {
 			return err
 		}
-		duplicate, err := database.SetFileHash(ctx, w.pool, id, hash)
+		duplicate, err := w.docs.RecordHash(ctx, id, hash)
 		if err != nil {
 			return err
 		}
@@ -75,12 +72,12 @@ func (w *fileWorker) Work(ctx context.Context, job *river.Job[queue.FileArgs]) e
 			return nil
 		}
 	}
-	if endingFrom(state.StorageKey, archiveEndings) == "" {
+	if !documents.IsArchive(doc.StorageKey) {
 		return nil
 	}
 
 	start = time.Now()
-	files, added, err := w.unpackAndSave(ctx, id, state.StorageKey)
+	files, added, err := w.unpackAndSave(ctx, id, doc.StorageKey)
 	if err != nil {
 		// With a fault in the content of the archive, a new attempt reads
 		// the same archive and finds the same fault.
@@ -98,44 +95,27 @@ func (w *fileWorker) Work(ctx context.Context, job *river.Job[queue.FileArgs]) e
 	w.logger.InfoContext(ctx, "archive unpacked",
 		"document", id,
 		"files", len(files),
-		"duplicates", len(files)-len(added),
+		"duplicates", len(files)-added,
 		"duration", time.Since(start),
 	)
 	return nil
 }
 
-// unpackAndSave takes the files out of an archive and saves them as
-// documents. It gives the files that are in the file storage, also with an
-// error, and the IDs of the documents that are not duplicates.
-func (w *fileWorker) unpackAndSave(ctx context.Context, id uuid.UUID, key string) ([]database.UnpackedFile, []uuid.UUID, error) {
+// unpackAndSave takes the files out of an archive and records them. It
+// gives the files that are in the file storage, also with an error, and
+// the number of them that are not duplicates.
+func (w *fileWorker) unpackAndSave(ctx context.Context, id uuid.UUID, key string) ([]documents.UnpackedFile, int, error) {
 	files, err := w.unpack(ctx, id, key)
 	if err != nil {
-		return files, nil, err
+		return files, 0, err
 	}
-	// The documents, their jobs and the status of the archive change
-	// together or not at all.
-	var added []uuid.UUID
-	err = pgx.BeginFunc(ctx, w.pool, func(tx pgx.Tx) error {
-		var err error
-		added, err = database.SaveUnpacked(ctx, tx, id, files)
-		if err != nil || len(added) == 0 {
-			return err
-		}
-		jobs := make([]river.InsertManyParams, len(added))
-		for i, document := range added {
-			jobs[i] = river.InsertManyParams{Args: queue.FileArgs{DocumentID: document}}
-		}
-		if _, err := river.ClientFromContext[pgx.Tx](ctx).InsertManyTx(ctx, tx, jobs); err != nil {
-			return fmt.Errorf("add the file jobs of the archive %s: %w", id, err)
-		}
-		return nil
-	})
+	added, err := w.docs.SaveUnpacked(ctx, id, files)
 	return files, added, err
 }
 
 // discard removes the files of an archive from the file storage after the
 // unpack failed for good.
-func (w *fileWorker) discard(ctx context.Context, id uuid.UUID, files []database.UnpackedFile) {
+func (w *fileWorker) discard(ctx context.Context, id uuid.UUID, files []documents.UnpackedFile) {
 	if len(files) == 0 {
 		return
 	}

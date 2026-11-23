@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Njunge11/rejea/internal/documents"
 	"github.com/Njunge11/rejea/internal/ingest"
 	"github.com/Njunge11/rejea/internal/queue"
 	"github.com/Njunge11/rejea/internal/server"
@@ -30,10 +31,11 @@ type Config struct {
 	// text for a person to read.
 	LogJSON bool
 
-	Storage storage.Config
-	Queue   queue.Config
-	Ingest  ingest.Config
-	Server  server.Config
+	Storage   storage.Config
+	Queue     queue.Config
+	Documents documents.Config
+	Ingest    ingest.Config
+	Server    server.Config
 }
 
 // Load reads the configuration through getenv, which has the signature of
@@ -72,9 +74,13 @@ func Load(getenv func(string) string) (Config, error) {
 			MaxAttempts:  env.count("REJEA_JOB_MAX_ATTEMPTS", 8),
 			StopTimeout:  env.duration("REJEA_JOB_STOP_TIMEOUT", 10*time.Second),
 		},
+		Documents: documents.Config{
+			MaxUploadFiles: env.count("REJEA_MAX_UPLOAD_FILES", 100),
+			MaxFileBytes:   maxFileBytes,
+			UploadMaxAge:   env.duration("REJEA_UPLOAD_MAX_AGE", 24*time.Hour),
+		},
 		Ingest: ingest.Config{
 			FailureSaveTimeout:  env.duration("REJEA_FAILURE_SAVE_TIMEOUT", 10*time.Second),
-			UploadMaxAge:        env.duration("REJEA_UPLOAD_MAX_AGE", 24*time.Hour),
 			UploadCheckInterval: env.duration("REJEA_UPLOAD_CHECK_INTERVAL", time.Hour),
 			MaxFileBytes:        maxFileBytes,
 			MaxArchiveFiles:     env.count("REJEA_MAX_ARCHIVE_FILES", 1000),
@@ -88,16 +94,14 @@ func Load(getenv func(string) string) (Config, error) {
 			IdleTimeout:       env.duration("REJEA_HTTP_IDLE_TIMEOUT", 5*time.Minute),
 			ShutdownTimeout:   env.duration("REJEA_SHUTDOWN_TIMEOUT", 10*time.Second),
 			HealthTimeout:     env.duration("REJEA_HEALTH_TIMEOUT", 2*time.Second),
-			MaxUploadFiles:    env.count("REJEA_MAX_UPLOAD_FILES", 100),
-			MaxFileBytes:      maxFileBytes,
 			MaxRequestBytes:   env.size("REJEA_MAX_REQUEST_BYTES", 1<<20), // 1 MiB
 		},
 	}
 	// A client can start its upload until the upload URL ends. A document
 	// that fails before that time fails with an upload in work.
-	if cfg.Ingest.UploadMaxAge <= cfg.Storage.UploadURLLife {
+	if cfg.Documents.UploadMaxAge <= cfg.Storage.UploadURLLife {
 		env.fault("REJEA_UPLOAD_MAX_AGE (%s) must be longer than REJEA_UPLOAD_URL_LIFE (%s)",
-			cfg.Ingest.UploadMaxAge, cfg.Storage.UploadURLLife)
+			cfg.Documents.UploadMaxAge, cfg.Storage.UploadURLLife)
 	}
 	if err := errors.Join(env.faults...); err != nil {
 		return Config{}, err

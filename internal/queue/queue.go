@@ -47,7 +47,7 @@ type Config struct {
 }
 
 // FileArgs is the job of the file queue: the first work on an uploaded
-// file. The server adds it and the file worker does it.
+// file. The package documents adds it and the file worker does it.
 type FileArgs struct {
 	DocumentID uuid.UUID `json:"document_id"`
 }
@@ -67,6 +67,20 @@ func (ExpireUploadsArgs) Kind() string { return "expire_uploads" }
 
 // InsertOpts puts the job in the maintenance queue.
 func (ExpireUploadsArgs) InsertOpts() river.InsertOpts { return river.InsertOpts{Queue: Maintenance} }
+
+// NewInserter makes a River client that adds jobs and runs none. The rules
+// of the service add their jobs through it. The workers call those rules,
+// so the rules cannot use the client that runs the workers: that client is
+// made from the workers.
+//
+// A job gets its number of attempts from the client that adds it, thus the
+// inserter has the same MaxAttempts as the client of the queues.
+func NewInserter(pool *pgxpool.Pool, logger *slog.Logger, cfg Config) (*river.Client[pgx.Tx], error) {
+	return river.NewClient(riverpgxv5.New(pool), &river.Config{
+		Logger:      logger,
+		MaxAttempts: cfg.MaxAttempts,
+	})
+}
 
 // NewClient makes the River client of the queues. River refuses to start a
 // client that has no worker. River logs through logger. Each job runs

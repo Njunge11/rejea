@@ -20,6 +20,7 @@ import (
 
 	"github.com/Njunge11/rejea/internal/config"
 	"github.com/Njunge11/rejea/internal/database"
+	"github.com/Njunge11/rejea/internal/documents"
 	"github.com/Njunge11/rejea/internal/ingest"
 	"github.com/Njunge11/rejea/internal/queue"
 	"github.com/Njunge11/rejea/internal/server"
@@ -74,8 +75,15 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 	// River takes no new job and waits for the jobs in work.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	failureRule := []rivertype.Middleware{ingest.FailureRule(pool, logger, cfg.Ingest.FailureSaveTimeout)}
-	workers := ingest.Workers(pool, store, logger, cfg.Ingest)
+	// The rules for documents. The HTTP server and the workers call them.
+	inserter, err := queue.NewInserter(pool, logger, cfg.Queue)
+	if err != nil {
+		return err
+	}
+	docs := documents.New(pool, store, inserter, cfg.Documents)
+
+	failureRule := []rivertype.Middleware{ingest.FailureRule(docs, logger, cfg.Ingest.FailureSaveTimeout)}
+	workers := ingest.Workers(docs, store, logger, cfg.Ingest)
 	jobs, err := queue.NewClient(pool, logger, workers, failureRule, ingest.Schedule(cfg.Ingest), cfg.Queue)
 	if err != nil {
 		return err
@@ -93,7 +101,7 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 			logger.Error("the jobs did not stop in time")
 		}
 	}()
-	handler := server.NewHandler(logger, pool, store, jobs, cfg.Server)
+	handler := server.NewHandler(logger, pool, docs, cfg.Server)
 
 	listener, err := net.Listen("tcp", cfg.HTTPAddr)
 	if err != nil {

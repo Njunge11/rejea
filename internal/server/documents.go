@@ -1,22 +1,16 @@
 package server
 
 import (
-	"errors"
-	"fmt"
 	"net/http"
-	"strings"
-	"unicode"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/riverqueue/river"
 
-	"github.com/Njunge11/rejea/internal/database"
-	"github.com/Njunge11/rejea/internal/ingest"
-	"github.com/Njunge11/rejea/internal/queue"
-	"github.com/Njunge11/rejea/internal/storage"
+	"github.com/Njunge11/rejea/internal/documents"
 )
+
+// The endpoints in this file do HTTP work only: they read the request,
+// call the package documents, and write the answer. The package documents
+// has each rule, and writeError turns its errors into answers.
 
 // createDocumentsRequest is the body of a request for upload URLs.
 type createDocumentsRequest struct {
@@ -45,58 +39,30 @@ type createdDocument struct {
 	UploadURL string    `json:"upload_url"`
 }
 
-// createDocuments makes one document with the status uploading and one
-// upload URL for each file in the request.
-func createDocuments(pool *pgxpool.Pool, store *storage.Store, cfg Config) endpoint {
+// createDocuments answers with one new document and one upload URL for
+// each file in the request.
+func createDocuments(docs *documents.Service, maxRequestBytes int64) endpoint {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		request, err := readJSON[createDocumentsRequest](w, r, cfg.MaxRequestBytes)
+		request, err := readJSON[createDocumentsRequest](w, r, maxRequestBytes)
 		if err != nil {
 			return err
 		}
-		if faults := request.faults(cfg); len(faults) > 0 {
-			return &apiError{
-				status: http.StatusUnprocessableEntity,
-				detail: "The request is not valid.",
-				faults: faults,
-			}
-		}
-
-		// The URLs are signed before the rows are written. Thus a failure
-		// leaves no row that has no URL.
-		docs := make([]database.NewDocument, len(request.Files))
-		created := make([]createdDocument, len(request.Files))
+		files := make([]documents.FileRequest, len(request.Files))
 		for i, file := range request.Files {
-			id, err := uuid.NewV7()
-			if err != nil {
-				return fmt.Errorf("make a document id: %w", err)
-			}
-			// The key has the id, not the name of the file, so each
-			// character in a file name is safe.
-			key := "documents/" + id.String() + "/original" + ingest.Ending(file.Filename)
-			url, err := store.UploadURL(r.Context(), key, file.Size)
-			if err != nil {
-				return err
-			}
-			metadata := file.Metadata
-			if metadata == nil {
-				metadata = map[string]any{}
-			}
-			docs[i] = database.NewDocument{
-				ID:         id,
-				UploadedBy: uuid.Nil, // The system: the service has no login yet.
-				Filename:   file.Filename,
-				StorageKey: key,
-				Metadata:   metadata,
-			}
-			created[i] = createdDocument{
-				ID:        id,
-				Filename:  file.Filename,
-				Status:    database.StatusUploading,
-				UploadURL: url,
-			}
+			files[i] = documents.FileRequest{Filename: file.Filename, Size: file.Size, Metadata: file.Metadata}
 		}
-		if err := database.InsertUploadingDocuments(r.Context(), pool, docs); err != nil {
+		uploads, err := docs.RequestUploads(r.Context(), files)
+		if err != nil {
 			return err
+		}
+		created := make([]createdDocument, len(uploads))
+		for i, upload := range uploads {
+			created[i] = createdDocument{
+				ID:        upload.ID,
+				Filename:  upload.Filename,
+				Status:    upload.Status,
+				UploadURL: upload.UploadURL,
+			}
 		}
 		return writeJSON(w, http.StatusCreated, createDocumentsResponse{Documents: created})
 	}
@@ -109,134 +75,22 @@ type documentStatus struct {
 }
 
 // confirmUpload is called by the client after it sent the file to the
-// upload URL. It gives the document the status uploaded and adds the file
-// job, both in one transaction: a document is never uploaded with no job,
-// and a job never exists for a document that is not uploaded.
+// upload URL.
 //
 // The answer is 202 Accepted, because the work on the file continues after
 // the answer. The Location header has the place of the status.
-//
-// A second confirm of the same document changes nothing and gets the same
-// answer, so a client can send the request again after a network fault.
-func confirmUpload(pool *pgxpool.Pool, store *storage.Store, jobs *river.Client[pgx.Tx]) endpoint {
+func confirmUpload(docs *documents.Service) endpoint {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		ctx := r.Context()
 		id, err := uuid.Parse(r.PathValue("id"))
 		if err != nil {
-			return noDocument()
+			// Text that is not an ID is the ID of no document.
+			return documents.ErrNotFound
 		}
-		state, err := database.GetFileState(ctx, pool, id)
-		if errors.Is(err, pgx.ErrNoRows) {
-			return noDocument()
-		}
+		status, err := docs.ConfirmUpload(r.Context(), id)
 		if err != nil {
 			return err
 		}
-		if state.Status == database.StatusUploading {
-			inStorage, err := store.Exists(ctx, state.StorageKey)
-			if err != nil {
-				return err
-			}
-			if !inStorage {
-				return &apiError{
-					status: http.StatusConflict,
-					detail: "The file is not in the storage. Send the file to its upload URL, then confirm.",
-				}
-			}
-			err = pgx.BeginFunc(ctx, pool, func(tx pgx.Tx) error {
-				confirmed, err := database.ConfirmUpload(ctx, tx, id)
-				if err != nil || !confirmed {
-					// The status changed after the read: a different
-					// request confirmed the document, or the document
-					// failed because it was too old.
-					return err
-				}
-				if _, err := jobs.InsertTx(ctx, tx, queue.FileArgs{DocumentID: id}, nil); err != nil {
-					return fmt.Errorf("add the file job of the document %s: %w", id, err)
-				}
-				return nil
-			})
-			if err != nil {
-				return err
-			}
-			// The answer has the status that the document has now.
-			state, err = database.GetFileState(ctx, pool, id)
-			if err != nil {
-				return err
-			}
-		}
-		if state.Status == database.StatusFailed {
-			return &apiError{
-				status: http.StatusConflict,
-				detail: "The document has the status failed. Ask for a new upload URL.",
-			}
-		}
 		w.Header().Set("Location", "/documents/"+id.String())
-		return writeJSON(w, http.StatusAccepted, documentStatus{ID: id, Status: state.Status})
+		return writeJSON(w, http.StatusAccepted, documentStatus{ID: id, Status: status})
 	}
-}
-
-// noDocument is the answer for an id that is not the id of a document.
-func noDocument() *apiError {
-	return &apiError{status: http.StatusNotFound, detail: "No document has this id."}
-}
-
-// faults finds each fault in the request.
-func (request createDocumentsRequest) faults(cfg Config) []fault {
-	if len(request.Files) == 0 {
-		return []fault{{Detail: "Give one file or more.", Pointer: "#/files"}}
-	}
-	if len(request.Files) > cfg.MaxUploadFiles {
-		return []fault{{
-			Detail:  fmt.Sprintf("One request can have %d files at most, and this one has %d.", cfg.MaxUploadFiles, len(request.Files)),
-			Pointer: "#/files",
-		}}
-	}
-	var faults []fault
-	for i, file := range request.Files {
-		at := fmt.Sprintf("#/files/%d/", i)
-		switch {
-		case file.Filename == "":
-			faults = append(faults, fault{Detail: "Give the name of the file.", Pointer: at + "filename"})
-		case strings.ContainsFunc(file.Filename, unicode.IsControl):
-			faults = append(faults, fault{Detail: "The name of the file has a control character.", Pointer: at + "filename"})
-		case ingest.Ending(file.Filename) == "":
-			faults = append(faults, fault{Detail: "The file must be a " + ingest.FileTypes + " file.", Pointer: at + "filename"})
-		}
-		switch {
-		case file.Size < 1:
-			faults = append(faults, fault{Detail: "Give the size of the file in bytes, 1 or more.", Pointer: at + "size"})
-		case file.Size > cfg.MaxFileBytes:
-			faults = append(faults, fault{
-				Detail:  fmt.Sprintf("A file can have %d bytes at most, and this one has %d.", cfg.MaxFileBytes, file.Size),
-				Pointer: at + "size",
-			})
-		}
-		if hasNUL(file.Metadata) {
-			faults = append(faults, fault{Detail: "The metadata has a NUL character, which the database cannot keep.", Pointer: at + "metadata"})
-		}
-	}
-	return faults
-}
-
-// hasNUL tells if a decoded JSON value has a NUL character in a string or
-// in a key. PostgreSQL refuses such a value in a jsonb column.
-func hasNUL(value any) bool {
-	switch value := value.(type) {
-	case string:
-		return strings.ContainsRune(value, 0)
-	case []any:
-		for _, element := range value {
-			if hasNUL(element) {
-				return true
-			}
-		}
-	case map[string]any:
-		for key, element := range value {
-			if strings.ContainsRune(key, 0) || hasNUL(element) {
-				return true
-			}
-		}
-	}
-	return false
 }

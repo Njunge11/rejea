@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+
+	"github.com/Njunge11/rejea/internal/documents"
 )
 
 // An endpoint is a handler that returns an error in place of an error
@@ -60,14 +62,38 @@ type problem struct {
 	Errors []fault `json:"errors,omitempty"`
 }
 
-// writeError turns an error into an answer. An apiError gives its status
-// and its detail. Each other error gives the status 500 with no detail,
-// because the text of an internal error can show how the service works.
-func writeError(w http.ResponseWriter, r *http.Request, logger *slog.Logger, err error) {
-	body := problem{Status: http.StatusInternalServerError}
+// problemOf gives the answer for an error. An apiError gives its status
+// and its detail. An error of the rules of the service gives the status
+// that agrees with it. Each other error gives the status 500 with no
+// detail, because the text of an internal error can show how the service
+// works.
+func problemOf(err error) problem {
 	if apiErr, ok := errors.AsType[*apiError](err); ok {
-		body = problem{Status: apiErr.status, Detail: apiErr.detail, Errors: apiErr.faults}
+		return problem{Status: apiErr.status, Detail: apiErr.detail, Errors: apiErr.faults}
 	}
+	if invalid, ok := errors.AsType[*documents.Invalid](err); ok {
+		faults := make([]fault, len(invalid.Faults))
+		for i, f := range invalid.Faults {
+			faults[i] = fault{Detail: f.Detail, Pointer: "#/files"}
+			if f.File >= 0 {
+				faults[i].Pointer = fmt.Sprintf("#/files/%d/%s", f.File, f.Field)
+			}
+		}
+		return problem{Status: http.StatusUnprocessableEntity, Detail: "The request is not valid.", Errors: faults}
+	}
+	if conflict, ok := errors.AsType[*documents.Conflict](err); ok {
+		return problem{Status: http.StatusConflict, Detail: conflict.Detail}
+	}
+	if errors.Is(err, documents.ErrNotFound) {
+		return problem{Status: http.StatusNotFound, Detail: "No document has this id."}
+	}
+	return problem{Status: http.StatusInternalServerError}
+}
+
+// writeError turns an error into an answer. Each endpoint returns its
+// error, and this function is the one place that makes the answer.
+func writeError(w http.ResponseWriter, r *http.Request, logger *slog.Logger, err error) {
+	body := problemOf(err)
 	body.Title = http.StatusText(body.Status)
 	if body.Status >= http.StatusInternalServerError {
 		logger.ErrorContext(r.Context(), "request failed",

@@ -3,15 +3,11 @@ package ingest
 import (
 	"context"
 	"log/slog"
-	"time"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 
-	"github.com/Njunge11/rejea/internal/database"
+	"github.com/Njunge11/rejea/internal/documents"
 	"github.com/Njunge11/rejea/internal/queue"
-	"github.com/Njunge11/rejea/internal/storage"
 )
 
 // Schedule gives River the jobs that it adds at a fixed interval. River
@@ -37,34 +33,18 @@ func Schedule(cfg Config) []*river.PeriodicJob {
 type expireWorker struct {
 	river.WorkerDefaults[queue.ExpireUploadsArgs]
 
-	pool   *pgxpool.Pool
-	store  *storage.Store
+	docs   *documents.Service
 	logger *slog.Logger
-	maxAge time.Duration
 }
 
-// Work fails each document that has the status uploading for longer than
-// the age limit, and removes its file from the file storage: a client can
-// send the file and not confirm it.
-//
-// The change of the status and the removal of the files are one unit. If
-// the removal fails, the documents keep the status uploading, and the next
-// run does the work again.
+// Work fails each upload that is too old.
 func (w *expireWorker) Work(ctx context.Context, _ *river.Job[queue.ExpireUploadsArgs]) error {
-	var keys []string
-	err := pgx.BeginFunc(ctx, w.pool, func(tx pgx.Tx) error {
-		var err error
-		keys, err = database.FailOldUploads(ctx, tx, w.maxAge)
-		if err != nil || len(keys) == 0 {
-			return err
-		}
-		return w.store.Delete(ctx, keys)
-	})
+	failed, err := w.docs.FailOldUploads(ctx)
 	if err != nil {
 		return err
 	}
-	if len(keys) > 0 {
-		w.logger.InfoContext(ctx, "old uploads failed", "documents", len(keys), "age_limit", w.maxAge)
+	if failed > 0 {
+		w.logger.InfoContext(ctx, "old uploads failed", "documents", failed)
 	}
 	return nil
 }

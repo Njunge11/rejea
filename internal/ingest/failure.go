@@ -9,11 +9,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/rivertype"
 
-	"github.com/Njunge11/rejea/internal/database"
+	"github.com/Njunge11/rejea/internal/documents"
 )
 
 // FailureRule is the failure rule of all workers, as a River middleware.
@@ -27,14 +26,14 @@ import (
 //
 // The rule is a middleware and not a River ErrorHandler, because River does
 // not call the ErrorHandler for a job that a worker cancels.
-func FailureRule(pool *pgxpool.Pool, logger *slog.Logger, saveTimeout time.Duration) rivertype.WorkerMiddleware {
-	return &failureRule{pool: pool, logger: logger, saveTimeout: saveTimeout}
+func FailureRule(docs *documents.Service, logger *slog.Logger, saveTimeout time.Duration) rivertype.WorkerMiddleware {
+	return &failureRule{docs: docs, logger: logger, saveTimeout: saveTimeout}
 }
 
 type failureRule struct {
 	river.WorkerMiddlewareDefaults
 
-	pool        *pgxpool.Pool
+	docs        *documents.Service
 	logger      *slog.Logger
 	saveTimeout time.Duration
 }
@@ -97,7 +96,7 @@ func (rule *failureRule) save(ctx context.Context, job *rivertype.JobRow, reason
 	// failure must be saved all the same.
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), rule.saveTimeout)
 	defer cancel()
-	found, err := database.FailDocument(ctx, rule.pool, *args.DocumentID, reason)
+	found, err := rule.docs.Fail(ctx, *args.DocumentID, reason)
 	if err != nil {
 		rule.logger.ErrorContext(ctx, "the failure of a document was not saved",
 			"document", *args.DocumentID, "job", job.ID, "reason", reason, "err", err)

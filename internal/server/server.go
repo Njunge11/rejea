@@ -9,11 +9,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/riverqueue/river"
 
-	"github.com/Njunge11/rejea/internal/storage"
+	"github.com/Njunge11/rejea/internal/documents"
 )
 
 // Config is the limits of the HTTP server and of its API.
@@ -31,21 +29,16 @@ type Config struct {
 	// HealthTimeout is the time that the database gets to answer the
 	// health check.
 	HealthTimeout time.Duration
-
-	// MaxUploadFiles is the largest number of files in one request for
-	// upload URLs.
-	MaxUploadFiles int
-	// MaxFileBytes is the largest size of one uploaded file.
-	MaxFileBytes int64
 	// MaxRequestBytes is the largest size of the JSON body of a request.
 	MaxRequestBytes int64
 }
 
 // NewHandler makes the handler of the service: the routes, with one log
-// line for each request. The endpoints add their jobs through jobs.
-func NewHandler(logger *slog.Logger, pool *pgxpool.Pool, store *storage.Store, jobs *river.Client[pgx.Tx], cfg Config) http.Handler {
+// line for each request. An endpoint reads the request, calls docs and
+// writes the answer. The health check asks the pool.
+func NewHandler(logger *slog.Logger, pool *pgxpool.Pool, docs *documents.Service, cfg Config) http.Handler {
 	mux := http.NewServeMux()
-	addRoutes(mux, logger, pool, store, jobs, cfg)
+	addRoutes(mux, logger, pool, docs, cfg)
 	return logRequests(logger, mux)
 }
 

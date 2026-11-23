@@ -1,4 +1,4 @@
-package ingest
+package documents
 
 import "strings"
 
@@ -20,6 +20,14 @@ func Ending(filename string) string {
 	}
 	return endingFrom(filename, archiveEndings)
 }
+
+// IsArchive tells if a file name has the ending of an archive: a file that
+// holds other files.
+func IsArchive(filename string) bool { return endingFrom(filename, archiveEndings) != "" }
+
+// IsDocumentFile tells if a file name has the ending of a PDF or a Word
+// file.
+func IsDocumentFile(filename string) bool { return endingFrom(filename, documentEndings) != "" }
 
 func endingFrom(filename string, endings []string) string {
 	name := strings.ToLower(filename)
