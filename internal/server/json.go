@@ -7,6 +7,7 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"slices"
 	"strings"
 )
 
@@ -76,6 +77,30 @@ func bodyError(err error) error {
 
 func badRequest(detail string) *apiError {
 	return &apiError{status: http.StatusBadRequest, detail: detail}
+}
+
+// readQuery reads the query of a request as a set of named values. It
+// refuses a parameter that is not in names and a parameter that the query
+// has two times, as readJSON refuses an unknown field: a parameter with a
+// wrong name then gets an error, and not an answer that ignores it.
+func readQuery(r *http.Request, names ...string) (map[string]string, error) {
+	values := map[string]string{}
+	for name, given := range r.URL.Query() {
+		if !slices.Contains(names, name) {
+			return nil, &apiError{
+				status: http.StatusBadRequest,
+				detail: fmt.Sprintf("The query has the unknown parameter %q.", name),
+			}
+		}
+		if len(given) != 1 {
+			return nil, &apiError{
+				status: http.StatusBadRequest,
+				detail: fmt.Sprintf("The query has the parameter %q more than one time.", name),
+			}
+		}
+		values[name] = given[0]
+	}
+	return values, nil
 }
 
 // writeJSON writes v as the JSON body of an answer with the given status.

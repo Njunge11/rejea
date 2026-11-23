@@ -42,6 +42,9 @@ const (
 	StatusFailed = "failed"
 )
 
+// statuses is each status that a document can have now.
+var statuses = []string{StatusUploading, StatusUploaded, StatusUnpacked, StatusDuplicate, StatusFailed}
+
 // Config is the limits of the rules.
 type Config struct {
 	// MaxUploadFiles is the largest number of files in one request for
@@ -52,6 +55,12 @@ type Config struct {
 	// UploadMaxAge is the longest time that a document can wait for the
 	// confirm of its upload. After it, the document fails.
 	UploadMaxAge time.Duration
+	// ListLimit is the number of documents in one page of the list when
+	// the caller gives no number.
+	ListLimit int
+	// MaxListLimit is the largest number of documents that a caller can
+	// ask for in one page of the list.
+	MaxListLimit int
 }
 
 // Document is a document as the database keeps it.
@@ -79,6 +88,14 @@ type Fault struct {
 	// Detail tells the client how to correct the fault.
 	Detail string
 }
+
+// InvalidArgument is a request with a value that the rules refuse. The
+// detail tells the client which value, and what the rules permit.
+type InvalidArgument struct {
+	Detail string
+}
+
+func (e *InvalidArgument) Error() string { return e.Detail }
 
 // Conflict is a request that the state of the document refuses. The
 // detail tells the client what to do.

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -44,27 +45,83 @@ type Document struct {
 	// ParentID is the archive that held the file. It is uuid.Nil for a
 	// file that a client uploaded.
 	ParentID uuid.UUID
+	// Error is the reason that the work on the document stopped. It is ""
+	// when the document has no error.
+	Error string
+	// CreatedAt is set by the database when the row is added.
+	CreatedAt time.Time
+}
+
+// documentColumns is the columns of a Document, in the order that
+// scanDocument reads them.
+const documentColumns = `id, uploaded_by, filename, storage_key, metadata, status,
+	coalesce(file_hash, ''), parent_id, coalesce(error, ''), created_at`
+
+// scanDocument reads one row that has the columns of documentColumns.
+func scanDocument(row pgx.Row) (Document, error) {
+	var doc Document
+	var parent *uuid.UUID
+	err := row.Scan(&doc.ID, &doc.UploadedBy, &doc.Filename, &doc.StorageKey, &doc.Metadata, &doc.Status,
+		&doc.FileHash, &parent, &doc.Error, &doc.CreatedAt)
+	if err != nil {
+		return Document{}, err
+	}
+	if parent != nil {
+		doc.ParentID = *parent
+	}
+	return doc, nil
 }
 
 // GetDocument reads one document. The error is ErrNotFound when no
 // document has the ID.
 func GetDocument(ctx context.Context, db DB, id uuid.UUID) (Document, error) {
-	doc := Document{ID: id}
-	var parent *uuid.UUID
-	err := db.QueryRow(ctx,
-		`select uploaded_by, filename, storage_key, metadata, status, coalesce(file_hash, ''), parent_id
-		 from documents where id = $1`, id,
-	).Scan(&doc.UploadedBy, &doc.Filename, &doc.StorageKey, &doc.Metadata, &doc.Status, &doc.FileHash, &parent)
+	doc, err := scanDocument(db.QueryRow(ctx, `select `+documentColumns+` from documents where id = $1`, id))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Document{}, fmt.Errorf("read the document %s: %w", id, ErrNotFound)
 	}
 	if err != nil {
 		return Document{}, fmt.Errorf("read the document %s: %w", id, err)
 	}
-	if parent != nil {
-		doc.ParentID = *parent
-	}
 	return doc, nil
+}
+
+// ListDocuments reads the documents from the newest to the oldest: the
+// order of their IDs, which have the time of their making at the start.
+// It gives limit documents at most.
+//
+// A status that is not "" keeps only the documents with that status. An
+// after that is not uuid.Nil keeps only the documents that come after
+// that ID in the order: the older ones.
+//
+// The position is an ID and not a number of rows to skip, because
+// PostgreSQL must compute each row that it skips.
+func ListDocuments(ctx context.Context, db DB, status string, after uuid.UUID, limit int) ([]Document, error) {
+	query := `select ` + documentColumns + ` from documents`
+	var conditions []string
+	var args []any
+	if status != "" {
+		args = append(args, status)
+		conditions = append(conditions, fmt.Sprintf("status = $%d", len(args)))
+	}
+	if after != uuid.Nil {
+		args = append(args, after)
+		conditions = append(conditions, fmt.Sprintf("id < $%d", len(args)))
+	}
+	if len(conditions) > 0 {
+		query += ` where ` + strings.Join(conditions, ` and `)
+	}
+	args = append(args, limit)
+	query += fmt.Sprintf(` order by id desc limit $%d`, len(args))
+
+	rows, err := db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("list the documents: %w", err)
+	}
+	docs, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (Document, error) { return scanDocument(row) })
+	if err != nil {
+		return nil, fmt.Errorf("list the documents: %w", err)
+	}
+	return docs, nil
 }
 
 // InsertDocuments adds one row for each document. The file hash is unique

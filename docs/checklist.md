@@ -95,7 +95,7 @@ These points are not in the plan. Each one is settled before its item starts.
   - Settings with defaults: the age limit (24 hours), the interval (1 hour). The age limit must be longer than the life of an upload URL, or the service does not start.
   - Proof: an old `uploading` row becomes `failed`. A new one does not change.
 
-- [ ] **11. Endpoints: status**
+- [x] **11. Endpoints: status**
   - `GET /documents/{id}`: the status and the error of one file.
   - `GET /documents`: the list, with a `status` filter (`?status=failed`).
   - Proof: each answer agrees with the rows in the database.

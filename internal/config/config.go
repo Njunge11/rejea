@@ -78,6 +78,8 @@ func Load(getenv func(string) string) (Config, error) {
 			MaxUploadFiles: env.count("REJEA_MAX_UPLOAD_FILES", 100),
 			MaxFileBytes:   maxFileBytes,
 			UploadMaxAge:   env.duration("REJEA_UPLOAD_MAX_AGE", 24*time.Hour),
+			ListLimit:      env.count("REJEA_LIST_LIMIT", 50),
+			MaxListLimit:   env.count("REJEA_MAX_LIST_LIMIT", 1000),
 		},
 		Ingest: ingest.Config{
 			FailureSaveTimeout:  env.duration("REJEA_FAILURE_SAVE_TIMEOUT", 10*time.Second),
@@ -102,6 +104,10 @@ func Load(getenv func(string) string) (Config, error) {
 	if cfg.Documents.UploadMaxAge <= cfg.Storage.UploadURLLife {
 		env.fault("REJEA_UPLOAD_MAX_AGE (%s) must be longer than REJEA_UPLOAD_URL_LIFE (%s)",
 			cfg.Documents.UploadMaxAge, cfg.Storage.UploadURLLife)
+	}
+	if cfg.Documents.ListLimit > cfg.Documents.MaxListLimit {
+		env.fault("REJEA_LIST_LIMIT (%d) must not be more than REJEA_MAX_LIST_LIMIT (%d)",
+			cfg.Documents.ListLimit, cfg.Documents.MaxListLimit)
 	}
 	if err := errors.Join(env.faults...); err != nil {
 		return Config{}, err

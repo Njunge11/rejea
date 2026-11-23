@@ -81,6 +81,9 @@ func problemOf(err error) problem {
 		}
 		return problem{Status: http.StatusUnprocessableEntity, Detail: "The request is not valid.", Errors: faults}
 	}
+	if invalid, ok := errors.AsType[*documents.InvalidArgument](err); ok {
+		return problem{Status: http.StatusBadRequest, Detail: invalid.Detail}
+	}
 	if conflict, ok := errors.AsType[*documents.Conflict](err); ok {
 		return problem{Status: http.StatusConflict, Detail: conflict.Detail}
 	}
