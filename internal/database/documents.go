@@ -19,6 +19,9 @@ const (
 	// StatusDuplicate is the status of a file that has the same content as
 	// a file of a different document. Its work stops there.
 	StatusDuplicate = "duplicate"
+	// StatusFailed is the status of a document whose work stopped with a
+	// fault. The error column has the reason.
+	StatusFailed = "failed"
 )
 
 // uniqueViolation is the PostgreSQL error code for a value that a unique
@@ -54,14 +57,37 @@ func InsertUploadingDocuments(ctx context.Context, pool *pgxpool.Pool, docs []Ne
 	return nil
 }
 
-// StorageKey gives the key of the file of a document in the file storage.
-func StorageKey(ctx context.Context, pool *pgxpool.Pool, id uuid.UUID) (string, error) {
-	var key string
-	err := pool.QueryRow(ctx, `select storage_key from documents where id = $1`, id).Scan(&key)
+// FileState is what the file worker must know about a document before it
+// starts.
+type FileState struct {
+	// StorageKey is the key of the file in the file storage.
+	StorageKey string
+	// Hashed is true when the document has its file hash.
+	Hashed bool
+	Status string
+}
+
+// GetFileState reads the FileState of a document. When the document does
+// not exist, the error is pgx.ErrNoRows.
+func GetFileState(ctx context.Context, pool *pgxpool.Pool, id uuid.UUID) (FileState, error) {
+	var state FileState
+	err := pool.QueryRow(ctx,
+		`select storage_key, file_hash is not null, status from documents where id = $1`, id,
+	).Scan(&state.StorageKey, &state.Hashed, &state.Status)
 	if err != nil {
-		return "", fmt.Errorf("read the storage key of the document %s: %w", id, err)
+		return FileState{}, fmt.Errorf("read the document %s: %w", id, err)
 	}
-	return key, nil
+	return state, nil
+}
+
+// FailDocument gives a document the status failed and the reason. It
+// reports false when the document does not exist.
+func FailDocument(ctx context.Context, pool *pgxpool.Pool, id uuid.UUID, reason string) (bool, error) {
+	tag, err := pool.Exec(ctx, `update documents set status = $2, error = $3 where id = $1`, id, StatusFailed, reason)
+	if err != nil {
+		return false, fmt.Errorf("mark the document %s as failed: %w", id, err)
+	}
+	return tag.RowsAffected() == 1, nil
 }
 
 // SetFileHash saves the hash of the file of a document. The hash is unique

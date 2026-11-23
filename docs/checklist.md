@@ -64,11 +64,13 @@ These points are not in the plan. Each one is settled before its item starts.
   - Settings with defaults: time for jobs to finish at a stop (10 seconds), longest silence of a connection to S3 (1 minute).
   - Proof: a file gets its hash. The same file a second time gets `duplicate`.
 
-- [ ] **7. Failure rule for all workers**
+- [x] **7. Failure rule for all workers**
   - A stage that fails returns an error, and River tries it again after a wait that grows.
-  - A fault that a retry cannot fix stops the job at once.
-  - When no attempt is left, the `documents` row gets the status `failed` and the reason in `error`.
+  - A fault that a retry cannot fix stops the job at once: the worker returns `river.JobCancel`.
+  - When no attempt is left, or the job is cancelled, the `documents` row gets the status `failed` and the reason in `error`. A job that the stop of the service interrupts does not fail.
+  - The rule is one River middleware, so it applies to each worker.
   - A new attempt skips the stages that are complete.
+  - Setting with default: time to save a failure (10 seconds).
   - Proof: a job that always fails ends as `failed` with its reason. A job that fails once succeeds on the second attempt.
 
 - [ ] **8. Endpoint: confirm an upload**

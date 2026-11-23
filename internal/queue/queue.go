@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
+	"github.com/riverqueue/river/rivertype"
 )
 
 // The queues. Each queue has one kind of work and its own workers, so a
@@ -54,12 +55,14 @@ func (FileArgs) Kind() string { return "file" }
 func (FileArgs) InsertOpts() river.InsertOpts { return river.InsertOpts{Queue: File} }
 
 // NewClient makes the River client of the three queues. River refuses to
-// start a client that has no worker. River logs through logger.
-func NewClient(pool *pgxpool.Pool, logger *slog.Logger, workers *river.Workers, cfg Config) (*river.Client[pgx.Tx], error) {
+// start a client that has no worker. River logs through logger. Each job
+// runs inside the middleware.
+func NewClient(pool *pgxpool.Pool, logger *slog.Logger, workers *river.Workers, middleware []rivertype.Middleware, cfg Config) (*river.Client[pgx.Tx], error) {
 	return river.NewClient(riverpgxv5.New(pool), &river.Config{
 		JobTimeout:  cfg.JobTimeout,
 		Logger:      logger,
 		MaxAttempts: cfg.MaxAttempts,
+		Middleware:  middleware,
 		// When the context of Start is cancelled, River takes no new job
 		// and waits this long for the jobs in work.
 		SoftStopTimeout: cfg.StopTimeout,

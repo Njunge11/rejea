@@ -16,6 +16,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/riverqueue/river/rivertype"
+
 	"github.com/Njunge11/rejea/internal/config"
 	"github.com/Njunge11/rejea/internal/database"
 	"github.com/Njunge11/rejea/internal/ingest"
@@ -78,7 +80,8 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 	// River takes no new job and waits for the jobs in work.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	jobs, err := queue.NewClient(pool, logger, ingest.Workers(pool, store, logger), queue.Config{
+	failureRule := []rivertype.Middleware{ingest.FailureRule(pool, logger, cfg.FailureSaveTimeout)}
+	jobs, err := queue.NewClient(pool, logger, ingest.Workers(pool, store, logger), failureRule, queue.Config{
 		FileWorkers:  cfg.FileWorkers,
 		ParseWorkers: cfg.ParseWorkers,
 		IndexWorkers: cfg.IndexWorkers,

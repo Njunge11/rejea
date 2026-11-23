@@ -60,6 +60,9 @@ type Config struct {
 	// S3ReadTimeout is the longest time that a connection to S3 can be
 	// silent before a read fails.
 	S3ReadTimeout time.Duration
+	// FailureSaveTimeout is the time that the database gets to save the
+	// failure of a document.
+	FailureSaveTimeout time.Duration
 }
 
 const (
@@ -80,6 +83,7 @@ const (
 	defaultHealthTimeout         = 2 * time.Second
 	defaultJobStopTimeout        = 10 * time.Second
 	defaultS3ReadTimeout         = time.Minute
+	defaultFailureSaveTimeout    = 10 * time.Second
 )
 
 // Load reads the configuration through getenv, which has the signature of
@@ -150,6 +154,7 @@ func Load(getenv func(string) string) (Config, error) {
 		{"REJEA_HEALTH_TIMEOUT", &cfg.HealthTimeout, defaultHealthTimeout},
 		{"REJEA_JOB_STOP_TIMEOUT", &cfg.JobStopTimeout, defaultJobStopTimeout},
 		{"REJEA_S3_READ_TIMEOUT", &cfg.S3ReadTimeout, defaultS3ReadTimeout},
+		{"REJEA_FAILURE_SAVE_TIMEOUT", &cfg.FailureSaveTimeout, defaultFailureSaveTimeout},
 	} {
 		*setting.value = setting.def
 		text := getenv(setting.name)

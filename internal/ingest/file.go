@@ -4,11 +4,13 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 
@@ -30,15 +32,24 @@ type fileWorker struct {
 // Work computes the hash of the file and saves it. A file with the same
 // content as the file of a different document becomes a duplicate.
 //
-// An error makes River run the job again after a wait.
+// An error makes River run the job again after a wait. A new attempt skips
+// each stage that is complete.
 func (w *fileWorker) Work(ctx context.Context, job *river.Job[queue.FileArgs]) error {
 	start := time.Now()
 	id := job.Args.DocumentID
-	key, err := database.StorageKey(ctx, w.pool, id)
+	state, err := database.GetFileState(ctx, w.pool, id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		// A new attempt cannot find a document that does not exist.
+		return river.JobCancel(fmt.Errorf("the document %s does not exist", id))
+	}
 	if err != nil {
 		return err
 	}
-	hash, size, err := w.hash(ctx, key)
+	if state.Hashed || state.Status == database.StatusDuplicate {
+		w.logger.DebugContext(ctx, "file hash stage skipped: it is complete", "document", id)
+		return nil
+	}
+	hash, size, err := w.hash(ctx, state.StorageKey)
 	if err != nil {
 		return err
 	}
