@@ -54,6 +54,12 @@ type Config struct {
 	// HealthTimeout is the time that the database gets to answer the
 	// health check.
 	HealthTimeout time.Duration
+	// JobStopTimeout is the time that the jobs in work get to finish when
+	// the service stops. After it, the jobs are cancelled.
+	JobStopTimeout time.Duration
+	// S3ReadTimeout is the longest time that a connection to S3 can be
+	// silent before a read fails.
+	S3ReadTimeout time.Duration
 }
 
 const (
@@ -72,6 +78,8 @@ const (
 	defaultHTTPIdleTimeout       = 5 * time.Minute
 	defaultShutdownTimeout       = 10 * time.Second
 	defaultHealthTimeout         = 2 * time.Second
+	defaultJobStopTimeout        = 10 * time.Second
+	defaultS3ReadTimeout         = time.Minute
 )
 
 // Load reads the configuration through getenv, which has the signature of
@@ -140,6 +148,8 @@ func Load(getenv func(string) string) (Config, error) {
 		{"REJEA_HTTP_IDLE_TIMEOUT", &cfg.HTTPIdleTimeout, defaultHTTPIdleTimeout},
 		{"REJEA_SHUTDOWN_TIMEOUT", &cfg.ShutdownTimeout, defaultShutdownTimeout},
 		{"REJEA_HEALTH_TIMEOUT", &cfg.HealthTimeout, defaultHealthTimeout},
+		{"REJEA_JOB_STOP_TIMEOUT", &cfg.JobStopTimeout, defaultJobStopTimeout},
+		{"REJEA_S3_READ_TIMEOUT", &cfg.S3ReadTimeout, defaultS3ReadTimeout},
 	} {
 		*setting.value = setting.def
 		text := getenv(setting.name)

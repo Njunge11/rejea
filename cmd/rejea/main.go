@@ -14,9 +14,12 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/Njunge11/rejea/internal/config"
 	"github.com/Njunge11/rejea/internal/database"
+	"github.com/Njunge11/rejea/internal/ingest"
+	"github.com/Njunge11/rejea/internal/queue"
 	"github.com/Njunge11/rejea/internal/server"
 	"github.com/Njunge11/rejea/internal/storage"
 )
@@ -60,15 +63,45 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 		return err
 	}
 
-	store, err := storage.New(ctx, storage.Config{
+	store, err := storage.New(ctx, logger, storage.Config{
 		Bucket:        cfg.S3Bucket,
 		Region:        cfg.S3Region,
 		UploadURLLife: cfg.UploadURLLife,
 		MaxFileBytes:  cfg.MaxFileBytes,
+		ReadTimeout:   cfg.S3ReadTimeout,
 	})
 	if err != nil {
 		return err
 	}
+
+	// The workers run in this process. They stop when ctx is cancelled:
+	// River takes no new job and waits for the jobs in work.
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	jobs, err := queue.NewClient(pool, logger, ingest.Workers(pool, store, logger), queue.Config{
+		FileWorkers:  cfg.FileWorkers,
+		ParseWorkers: cfg.ParseWorkers,
+		IndexWorkers: cfg.IndexWorkers,
+		JobTimeout:   cfg.JobTimeout,
+		MaxAttempts:  cfg.JobMaxAttempts,
+		StopTimeout:  cfg.JobStopTimeout,
+	})
+	if err != nil {
+		return err
+	}
+	if err := jobs.Start(ctx); err != nil {
+		return err
+	}
+	defer func() {
+		cancel()
+		// After the stop timeout River cancels the jobs. A job that does
+		// not obey gets the shutdown timeout, then the service stops.
+		select {
+		case <-jobs.Stopped():
+		case <-time.After(cfg.JobStopTimeout + cfg.ShutdownTimeout):
+			logger.Error("the jobs did not stop in time")
+		}
+	}()
 	serverCfg := server.Config{
 		ReadHeaderTimeout: cfg.HTTPReadHeaderTimeout,
 		ReadTimeout:       cfg.HTTPReadTimeout,

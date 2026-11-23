@@ -57,10 +57,11 @@ These points are not in the plan. Each one is settled before its item starts.
   - `rejea serve` makes the file storage at its start.
   - Proof: a request for 3 files gives 3 URLs and 3 rows. A request over a limit is refused.
 
-- [ ] **6. File worker: hash and duplicate check**
-  - The worker downloads the file and computes its hash in one pass.
+- [x] **6. File worker: hash and duplicate check**
+  - The worker downloads the file and computes its hash in one pass. The AWS SDK checks the bytes against the checksum that S3 keeps.
   - The unique `file_hash` finds a duplicate. A duplicate gets the status `duplicate` and stops.
-  - `rejea serve` starts River.
+  - `rejea serve` starts River. At a stop, the jobs in work get a set time to finish, then go back to the queue.
+  - Settings with defaults: time for jobs to finish at a stop (10 seconds), longest silence of a connection to S3 (1 minute).
   - Proof: a file gets its hash. The same file a second time gets `duplicate`.
 
 - [ ] **7. Failure rule for all workers**

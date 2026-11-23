@@ -13,7 +13,7 @@ A RAG (retrieval-augmented generation) engine for PDF and Word documents, with h
 
 ## Status
 
-Built: the schema, the migrations, the job queue. Not built: ingestion, retrieval, generation.
+Built: the schema, the migrations, the job queues, upload URLs, the file hash and the duplicate check. Not built: the rest of ingestion, retrieval, generation.
 
 ## Requirements
 

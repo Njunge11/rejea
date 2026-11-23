@@ -6,11 +6,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/smithy-go/logging"
 )
 
 // The limits of S3.
@@ -31,6 +34,10 @@ type Config struct {
 	UploadURLLife time.Duration
 	// MaxFileBytes is the largest file that a client can upload.
 	MaxFileBytes int64
+	// ReadTimeout is the longest time that a connection to S3 can be silent
+	// before a read fails. Each byte that arrives starts the time again,
+	// so a slow download that moves does not fail.
+	ReadTimeout time.Duration
 }
 
 // Store reads and writes the files in the bucket.
@@ -42,8 +49,9 @@ type Store struct {
 }
 
 // New makes a Store. The AWS credentials come from the default sources of
-// the AWS SDK: the environment, a profile, or the role of the machine.
-func New(ctx context.Context, cfg Config) (*Store, error) {
+// the AWS SDK: the environment, a profile, or the role of the machine. The
+// SDK logs through logger.
+func New(ctx context.Context, logger *slog.Logger, cfg Config) (*Store, error) {
 	if cfg.Bucket == "" || cfg.Region == "" {
 		return nil, errors.New("the S3 bucket and its region are not set")
 	}
@@ -55,8 +63,21 @@ func New(ctx context.Context, cfg Config) (*Store, error) {
 		return nil, fmt.Errorf("the largest file is %d bytes: S3 permits 1 to %d bytes in one upload request",
 			cfg.MaxFileBytes, int64(maxPutBytes))
 	}
+	if cfg.ReadTimeout <= 0 {
+		return nil, fmt.Errorf("the S3 read timeout is %s: it must be more than zero", cfg.ReadTimeout)
+	}
 	awsCfg, err := config.LoadDefaultConfig(ctx,
 		config.WithRegion(cfg.Region),
+		config.WithLogger(logging.LoggerFunc(func(class logging.Classification, format string, v ...any) {
+			level := slog.LevelDebug
+			if class == logging.Warn {
+				level = slog.LevelWarn
+			}
+			logger.Log(ctx, level, "aws sdk: "+fmt.Sprintf(format, v...))
+		})),
+		// The SDK has no read timeout for S3. Without one, a download on a
+		// connection that goes silent waits until its job is cancelled.
+		config.WithHTTPClient(awshttp.NewBuildableClient().WithReadTimeout(cfg.ReadTimeout)),
 		// S3 refuses an upload URL when the credentials that signed it are
 		// expired, even if the URL has time left. Thus the SDK must get new
 		// credentials when the current ones have less time left than the
