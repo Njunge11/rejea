@@ -100,11 +100,12 @@ func Load(getenv func(string) string) (Config, error) {
 			StopTimeout:  env.duration("REJEA_JOB_STOP_TIMEOUT", 10*time.Second),
 		},
 		Documents: documents.Config{
-			MaxUploadFiles: env.count("REJEA_MAX_UPLOAD_FILES", 100),
-			MaxFileBytes:   maxFileBytes,
-			UploadMaxAge:   env.duration("REJEA_UPLOAD_MAX_AGE", 24*time.Hour),
-			ListLimit:      env.count("REJEA_LIST_LIMIT", 50),
-			MaxListLimit:   env.count("REJEA_MAX_LIST_LIMIT", 1000),
+			MaxUploadFiles:   env.count("REJEA_MAX_UPLOAD_FILES", 100),
+			MaxFileBytes:     maxFileBytes,
+			UploadMaxAge:     env.duration("REJEA_UPLOAD_MAX_AGE", 24*time.Hour),
+			ListLimit:        env.count("REJEA_LIST_LIMIT", 50),
+			MaxListLimit:     env.count("REJEA_MAX_LIST_LIMIT", 1000),
+			ReindexBatchSize: env.count("REJEA_REINDEX_BATCH_SIZE", 500),
 		},
 		Ingest: ingest.Config{
 			FailureSaveTimeout:  env.duration("REJEA_FAILURE_SAVE_TIMEOUT", 10*time.Second),

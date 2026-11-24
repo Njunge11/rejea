@@ -3,10 +3,12 @@ package documents
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/riverqueue/river"
 
 	"github.com/Njunge11/rejea/internal/database"
 	"github.com/Njunge11/rejea/internal/queue"
@@ -88,4 +90,90 @@ func (s *Service) SaveChunks(ctx context.Context, id uuid.UUID, chunks []Chunk) 
 		}
 		return database.ReplaceChunks(ctx, tx, id, chunks)
 	})
+}
+
+// reindexFrom is the statuses from which a parsed document can go to the
+// index work again: it is indexed, or its parse ended before the service
+// had an index worker.
+var reindexFrom = []string{StatusIndexed, StatusParsing}
+
+// Reindex puts a parsed document in the index work again: the document
+// gets the status indexing and a new index job, both in one transaction.
+// The index worker then makes its chunks and their vectors again from the
+// blocks that the parse saved. The parser does not run. The document keeps
+// its old chunks until the new chunks take their place.
+//
+// The error is ErrNotFound when no document has the ID. It is a Conflict
+// when the document has no complete parse, or when it is in the index work
+// already.
+func (s *Service) Reindex(ctx context.Context, id uuid.UUID) error {
+	return pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
+		doc, err := database.GetDocument(ctx, tx, id)
+		if err != nil {
+			return err
+		}
+		switch {
+		case doc.Status == StatusIndexing:
+			return &Conflict{Detail: "The document is in the index work already."}
+		case doc.Status == StatusFailed:
+			return &Conflict{Detail: "The document has the status failed. Send POST /documents/" + id.String() + "/retry: it starts the document again and skips each stage that is complete."}
+		case doc.Parser == "" || !slices.Contains(reindexFrom, doc.Status):
+			return &Conflict{Detail: fmt.Sprintf("The document has the status %s and no complete parse. Only a parsed document can get new chunks.", doc.Status)}
+		}
+		moved, err := database.ChangeStatus(ctx, tx, id, doc.Status, StatusIndexing)
+		if err != nil {
+			return err
+		}
+		if !moved {
+			return &Conflict{Detail: "The status of the document changed during the request. Send the request again."}
+		}
+		if _, err := s.jobs.InsertTx(ctx, tx, queue.IndexArgs{DocumentID: id}, nil); err != nil {
+			return fmt.Errorf("add the index job of the document %s: %w", id, err)
+		}
+		return nil
+	})
+}
+
+// ReindexAll puts each parsed document in the index work again, as Reindex
+// does for one document. It gives the number of documents.
+//
+// It works in groups of ReindexBatchSize documents, each in a transaction
+// of its own: a document has the status indexing and its job, or neither.
+// It leaves out a document that is in the index work already, and a
+// document that failed.
+func (s *Service) ReindexAll(ctx context.Context) (int, error) {
+	total := 0
+	after := uuid.Nil
+	for {
+		var ids []uuid.UUID
+		err := pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
+			var err error
+			ids, err = database.LockParsedIDs(ctx, tx, reindexFrom, after, s.cfg.ReindexBatchSize)
+			if err != nil || len(ids) == 0 {
+				return err
+			}
+			if err := database.SetStatusOfMany(ctx, tx, ids, StatusIndexing); err != nil {
+				return err
+			}
+			jobs := make([]river.InsertManyParams, len(ids))
+			for i, id := range ids {
+				jobs[i] = river.InsertManyParams{Args: queue.IndexArgs{DocumentID: id}}
+			}
+			if _, err := s.jobs.InsertManyTx(ctx, tx, jobs); err != nil {
+				return fmt.Errorf("add the index jobs of %d documents: %w", len(ids), err)
+			}
+			return nil
+		})
+		if err != nil {
+			return total, err
+		}
+		if len(ids) == 0 {
+			return total, nil
+		}
+		total += len(ids)
+		// The next group starts after the last document of this one. A
+		// document that the worker indexed during the loop is thus not
+		// taken a second time.
+		after = ids[len(ids)-1]
+	}
 }

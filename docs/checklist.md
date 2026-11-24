@@ -261,9 +261,17 @@ These points are not in the plan. Each one is settled before its item starts.
   - Not proved: a document of more than 13 pages, and more than 4 documents at the same time.
   - A document that was parsed before this item keeps the status `parsing`: item 23 gives the command for it.
 
-- [ ] **23. Chunk again without a new parse**
+- [x] **23. Chunk again without a new parse**
   - A command that makes the chunks of a document again from its saved blocks.
   - **Step check of the plan:** every chunk has text, pages and an embedding. Re-chunking runs without re-parsing.
+  - The reason: a document gets its chunks and vectors one time. After a change of the chunk size or of the model, the saved chunks are old, and vectors from two models cannot be compared. The usual name is re-embedding (Qdrant and MongoDB Voyage AI documents).
+  - Built: `rejea reindex --all` and `rejea reindex <document-id>...`, and `make reindex` (with `DOC=<id>` for one document). The command gives a parsed document the status `indexing` and a new index job in one transaction. The service does the work of item 22 with its own settings. For all documents, it works in groups of `REJEA_REINDEX_BATCH_SIZE`.
+  - A document keeps its old chunks until the new chunks take their place in one transaction.
+  - Proved by a run: with 512 tokens, 13 documents went from 83 to 224 chunks in 61 seconds. With the old setting again: 83 chunks. The blocks, the parse times of the pages and the log of the parser did not change: the parser did not run.
+  - Step check, on the 224 chunks: each has text, blocks of its own document and a vector of 1,024 numbers, and each of the 211 chunks of a PDF has pages in the document.
+  - Proved: a document that was parsed before item 22 got its chunks with `make reindex DOC=<id>`.
+  - Proved fault cases, each with its message: no argument, a text that is not an ID, an ID of no document, a failed document (the message gives the retry request), a document with no complete parse, a duplicate, a document in the index work already, the service not started.
+  - Not built: a change of the model with no time in which the search is wrong (the two-collection method of Qdrant). The search of a later item decides which chunks it reads during a reindex.
 
 ## Test set (plan step 5)
 

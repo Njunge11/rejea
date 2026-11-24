@@ -82,3 +82,34 @@ func EmbeddingDimensions(ctx context.Context, db DB) (int, error) {
 	}
 	return dimensions, nil
 }
+
+// LockParsedIDs gives the IDs of the documents that have a parser and one
+// of the statuses, in the order of their IDs, from the first ID after the
+// given one. It locks their rows until the transaction ends, and it leaves
+// out a row that a different transaction has locked.
+func LockParsedIDs(ctx context.Context, db DB, statuses []string, after uuid.UUID, limit int) ([]uuid.UUID, error) {
+	rows, err := db.Query(ctx,
+		`select id from documents
+		 where id > $2 and parser is not null and status = any($1)
+		 order by id limit $3
+		 for update skip locked`,
+		statuses, after, limit,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("list the parsed documents: %w", err)
+	}
+	ids, err := pgx.CollectRows(rows, pgx.RowTo[uuid.UUID])
+	if err != nil {
+		return nil, fmt.Errorf("list the parsed documents: %w", err)
+	}
+	return ids, nil
+}
+
+// SetStatusOfMany gives each of the documents a status.
+func SetStatusOfMany(ctx context.Context, db DB, ids []uuid.UUID, status string) error {
+	_, err := db.Exec(ctx, `update documents set status = $2 where id = any($1)`, ids, status)
+	if err != nil {
+		return fmt.Errorf("give %d documents the status %s: %w", len(ids), status, err)
+	}
+	return nil
+}

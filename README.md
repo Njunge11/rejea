@@ -13,7 +13,7 @@ A RAG (retrieval-augmented generation) engine for PDF and Word documents, with h
 
 ## Status
 
-Built: the schema, the migrations, the job queues, upload URLs, the confirm of an upload, the file hash, the duplicate check, the failure rule, the unpack of archives (zip, tar, tar.gz), the job that fails old uploads, the status of one document and of the list of documents, the retry of a failed document, the parser service, the page images of a PDF, the blocks of a PDF and of a Word file, the chunker, the embeddings, and the index step that saves the chunks of a document with their vectors. Not built: the rest of ingestion, retrieval, generation.
+Built: the schema, the migrations, the job queues, upload URLs, the confirm of an upload, the file hash, the duplicate check, the failure rule, the unpack of archives (zip, tar, tar.gz), the job that fails old uploads, the status of one document and of the list of documents, the retry of a failed document, the parser service, the page images of a PDF, the blocks of a PDF and of a Word file, the chunker, the embeddings, the index step that saves the chunks of a document with their vectors, and the command that makes the chunks again. Not built: the rest of ingestion, retrieval, generation.
 
 ## Run
 
@@ -74,6 +74,25 @@ After the parse, a document has the status `indexing`. The index worker cuts its
 A fault that a new attempt can correct (the provider gives no answer) makes the job run again after a wait. After `REJEA_JOB_MAX_ATTEMPTS` attempts, the document has the status `failed` and the reason. `POST /documents/{id}/retry` starts a failed document again: it skips the parse that is complete. A document with no text fails at once.
 
 `REJEA_INDEX_WORKERS` is the number of documents in the index work at the same time.
+
+### New chunks for the documents in the database
+
+A document gets its chunks and its vectors one time, with the chunk size and the embedding model of that day. After a change of `REJEA_CHUNK_MAX_TOKENS` or of the model, the documents in the database still have the old chunks. Vectors from two models cannot be compared, so after a change of the model the search cannot find the old documents correctly.
+
+`make reindex` gives each parsed document new chunks and new vectors. It uses the blocks that the parse saved: the parser does not run.
+
+```sh
+# 1. Change the setting in .env, then start the service again with it.
+make up
+# 2. Put each parsed document in the index queue again.
+make reindex
+# One document:
+make reindex DOC=01a20e0e-81f5-7043-922b-4ed3749f5436
+```
+
+The command adds the jobs, and the service does the work. A document has the status `indexing` until its new chunks are saved, and it keeps its old chunks until then. The command refuses a document with no complete parse, and it says why. Without Docker, the command is `go run ./cmd/rejea reindex --all`.
+
+A model with a different number of dimensions also needs a migration of the column `chunks.embedding`.
 
 ## Embeddings
 

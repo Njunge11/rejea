@@ -48,8 +48,8 @@ func main() {
 
 // run writes the result of a command to stdout and the log to stderr.
 func run(ctx context.Context, args []string, getenv func(string) string, stdout, stderr io.Writer) error {
-	if len(args) != 1 || (args[0] != "migrate" && args[0] != "serve" && args[0] != "health") {
-		return errors.New("usage: rejea migrate | rejea serve | rejea health")
+	if !validCommand(args) {
+		return errors.New(usage)
 	}
 	cfg, err := config.Load(getenv)
 	if err != nil {
@@ -83,6 +83,9 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 	// port. If not, the reason shows only at the first request.
 	if err := database.Current(ctx, pool); err != nil {
 		return err
+	}
+	if args[0] == "reindex" {
+		return reindex(ctx, pool, logger, cfg, args[1:], stdout)
 	}
 	store, err := storage.New(ctx, logger, cfg.Storage)
 	if err != nil {

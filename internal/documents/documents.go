@@ -73,6 +73,9 @@ type Config struct {
 	// MaxListLimit is the largest number of documents that a caller can
 	// ask for in one page of the list.
 	MaxListLimit int
+	// ReindexBatchSize is the number of documents that go to the index
+	// work again in one transaction.
+	ReindexBatchSize int
 }
 
 // Document is a document as the database keeps it.
