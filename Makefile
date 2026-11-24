@@ -12,7 +12,7 @@ need = @command -v $(1) >/dev/null 2>&1 || { echo "$(1) is not installed. $(2)" 
 need-go = $(call need,go,Install Go 1.26: https://go.dev/dl/)
 need-docker = $(call need,docker,Install Docker: https://docs.docker.com/get-started/get-docker/)
 
-.PHONY: up down reindex db-up db-down migrate serve parser-install parser word-install tokenizer-install build test lint vet docker-check check
+.PHONY: up down reindex testset-check db-up db-down migrate serve parser-install parser word-install tokenizer-install build test lint vet docker-check check
 
 up: ## Start all of Rejea on this machine: the one command for a new clone.
 	@scripts/up
@@ -24,6 +24,10 @@ reindex: ## Make the chunks of each parsed document again, with no new parse. Fo
 	$(need-docker)
 	@docker compose ps --status running --services 2>/dev/null | grep -qx rejea || { echo "Rejea does not run, and the command is in its container. Start it first: make up" >&2; exit 1; }
 	@docker compose exec rejea rejea reindex $(or $(DOC),--all)
+
+testset-check: ## Load and examine the question file of the test set.
+	$(need-go)
+	@go run ./cmd/testset check testset/questions.json
 
 db-up: ## Start the database and the file store only, for a service that runs on the machine (make serve).
 	$(need-docker)
@@ -82,4 +86,4 @@ docker-check: ## Check the Dockerfiles and the Compose file.
 	docker build --check docker/postgres
 	docker compose config --quiet
 
-check: lint vet build test docker-check ## Run each check of the project. CI runs the same targets.
+check: lint vet build test docker-check testset-check ## Run each check of the project. CI runs the same targets.

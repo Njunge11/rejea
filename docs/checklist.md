@@ -275,9 +275,16 @@ These points are not in the plan. Each one is settled before its item starts.
 
 ## Test set (plan step 5)
 
-- [ ] **24. Question file and its script** (needs point C)
+- [x] **24. Question file and its script** (needs point C)
   - 30 to 50 questions: fact lookup, reasoning across passages, summary across documents. Each has its expected answer and source page. A few have no answer in the documents.
   - **Step check of the plan:** a script can load them.
+  - The technique: a question file with the correct answer and the correct pages for each question (the form of GraphRAG-Bench and of BEIR). The three kinds are levels 1 to 3 of GraphRAG-Bench. The questions with no answer are those of SQuAD 2.0: they look like the others, and the correct result is no answer.
+  - Built: `testset/questions.json`, the loader `internal/testset`, the command `testset check <question file>` and `make testset-check` (also in `make check` and in CI).
+  - The file: 13 public KNBS reports with 289 pages, one or more of each of the 10 report types of the collection (cpi, ppi, cipi, bop, labour, gdp_quarterly, gcp, lei, county_stats, poverty). Each document has its URL, its SHA-256 hash and its number of pages. One report is a scan, and one is an infographic.
+  - The questions: 48. 23 `fact`, 12 `reasoning`, 7 `summary` (2 or 3 documents each), 6 `no_answer`. Each has its answer, its source pages and its evidence (the words of the page).
+  - Proved by a run: the script loads the file and gives the counts. Each of the 90 evidence quotes is on the page that the question names: a script compared them with the text of the PDF files, and the 3 pages of the scan were read by eye. A search of all the documents found no text that answers one of the 6 `no_answer` questions.
+  - Proved fault cases, each with its message: no file, JSON with a fault (with the line), a field with a wrong name, a wrong type, a page that the document does not have, a document that is not in the list, a summary with one document, a `no_answer` with an answer, an ID two times, no answer text, no evidence, a wrong hash, too few questions, a kind with no questions.
+  - Not built: the runner that sends the questions to the service and gives the measures (recall at K, MRR, time, correct answers). The search does not exist yet: item 27 (search report) and item 30 (answer report) add the runner.
 
 ## Search (plan step 6)
 

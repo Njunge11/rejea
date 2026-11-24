@@ -13,7 +13,7 @@ A RAG (retrieval-augmented generation) engine for PDF and Word documents, with h
 
 ## Status
 
-Built: the schema, the migrations, the job queues, upload URLs, the confirm of an upload, the file hash, the duplicate check, the failure rule, the unpack of archives (zip, tar, tar.gz), the job that fails old uploads, the status of one document and of the list of documents, the retry of a failed document, the parser service, the page images of a PDF, the blocks of a PDF and of a Word file, the chunker, the embeddings, the index step that saves the chunks of a document with their vectors, and the command that makes the chunks again. Not built: the rest of ingestion, retrieval, generation.
+Built: the schema, the migrations, the job queues, upload URLs, the confirm of an upload, the file hash, the duplicate check, the failure rule, the unpack of archives (zip, tar, tar.gz), the job that fails old uploads, the status of one document and of the list of documents, the retry of a failed document, the parser service, the page images of a PDF, the blocks of a PDF and of a Word file, the chunker, the embeddings, the index step that saves the chunks of a document with their vectors, the command that makes the chunks again, and the question file of the test set. Not built: the rest of ingestion, retrieval, generation.
 
 ## Run
 
@@ -112,6 +112,41 @@ When the service starts, it sends one small request to the model. With no values
 
 The code for a provider is an adapter behind one interface ([internal/embed](internal/embed/embed.go)). The registry in [internal/models](internal/models/models.go) has the name of each provider, and `REJEA_EMBED_PROVIDER` selects one. The new attempts, the time limit and the usage log are the same code for each provider. The usage log is one line for each request: the model, the number of texts, the tokens that the provider counted, the time.
 
+## Test set
+
+`testset/questions.json` has the questions that measure the search and the answers of the service. Each later change is measured with the same questions.
+
+- **Documents:** 13 public reports of the Kenya National Bureau of Statistics, with one or more reports of each of its 10 report types. Each document has its URL and its SHA-256 hash, so that you can get the same file.
+- **Questions:** 48, of 4 types.
+
+| Type | The question | Number |
+| --- | --- | --- |
+| `fact` | One passage answers it. | 23 |
+| `reasoning` | It needs two or more passages together. | 12 |
+| `summary` | It needs passages of two or more documents. | 7 |
+| `no_answer` | The documents cannot answer it. The correct result is no answer. | 6 |
+
+One question:
+
+```json
+{
+  "id": "fact-cpi-2011-inflation",
+  "type": "fact",
+  "question": "What was the overall inflation rate in Kenya in April 2011?",
+  "answer": "12.05 per cent.",
+  "sources": [{ "document": "cpi-2011-04", "pages": [1] }],
+  "evidence": "p.1: \"The overall inflation rate stood at 12.05 per cent in April 2011\""
+}
+```
+
+`sources` gives each page that has the answer or a part of it. The first page of a document is 1. `evidence` gives the words of the page. A question of the type `no_answer` has no `answer` and no `sources`, and its `evidence` tells why the documents have no answer.
+
+```sh
+make testset-check
+```
+
+The command loads the file and examines it. It names each fault with its question and its correction.
+
 ## File storage
 
 The files are in a store with the API of S3.
@@ -153,7 +188,7 @@ make db-up               # the database and the file store, in containers
 make migrate
 make serve               # http://127.0.0.1:8080/healthz
 make parser              # the parser, in a second terminal
-make check               # lint, vet, build, tests, Docker checks
+make check               # lint, vet, build, tests, Docker checks, the question file
 ```
 
 Use `make build`, `make serve` and `make test`, not the bare `go` commands: they tell the Go compiler where the tokenizers library is.
