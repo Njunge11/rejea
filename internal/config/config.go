@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Njunge11/rejea/internal/chunk"
 	"github.com/Njunge11/rejea/internal/documents"
 	"github.com/Njunge11/rejea/internal/ingest"
 	"github.com/Njunge11/rejea/internal/parse"
@@ -18,6 +19,7 @@ import (
 	"github.com/Njunge11/rejea/internal/queue"
 	"github.com/Njunge11/rejea/internal/server"
 	"github.com/Njunge11/rejea/internal/storage"
+	"github.com/Njunge11/rejea/internal/tokens"
 )
 
 // Config is the configuration of the service. Each part of the service
@@ -40,6 +42,8 @@ type Config struct {
 	PDF       pdf.Config
 	Parse     parse.Config
 	Word      parse.WordConfig
+	Chunk     chunk.Config
+	Tokens    tokens.Config
 	Server    server.Config
 }
 
@@ -113,6 +117,12 @@ func Load(getenv func(string) string) (Config, error) {
 			Path:    env.text("REJEA_WORD_READER_PATH", "bin/office-oxide"),
 			Timeout: env.duration("REJEA_WORD_READER_TIMEOUT", time.Minute),
 			TempDir: env.text("REJEA_TEMP_DIR", ""),
+		},
+		Chunk: chunk.Config{
+			MaxTokens: env.count("REJEA_CHUNK_MAX_TOKENS", 4096),
+		},
+		Tokens: tokens.Config{
+			Path: env.text("REJEA_TOKENIZER_PATH", "models/qwen3-embedding-0.6b/tokenizer.json"),
 		},
 		Server: server.Config{
 			ReadHeaderTimeout: env.duration("REJEA_HTTP_READ_HEADER_TIMEOUT", 10*time.Second),

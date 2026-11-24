@@ -47,9 +47,17 @@ linters:
             - {pkg: "net/http$", desc: "the database package does no HTTP work"}
         parts:
           list-mode: lax
-          files: ["**/internal/storage/*.go", "**/internal/queue/*.go", "**/internal/pdf/*.go", "**/internal/parse/*.go", "!$test"]
+          files: ["**/internal/storage/*.go", "**/internal/queue/*.go", "**/internal/pdf/*.go", "**/internal/parse/*.go", "**/internal/tokens/*.go", "!$test"]
           deny:
             - {pkg: "github.com/Njunge11/rejea/internal/", desc: "this package is a base part: it uses no other part of the service"}
+        # The chunker is a base part that knows the types of a block.
+        chunk:
+          list-mode: lax
+          files: ["**/internal/chunk/*.go", "!$test"]
+          allow:
+            - "github.com/Njunge11/rejea/internal/parse"
+          deny:
+            - {pkg: "github.com/Njunge11/rejea/internal/", desc: "the chunker uses the block types of the package parse, and no other part of the service"}
     forbidigo:
       analyze-types: true
       forbid:

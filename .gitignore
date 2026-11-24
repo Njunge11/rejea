@@ -4,6 +4,10 @@
 # Build output
 /bin/
 
+# The tokenizers library and the tokenizer of the embedding model
+/lib/
+/models/
+
 # The Python environments of the parser service
 /parser/.venv-*/
 

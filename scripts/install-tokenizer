@@ -1,0 +1,64 @@
+#!/bin/sh
+# Installs the two files that the service needs to count the tokens of a
+# text:
+#
+#   lib/libtokenizers.a   the tokenizers library of Hugging Face, which the
+#                         Go compiler links into the service
+#   models/qwen3-embedding-0.6b/tokenizer.json
+#                         the tokenizer of the embedding model
+#
+# It downloads each file of one fixed version, and checks its SHA-256 hash.
+#
+# For a new version of the library, change the version and the four hashes,
+# and the version of github.com/daulet/tokenizers in go.mod: the two must be
+# the same. For a new embedding model, change the model, the revision and
+# the hash, and REJEA_TOKENIZER_PATH.
+set -eu
+cd "$(dirname "$0")/.."
+
+library_version="1.27.0"
+case "$(uname -s)-$(uname -m)" in
+	Darwin-arm64) platform="darwin-arm64" library_hash="fb84b8b2e349a5952767ffe80ccd862fc44084de47f3b0cc3f0b7c9d4e649cf7" ;;
+	Darwin-x86_64) platform="darwin-x86_64" library_hash="6239efe5a81fde8089ef2df8ae710366542b4e5deab6d8ecb74d7d1862db2ddb" ;;
+	Linux-x86_64) platform="linux-amd64" library_hash="72556cdca798dd4ea7cdaba308e5f0d68a8cb93b67c96edf485b7a0edd7b07f4" ;;
+	Linux-aarch64 | Linux-arm64) platform="linux-arm64" library_hash="e96545ad05930c26f51f63d932ee6d3bbd32bbed149e102c5290d587a2293067" ;;
+	*)
+		echo "tokenizer: no library for $(uname -s) $(uname -m)" >&2
+		exit 1
+		;;
+esac
+
+model="Qwen/Qwen3-Embedding-0.6B"
+model_revision="97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3"
+model_hash="def76fb086971c7867b829c23a26261e38d9d74e02139253b38aeb9df8b4b50a"
+model_dir="models/qwen3-embedding-0.6b"
+
+work="$(mktemp -d -t rejea-tokenizer.XXXXXX)"
+trap 'rm -rf "$work"' EXIT
+
+# download <url> <file> <hash>: gets the file and stops if its hash is wrong.
+download() {
+	curl --fail --silent --show-error --location --output "$2" "$1"
+	if command -v sha256sum >/dev/null 2>&1; then
+		found="$(sha256sum "$2" | cut -d ' ' -f 1)"
+	else
+		found="$(shasum -a 256 "$2" | cut -d ' ' -f 1)"
+	fi
+	if [ "$found" != "$3" ]; then
+		echo "tokenizer: the hash of $1 is $found, not $3" >&2
+		exit 1
+	fi
+}
+
+download "https://github.com/daulet/tokenizers/releases/download/v$library_version/libtokenizers.$platform.tar.gz" \
+	"$work/library.tar.gz" "$library_hash"
+tar -xzf "$work/library.tar.gz" -C "$work" libtokenizers.a
+mkdir -p lib
+mv "$work/libtokenizers.a" lib/libtokenizers.a
+echo "tokenizer: the library $library_version is in lib/libtokenizers.a"
+
+download "https://huggingface.co/$model/resolve/$model_revision/tokenizer.json" \
+	"$work/tokenizer.json" "$model_hash"
+mkdir -p "$model_dir"
+mv "$work/tokenizer.json" "$model_dir/tokenizer.json"
+echo "tokenizer: the tokenizer of $model is in $model_dir/tokenizer.json"

@@ -200,13 +200,18 @@ These points are not in the plan. Each one is settled before its item starts.
 
 ## Chunk and index (plan step 4)
 
-- [ ] **20. Chunker**
+- [x] **20. Chunker**
   - Split at headings. Split a long section at paragraphs, merge short ones, keep each chunk under 4,096 tokens. Start each chunk with the title and the heading path.
-  - Logic only, with tests. It writes no rows, because a `chunks` row needs its embedding.
-  - The parser gives no level for a heading. Its API has a second endpoint, `/restructure-pages`, which sets the levels of the headings across the pages of a document and joins a table that continues on the next page. Decide here if the chunker uses it.
-  - The blocks of the types header, footer, page_number and aside are not body text. PaddleOCR leaves them, and footnotes, out of its own Markdown.
-  - The parser writes a superscript and underlined text in the notation of formulas, such as `31^{st}` and `$ \underline{\text{info@knbs.or.ke}} $`: 11 of 500 blocks in the step check of item 19. The text stays as the parser gives it. Decide here if the chunk text gets a clean form for the search.
-  - A Word file gives the level of each heading (`blocks.level`). A PDF gives none.
+  - Logic only. It writes no rows, because a `chunks` row needs its embedding.
+  - The method is the HybridChunker of Docling: each block gets the path of the headings above it, a block that is too large is split, and blocks that are next to each other in one section are put together up to the limit. A heading with no text below it is a chunk of its own (the Docling option `always_emit_headings`): 11 of 64 headings in the 12 documents of item 19.
+  - The limit is for the full text of a chunk: the heading path, an empty line, the body. It is the setting `REJEA_CHUNK_MAX_TOKENS`. Cloudflare gives the model a context of 8,192 tokens.
+  - Token count: the tokenizers library of Hugging Face (Rust) through the Go binding `daulet/tokenizers` 1.27.0, with the `tokenizer.json` of Qwen3-Embedding-0.6B. `make tokenizer-install` gets the two, each with its SHA-256 hash. The service is thus built with CGO. Measured: 690 texts, 0 differences from the Python library, 155,000 tokens in 118 ms. A count of characters is not safe: a table has 1.7 characters for each token and a paragraph has 4.1. The pure Go library `sugarme/tokenizer` cannot read the tokenizer of the model.
+  - A table that is too large is split at its rows, as the table chunker of Unstructured does: each part starts with the header rows, rows that a cell of more than one row holds together stay in one part, and such rows that are too large for one part go one by one, each with a copy of the cell that covers it. The parser marks no header row, so the header rows are the first row and the rows that its cells cover. 2 tables of the 12 documents are larger than 4,096 tokens.
+  - Other text that is too large is split by the recursive character splitter of LangChain (`langchaingo`): at empty lines, then lines, then spaces.
+  - A PDF heading has no level, so the heading path of a PDF is the title and the nearest heading. Docling and Unstructured do the same by default. The chunker reads `blocks.level`, so a later source of levels needs no change of the chunker. The endpoint `/restructure-pages` of the parser is not used: it needs the full answer of the parser for each page, which the service does not keep.
+  - Header, footer and page number blocks are in no chunk. Each other block with text is in a chunk: also footnotes and text in the margin, as in Docling.
+  - Proof: the blocks of the 12 documents of item 19, at limits of 4,096, 512, 128 and 32 tokens, checked with the Python library: no chunk over the limit, each block in a chunk, each split table equal to the original cell by cell, the heading path and the pages of each chunk, and no two chunks of one section that fit in one. 48 runs, 0 faults. The small limits found two faults that other documents can cause at 4,096, and both are corrected: the header rows of a table were in no part when no row fits with them, and rows held together by one cell were cut as text.
+  - Not proved: the library on Linux counts the same as on the Mac. CI builds the service with it, and item 22 runs it.
 
 - [ ] **21. Embed port, the Cloudflare adapter, the registry and the configurator**
   - One small interface for embeddings, and the adapter for Qwen3-Embedding-0.6B on Cloudflare Workers AI.

@@ -13,11 +13,12 @@ A RAG (retrieval-augmented generation) engine for PDF and Word documents, with h
 
 ## Status
 
-Built: the schema, the migrations, the job queues, upload URLs, the confirm of an upload, the file hash, the duplicate check, the failure rule, the unpack of archives (zip, tar, tar.gz), the job that fails old uploads, the status of one document and of the list of documents, the retry of a failed document, the parser service, the page images of a PDF, and the blocks of a PDF and of a Word file. Not built: the rest of ingestion, retrieval, generation.
+Built: the schema, the migrations, the job queues, upload URLs, the confirm of an upload, the file hash, the duplicate check, the failure rule, the unpack of archives (zip, tar, tar.gz), the job that fails old uploads, the status of one document and of the list of documents, the retry of a failed document, the parser service, the page images of a PDF, the blocks of a PDF and of a Word file, and the chunker. Not built: the rest of ingestion, retrieval, generation.
 
 ## Requirements
 
 - Go 1.26
+- A C compiler (the Xcode command line tools, or gcc): the service links a C library
 - Docker
 - golangci-lint, for `make check`
 - Lefthook, for the Git hooks
@@ -27,6 +28,7 @@ Built: the schema, the migrations, the job queues, upload URLs, the confirm of a
 ```sh
 lefthook install   # hooks: lint before a commit, check of the commit message
 cp .env.example .env
+make tokenizer-install   # the tokenizers library in lib/ and the tokenizer of the embedding model in models/, 50 MB
 make db-up      # PostgreSQL 17 with pgvector and pg_textsearch, on port 5433
 make migrate
 make serve      # http://127.0.0.1:8080/healthz
@@ -54,6 +56,12 @@ make word-install   # bin/office-oxide, 4 MB
 ```
 
 While the program is not installed, a Word file waits and the service tries again.
+
+## Chunks
+
+The chunker cuts the blocks of a document into chunks at its headings. Each chunk starts with its heading path, and has `REJEA_CHUNK_MAX_TOKENS` tokens or less. A table that is larger is split at its rows, and each part starts with the header rows.
+
+The limit is in tokens of the embedding model, Qwen3-Embedding-0.6B. The service counts them with the [tokenizers](https://github.com/huggingface/tokenizers) library of Hugging Face, through [its Go binding](https://github.com/daulet/tokenizers). `make tokenizer-install` gets the library and the tokenizer of the model. Use `make build`, `make serve` and `make test`: they tell the Go compiler where the library is.
 
 ## File storage
 
