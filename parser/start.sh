@@ -37,7 +37,13 @@ trap stop EXIT
 
 # Only the parse API uses the MLX server, so it listens on this machine
 # only.
-.venv-mlx/bin/mlx_vlm.server --host 127.0.0.1 --port "$vlm_port" --model "$model" &
+#
+# The server reads one block at a time (--max-num-seqs 1). With more,
+# mlx-vlm 0.8.0 fails for this model when a block joins a batch in work
+# ("[broadcast_shapes] Shapes (6) and (5) cannot be broadcast"), and the
+# parse API then answers 500 for a page with many blocks. Measured on an
+# M2 Pro: 13 pages take the same time with one block at a time.
+.venv-mlx/bin/mlx_vlm.server --host 127.0.0.1 --port "$vlm_port" --model "$model" --max-num-seqs 1 &
 vlm=$!
 echo "parser: the MLX server loads the model $model"
 until curl --silent --fail "http://127.0.0.1:$vlm_port/health" | grep -q '"model_ready":true'; do
