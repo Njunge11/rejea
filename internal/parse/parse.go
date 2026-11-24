@@ -13,6 +13,10 @@ type Parser interface {
 	// Parse reads the image of one page, a PNG file, and gives the blocks
 	// of the page in the order in which a person reads them.
 	Parse(ctx context.Context, image []byte) ([]Block, error)
+	// Name gives the name and the version of the parser. The service
+	// records it on each document that the parser reads, so a person can
+	// find the documents that an old parser read.
+	Name() string
 }
 
 // Block is one piece of a page.

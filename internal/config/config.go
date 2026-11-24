@@ -101,6 +101,7 @@ func Load(getenv func(string) string) (Config, error) {
 			MaxOpen:       parseWorkers,
 		},
 		Parse: parse.Config{
+			Name:           env.text("REJEA_PARSER_NAME", "PaddleOCR-VL-1.6"),
 			URL:            env.text("REJEA_PARSER_URL", "http://127.0.0.1:8112"),
 			Timeout:        env.duration("REJEA_PARSER_TIMEOUT", 5*time.Minute),
 			MaxAnswerBytes: env.size("REJEA_PARSER_MAX_ANSWER_BYTES", 16<<20), // 16 MiB

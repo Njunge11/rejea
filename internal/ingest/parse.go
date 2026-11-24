@@ -5,12 +5,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"time"
 
 	"github.com/riverqueue/river"
 
 	"github.com/Njunge11/rejea/internal/documents"
+	"github.com/Njunge11/rejea/internal/parse"
 	"github.com/Njunge11/rejea/internal/pdf"
 	"github.com/Njunge11/rejea/internal/queue"
 	"github.com/Njunge11/rejea/internal/storage"
@@ -24,14 +26,17 @@ type parseWorker struct {
 	docs   *documents.Service
 	store  *storage.Store
 	pdfs   *pdf.Reader
+	parser parse.Parser
 	logger *slog.Logger
 }
 
-// Work does one stage: it makes an image of each page of a PDF. A Word
-// file has no page image.
+// Work does two stages for a PDF: it makes an image of each page, then the
+// parser reads each image and gives the blocks of the page. A Word file
+// has no page image.
 //
 // An error makes River run the job again after a wait. A new attempt skips
-// the stage when it is complete.
+// a stage that is complete, and does only the pages that are left of a
+// stage that is not.
 func (w *parseWorker) Work(ctx context.Context, job *river.Job[queue.ParseArgs]) error {
 	id := job.Args.DocumentID
 	doc, err := w.docs.Get(ctx, id)
@@ -49,16 +54,20 @@ func (w *parseWorker) Work(ctx context.Context, job *river.Job[queue.ParseArgs])
 	if !documents.IsPDF(doc.StorageKey) {
 		return nil
 	}
-	if doc.PageCount > 0 {
-		w.logger.DebugContext(ctx, "page render stage skipped: it is complete", "document", id)
-		return nil
+	if doc.PageCount == 0 {
+		err = w.renderPages(ctx, doc)
+		if pdf.IsContentError(err) {
+			// A new attempt reads the same PDF and finds the same fault.
+			return river.JobCancel(err)
+		}
+		if err != nil {
+			return err
+		}
 	}
-	err = w.renderPages(ctx, doc)
-	if pdf.IsContentError(err) {
-		// A new attempt reads the same PDF and finds the same fault.
-		return river.JobCancel(err)
+	if doc.Parser == "" {
+		return w.parsePages(ctx, doc)
 	}
-	return err
+	return nil
 }
 
 // renderPages makes an image of each page of a PDF, sends each image to
@@ -120,4 +129,65 @@ func (w *parseWorker) renderPages(ctx context.Context, doc documents.Document) e
 		"duration", time.Since(start),
 	)
 	return nil
+}
+
+// parsePages sends the image of each page to the parser and records the
+// blocks that the parser gives.
+//
+// The blocks of a page are recorded when the parser answers. Thus a new
+// attempt, after a fault or a stop of the service, does only the pages
+// that the parser did not read. The name of the parser is recorded last:
+// it tells that the stage is complete.
+//
+// Each error is one that a new attempt can correct: the images are those
+// of the render stage, so the parser has no reason to refuse one.
+func (w *parseWorker) parsePages(ctx context.Context, doc documents.Document) error {
+	start := time.Now()
+	pages, err := w.docs.PagesToParse(ctx, doc.ID)
+	if err != nil {
+		return err
+	}
+	blockCount := 0
+	for _, page := range pages {
+		image, err := w.pageImage(ctx, page.ImageKey)
+		if err != nil {
+			return err
+		}
+		blocks, err := w.parser.Parse(ctx, image)
+		if err != nil {
+			return fmt.Errorf("parse page %d: %w", page.Number, err)
+		}
+		if err := w.docs.SaveBlocks(ctx, doc.ID, page.Number, blocks); err != nil {
+			return err
+		}
+		blockCount += len(blocks)
+	}
+	if err := w.docs.SetParser(ctx, doc.ID, w.parser.Name()); err != nil {
+		return err
+	}
+	w.logger.InfoContext(ctx, "pages parsed",
+		"document", doc.ID,
+		"parsed", len(pages),
+		"blocks", blockCount,
+		"parser", w.parser.Name(),
+		"duration", time.Since(start),
+	)
+	return nil
+}
+
+// pageImage reads the image of one page from the file storage. The image
+// is in memory as a whole, because the parser takes it in one request. The
+// render stage made the image, and its pixel limit is the limit of the
+// size.
+func (w *parseWorker) pageImage(ctx context.Context, key string) ([]byte, error) {
+	file, err := w.store.Download(ctx, key)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close() //nolint:errcheck // The read found each error.
+	image, err := io.ReadAll(file)
+	if err != nil {
+		return nil, fmt.Errorf("read the page image %s: %w", key, err)
+	}
+	return image, nil
 }

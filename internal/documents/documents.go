@@ -162,12 +162,12 @@ func InnerKey(archive uuid.UUID, n int, filename string) string {
 	return "documents/" + archive.String() + "/files/" + strconv.Itoa(n) + Ending(filename)
 }
 
-// newID makes the ID of a document. The IDs are in the order of their
-// time, which keeps new rows together in the index of the table.
+// newID makes the ID of a document or of a block. The IDs are in the order
+// of their time, which keeps new rows together in the index of the table.
 func newID() (uuid.UUID, error) {
 	id, err := uuid.NewV7()
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("make the ID of a document: %w", err)
+		return uuid.Nil, fmt.Errorf("make an ID: %w", err)
 	}
 	return id, nil
 }

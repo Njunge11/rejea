@@ -153,15 +153,25 @@ These points are not in the plan. Each one is settled before its item starts.
     - The numbers that came through the adapter agree with the PDF: all 126 of the consumer price table page and all 578 of the GDP table page. The boxes agree with the page image.
     - Charts: 5 charts of the report and 2 test charts (one with no data labels) gave each value correctly. A page with a chart takes 3 to 5 seconds more.
 
-- [ ] **18. Parse worker: blocks**
+- [x] **18. Parse worker: blocks**
   - Send each page image to the parser. Save `blocks`. Record the parser name and version on the document.
   - A second stage of the parse worker of item 16, after the render. It sends the PNG that item 16 stored in S3, not a new render.
-  - `rejea serve` makes the adapter of item 17 from `cfg.Parse` and gives it to the workers. No code calls it before this item.
-  - Migration: the comment of `blocks.type` gets the 12 types of the package `parse`.
-  - The parse API has no version in its answers. The name of the model is in `parser/pipeline.yaml`, and the versions are in `parser/constraints-paddle.txt`.
-  - The blocks of a page are saved when the parser answers, so a new attempt parses only the pages with no blocks. The parser takes 8 to 40 seconds for a page on this Mac, and one attempt of a job has 60 minutes.
+  - `rejea serve` makes the adapter of item 17 from `cfg.Parse` and gives it to the workers.
+  - The blocks of a page and the time of its parse (`pages.parsed_at`) are saved in one transaction when the parser answers. A new attempt parses only the pages with no `parsed_at`. A blank page is parsed and has no block.
+  - `documents.parser` is saved last: it tells that the stage is complete. The document keeps the status `parsing`, because the chunk and embed stages come next.
+  - The parse API has no version in its answers. Thus the parser name is a setting, `REJEA_PARSER_NAME`, with the default `PaddleOCR-VL-1.6` of `parser/pipeline.yaml`.
+  - `blocks.seq` is the place in the reading order of the page, from 1. A unique index on (document, page, seq) gives the blocks in reading order.
+  - Migration 4: `pages.parsed_at`, the index, and the comment of `blocks.type` with the 12 types of the package `parse`.
+  - While the parser does not run, the parse job fails and River runs it again after a wait. After the last attempt the document fails with the reason, and a retry continues from the pages that are left.
   - Proof: a PDF has its blocks, with boxes as fractions of the page.
-
+  - Measured on this Mac (M2 Pro), 2026-11-24:
+    - The consumer price report of March 2026: 13 pages, 138 blocks, 2 minutes. Each page has the same number of blocks as in item 17. Each box is inside its page.
+    - The saved blocks of the price table page have all 126 numbers of the PDF.
+    - A PDF with a blank page: the blank page is parsed and has no block.
+    - A stop of the service at page 4 of 10: the new start parses the 6 pages that are left.
+    - A second run of a document that has its blocks parses nothing.
+    - A zip with two PDFs and two parse workers: each PDF gets its blocks.
+    - A Word file gets no block: item 19.
 - [ ] **19. Word files**
   - Read `.docx` and `.doc` directly with office_oxide: headings, paragraphs and tables, without coordinates. A Word file skips the render.
   - A Word file has its parse job and the status `parsing` from item 16. The parse worker returns at once for it now: this item adds the Word stage at that place.

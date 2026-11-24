@@ -15,6 +15,10 @@ import (
 
 // Config is the settings of the PaddleOCR adapter.
 type Config struct {
+	// Name is the name and the version of the model that the parser
+	// service runs. The service does not tell its version, so the person
+	// who installs it gives the name.
+	Name string
 	// URL is the address of the parser service, such as
 	// http://127.0.0.1:8112.
 	URL string
@@ -43,6 +47,9 @@ func NewPaddleOCR(cfg Config) (*PaddleOCR, error) {
 	if err != nil || (base.Scheme != "http" && base.Scheme != "https") || base.Host == "" {
 		return nil, fmt.Errorf("the URL of the parser is %q: it must be an http or https URL with a host", cfg.URL)
 	}
+	if strings.TrimSpace(cfg.Name) == "" {
+		return nil, errors.New("the parser has no name")
+	}
 	if cfg.Timeout <= 0 || cfg.MaxAnswerBytes < 1 {
 		return nil, fmt.Errorf("the parser has a time limit of %s and an answer limit of %d bytes: each must be more than zero",
 			cfg.Timeout, cfg.MaxAnswerBytes)
@@ -54,6 +61,9 @@ func NewPaddleOCR(cfg Config) (*PaddleOCR, error) {
 		client: &http.Client{},
 	}, nil
 }
+
+// Name gives the name and the version of the model of the parser service.
+func (p *PaddleOCR) Name() string { return p.cfg.Name }
 
 // paddleRequest is the body of a request to the layout parsing API.
 type paddleRequest struct {

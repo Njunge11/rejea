@@ -51,6 +51,9 @@ type Document struct {
 	// PageCount is the number of pages. It is 0 when the document has no
 	// page count.
 	PageCount int
+	// Parser is the name of the parser that read the document. It is ""
+	// when the parser did not read each page.
+	Parser string
 	// CreatedAt is set by the database when the row is added.
 	CreatedAt time.Time
 }
@@ -58,14 +61,14 @@ type Document struct {
 // documentColumns is the columns of a Document, in the order that
 // scanDocument reads them.
 const documentColumns = `id, uploaded_by, filename, storage_key, metadata, status,
-	coalesce(file_hash, ''), parent_id, coalesce(error, ''), coalesce(page_count, 0), created_at`
+	coalesce(file_hash, ''), parent_id, coalesce(error, ''), coalesce(page_count, 0), coalesce(parser, ''), created_at`
 
 // scanDocument reads one row that has the columns of documentColumns.
 func scanDocument(row pgx.Row) (Document, error) {
 	var doc Document
 	var parent *uuid.UUID
 	err := row.Scan(&doc.ID, &doc.UploadedBy, &doc.Filename, &doc.StorageKey, &doc.Metadata, &doc.Status,
-		&doc.FileHash, &parent, &doc.Error, &doc.PageCount, &doc.CreatedAt)
+		&doc.FileHash, &parent, &doc.Error, &doc.PageCount, &doc.Parser, &doc.CreatedAt)
 	if err != nil {
 		return Document{}, err
 	}

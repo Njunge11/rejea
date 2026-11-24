@@ -9,6 +9,7 @@ import (
 	"github.com/riverqueue/river"
 
 	"github.com/Njunge11/rejea/internal/documents"
+	"github.com/Njunge11/rejea/internal/parse"
 	"github.com/Njunge11/rejea/internal/pdf"
 	"github.com/Njunge11/rejea/internal/storage"
 )
@@ -37,10 +38,10 @@ type Config struct {
 // Workers gives River the worker of each kind of job. A worker does the
 // work on the file and calls docs for each rule and each change of a
 // document.
-func Workers(docs *documents.Service, store *storage.Store, pdfs *pdf.Reader, logger *slog.Logger, cfg Config) *river.Workers {
+func Workers(docs *documents.Service, store *storage.Store, pdfs *pdf.Reader, parser parse.Parser, logger *slog.Logger, cfg Config) *river.Workers {
 	workers := river.NewWorkers()
 	river.AddWorker(workers, &fileWorker{docs: docs, store: store, logger: logger, cfg: cfg})
-	river.AddWorker(workers, &parseWorker{docs: docs, store: store, pdfs: pdfs, logger: logger})
+	river.AddWorker(workers, &parseWorker{docs: docs, store: store, pdfs: pdfs, parser: parser, logger: logger})
 	river.AddWorker(workers, &expireWorker{docs: docs, logger: logger})
 	return workers
 }

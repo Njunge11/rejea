@@ -22,6 +22,7 @@ import (
 	"github.com/Njunge11/rejea/internal/database"
 	"github.com/Njunge11/rejea/internal/documents"
 	"github.com/Njunge11/rejea/internal/ingest"
+	"github.com/Njunge11/rejea/internal/parse"
 	"github.com/Njunge11/rejea/internal/pdf"
 	"github.com/Njunge11/rejea/internal/queue"
 	"github.com/Njunge11/rejea/internal/server"
@@ -91,7 +92,11 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 	docs := documents.New(pool, store, inserter, cfg.Documents)
 
 	failureRule := []rivertype.Middleware{ingest.FailureRule(docs, logger, cfg.Ingest.FailureSaveTimeout)}
-	workers := ingest.Workers(docs, store, pdfs, logger, cfg.Ingest)
+	parser, err := parse.NewPaddleOCR(cfg.Parse)
+	if err != nil {
+		return err
+	}
+	workers := ingest.Workers(docs, store, pdfs, parser, logger, cfg.Ingest)
 	jobs, err := queue.NewClient(pool, logger, workers, failureRule, ingest.Schedule(cfg.Ingest), cfg.Queue)
 	if err != nil {
 		return err
