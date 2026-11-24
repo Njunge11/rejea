@@ -34,6 +34,11 @@ The service is at `http://localhost:8080`, and `GET /healthz` answers `ok`. `mak
 
 The first `make up` downloads 0.8 GB of container images, and on a Mac 0.5 GB of Python packages (2.2 GB on the disk) and 2 GB of models for the parser. On an M2 Pro, a first run with empty caches took 18 minutes, most of it for the downloads. A later start takes 30 seconds.
 
+When a thing is missing or wrong, the message names it and gives the correction:
+
+- `make up` examines the machine before it starts a thing: Docker, the ports (with the program that uses one), Python, the disk space, the values of `.env`. If a container does not start, it shows the end of the log of that container.
+- The service stops when it starts, with the reason: a setting, the database, the schema, the file store, its keys, its bucket, the port. It only warns when the parser or the Word reader does not answer: the file waits.
+
 Linux has no parser at this time: a Word file goes through, and a PDF waits. Windows is not supported.
 
 ## Settings

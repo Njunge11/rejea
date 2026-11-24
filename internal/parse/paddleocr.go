@@ -41,6 +41,7 @@ type Config struct {
 // use by many goroutines.
 type PaddleOCR struct {
 	endpoint string
+	health   string
 	cfg      Config
 	client   *http.Client
 }
@@ -60,6 +61,7 @@ func NewPaddleOCR(cfg Config) (*PaddleOCR, error) {
 	}
 	return &PaddleOCR{
 		endpoint: base.JoinPath("layout-parsing").String(),
+		health:   base.JoinPath("health").String(),
 		cfg:      cfg,
 		// The time limit of a call is the limit of its context.
 		client: &http.Client{},
@@ -68,6 +70,24 @@ func NewPaddleOCR(cfg Config) (*PaddleOCR, error) {
 
 // Name gives the name and the version of the model of the parser service.
 func (p *PaddleOCR) Name() string { return p.cfg.Name }
+
+// Ready confirms that the parser service answers. The caller gives the
+// time limit.
+func (p *PaddleOCR) Ready(ctx context.Context) error {
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, p.health, nil)
+	if err != nil {
+		return fmt.Errorf("make the request for the parser: %w", err)
+	}
+	response, err := p.client.Do(request)
+	if err != nil {
+		return fmt.Errorf("call the parser: %w", err)
+	}
+	defer response.Body.Close() //nolint:errcheck // The status is the answer.
+	if response.StatusCode != http.StatusOK {
+		return fmt.Errorf("the parser answers %s", response.Status)
+	}
+	return nil
+}
 
 // paddleRequest is the body of a request to the layout parsing API.
 type paddleRequest struct {

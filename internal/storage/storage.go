@@ -7,17 +7,21 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net/http"
+	"net/url"
 	"slices"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/transfermanager"
 	transfertypes "github.com/aws/aws-sdk-go-v2/feature/s3/transfermanager/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/smithy-go/logging"
+	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 // The limits of S3.
@@ -55,7 +59,29 @@ type Config struct {
 	// RangeBytes is the size of one piece when the service reads a file in
 	// pieces.
 	RangeBytes int64
+	// CheckTimeout is the longest time that New waits for the answer of
+	// the store.
+	CheckTimeout time.Duration
 }
+
+// The reasons for which New fails because of the settings or the state of
+// the store. The caller tells the developer what to do for each one.
+var (
+	// ErrNotSet: the bucket or its region is not set.
+	ErrNotSet = errors.New("the file store has no bucket or no region")
+	// ErrEndpoint: an endpoint is not an http or https URL with a host.
+	ErrEndpoint = errors.New("the address of the file store is not valid")
+	// ErrNoCredentials: the AWS SDK found no credentials.
+	ErrNoCredentials = errors.New("the file store has no credentials")
+	// ErrNoAnswer: no store answers at the address.
+	ErrNoAnswer = errors.New("no file store answers")
+	// ErrRefused: the store refuses the credentials for the bucket.
+	ErrRefused = errors.New("the file store refuses the credentials")
+	// ErrNoBucket: the store has no bucket with this name.
+	ErrNoBucket = errors.New("the file store has no bucket with this name")
+	// ErrRegion: the bucket is in a different AWS Region.
+	ErrRegion = errors.New("the bucket is in a different region")
+)
 
 // Store reads and writes the files in the bucket.
 type Store struct {
@@ -82,12 +108,26 @@ func IsFault(err error) bool {
 	return ok
 }
 
-// New makes a Store. The AWS credentials come from the default sources of
-// the AWS SDK: the environment, a profile, or the role of the machine. The
-// SDK logs through logger.
+// New makes a Store and confirms that the bucket answers. The AWS
+// credentials come from the default sources of the AWS SDK: the
+// environment, a profile, or the role of the machine. The SDK logs through
+// logger.
 func New(ctx context.Context, logger *slog.Logger, cfg Config) (*Store, error) {
 	if cfg.Bucket == "" || cfg.Region == "" {
-		return nil, errors.New("the S3 bucket and its region are not set")
+		return nil, ErrNotSet
+	}
+	for _, endpoint := range []string{cfg.Endpoint, cfg.PublicEndpoint} {
+		if endpoint == "" {
+			continue
+		}
+		address, err := url.Parse(endpoint)
+		if err != nil || (address.Scheme != "http" && address.Scheme != "https") || address.Host == "" {
+			return nil, fmt.Errorf("%w: %q must be an http or https URL with a host, such as http://127.0.0.1:8333",
+				ErrEndpoint, endpoint)
+		}
+	}
+	if cfg.CheckTimeout <= 0 {
+		return nil, fmt.Errorf("the time limit of the check of the file store is %s: it must be more than zero", cfg.CheckTimeout)
 	}
 	if cfg.UploadURLLife <= 0 || cfg.UploadURLLife > maxUploadURLLife {
 		return nil, fmt.Errorf("the life of an upload URL is %s: S3 permits more than zero and at most %s",
@@ -103,8 +143,15 @@ func New(ctx context.Context, logger *slog.Logger, cfg Config) (*Store, error) {
 	if cfg.RangeBytes < 1 {
 		return nil, fmt.Errorf("the size of one piece of a file is %d bytes: it must be 1 or more", cfg.RangeBytes)
 	}
+	// Only a machine in AWS has a role. For a store that is not AWS S3,
+	// the SDK does not ask for one: the question takes seconds to fail.
+	machineRole := imds.ClientDefaultEnableState
+	if cfg.Endpoint != "" {
+		machineRole = imds.ClientDisabled
+	}
 	awsCfg, err := config.LoadDefaultConfig(ctx,
 		config.WithRegion(cfg.Region),
+		config.WithEC2IMDSClientEnableState(machineRole),
 		config.WithLogger(logging.LoggerFunc(func(class logging.Classification, format string, v ...any) {
 			level := slog.LevelDebug
 			if class == logging.Warn {
@@ -132,13 +179,16 @@ func New(ctx context.Context, logger *slog.Logger, cfg Config) (*Store, error) {
 	// a time in the past means that the credentials are too short.
 	creds, err := awsCfg.Credentials.Retrieve(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("get the AWS credentials: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrNoCredentials, err)
 	}
 	if left := time.Until(creds.Expires); creds.CanExpire && left <= 0 {
 		return nil, fmt.Errorf("the AWS credentials live for %s, but an upload URL lives for %s: use a longer session",
 			(left + cfg.UploadURLLife).Round(time.Second), cfg.UploadURLLife)
 	}
 	client := s3.NewFromConfig(awsCfg, at(cfg.Endpoint))
+	if err := check(ctx, client, cfg); err != nil {
+		return nil, err
+	}
 	// The address is a part of the signature of an upload URL, so the URL
 	// is signed for the address that its client uses.
 	signer := client
@@ -157,6 +207,40 @@ func New(ctx context.Context, logger *slog.Logger, cfg Config) (*Store, error) {
 			o.FailTimeout = cfg.ReadTimeout
 		}),
 	}, nil
+}
+
+// check asks the store for the bucket. A wrong address, wrong credentials
+// or a wrong bucket name thus stop the service when it starts, and not at
+// the first upload.
+func check(ctx context.Context, client *s3.Client, cfg Config) error {
+	ctx, cancel := context.WithTimeout(ctx, cfg.CheckTimeout)
+	defer cancel()
+	_, err := client.HeadBucket(ctx, &s3.HeadBucketInput{Bucket: aws.String(cfg.Bucket)})
+	if err == nil {
+		return nil
+	}
+	where := fmt.Sprintf("bucket %q in AWS S3, region %s", cfg.Bucket, cfg.Region)
+	if cfg.Endpoint != "" {
+		where = fmt.Sprintf("bucket %q at %s", cfg.Bucket, cfg.Endpoint)
+	}
+	// The store gives no reason in words: the answer to this request has
+	// no body. The status code is the reason.
+	status := 0
+	if response, ok := errors.AsType[*smithyhttp.ResponseError](err); ok {
+		status = response.HTTPStatusCode()
+	}
+	switch status {
+	case 0: // No answer came.
+		return fmt.Errorf("%w: %s: %w", ErrNoAnswer, where, err)
+	case http.StatusForbidden, http.StatusUnauthorized:
+		return fmt.Errorf("%w: %s: %w", ErrRefused, where, err)
+	case http.StatusNotFound:
+		return fmt.Errorf("%w: %s: %w", ErrNoBucket, where, err)
+	case http.StatusMovedPermanently:
+		return fmt.Errorf("%w: %s: %w", ErrRegion, where, err)
+	default:
+		return fmt.Errorf("the file store answers with status %d for %s: %w", status, where, err)
+	}
 }
 
 // at makes an S3 client use the file store at the given address. Such a

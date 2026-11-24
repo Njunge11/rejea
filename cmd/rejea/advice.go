@@ -1,0 +1,79 @@
+package main
+
+import (
+	"context"
+	"errors"
+	"log/slog"
+	"syscall"
+
+	"github.com/Njunge11/rejea/internal/config"
+	"github.com/Njunge11/rejea/internal/database"
+	"github.com/Njunge11/rejea/internal/parse"
+	"github.com/Njunge11/rejea/internal/storage"
+)
+
+// errSettings is the error of a setting that is missing or wrong.
+var errSettings = errors.New("the settings are not correct")
+
+// advice tells the developer what to do about an error that stops a
+// command. It names the settings and the commands of this repository, which
+// the parts of the service do not know. It gives "" for an error that has no
+// known correction.
+func advice(err error) string {
+	switch {
+	case errors.Is(err, errSettings):
+		return `Each setting and its default is in .env.example. Copy that file to .env and change the value there. "make up" needs no settings file.`
+
+	case errors.Is(err, database.ErrURL):
+		return `Give DATABASE_URL in .env the form postgres://user:password@host:port/database. The value for the database of compose.yaml is in .env.example.`
+	case errors.Is(err, database.ErrNoAnswer):
+		return `Start the database with "make db-up". If your database is at a different address, change DATABASE_URL in .env.`
+	case errors.Is(err, database.ErrRefused):
+		return `Give DATABASE_URL in .env the user and the password of the database. For the database of compose.yaml, each of the two is "rejea".`
+	case errors.Is(err, database.ErrNoDatabase):
+		return `Give DATABASE_URL in .env the name of a database that the server has. The database of compose.yaml has the name "rejea".`
+	case errors.Is(err, database.ErrNotMigrated):
+		return `Run "make migrate".`
+	case errors.Is(err, database.ErrNewerSchema):
+		return `Get the newest code of the service ("git pull"): a newer version migrated this database.`
+
+	case errors.Is(err, storage.ErrNotSet):
+		return `Set REJEA_S3_BUCKET and REJEA_S3_REGION in .env. The values for the file store of compose.yaml are in .env.example.`
+	case errors.Is(err, storage.ErrEndpoint):
+		return `Correct REJEA_S3_ENDPOINT and REJEA_S3_PUBLIC_ENDPOINT in .env. For AWS S3, remove the two.`
+	case errors.Is(err, storage.ErrNoCredentials):
+		return `Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in .env to the two keys of the file store: the values for the store of compose.yaml are in .env.example. For AWS S3, set AWS_PROFILE or give the machine a role: see "File storage" in the README.`
+	case errors.Is(err, storage.ErrNoAnswer):
+		return `Start the file store with "make db-up". If your store is at a different address, change REJEA_S3_ENDPOINT in .env. For AWS S3, examine the network connection.`
+	case errors.Is(err, storage.ErrRefused):
+		return `Give AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in .env the two keys of the file store: for the store of compose.yaml, the values of REJEA_STORAGE_ACCESS_KEY and REJEA_STORAGE_SECRET_KEY. For AWS S3, the role needs s3:ListBucket on the bucket: see "File storage" in the README.`
+	case errors.Is(err, storage.ErrNoBucket):
+		return `Give REJEA_S3_BUCKET in .env the name of a bucket that the store has. The bucket of the store of compose.yaml has the name "rejea".`
+	case errors.Is(err, storage.ErrRegion):
+		return `Give REJEA_S3_REGION in .env the AWS Region of the bucket.`
+
+	case errors.Is(err, syscall.EADDRINUSE):
+		return `Stop the other program that uses this port, or change the port in REJEA_HTTP_ADDR in .env.`
+	}
+	return ""
+}
+
+// warnOfMissingReaders logs a warning for the parser and for the Word
+// reader when one does not answer. The service starts all the same: a file
+// that needs the reader waits, and the service tries again.
+func warnOfMissingReaders(ctx context.Context, logger *slog.Logger, cfg config.Config, parser *parse.PaddleOCR, words *parse.Word) {
+	ctx, cancel := context.WithTimeout(ctx, cfg.StartCheckTimeout)
+	defer cancel()
+	if err := parser.Ready(ctx); err != nil {
+		logger.WarnContext(ctx, "the parser does not answer: a PDF waits until it does",
+			"url", cfg.Parse.URL,
+			"to_correct", `start the parser with "make parser" ("make up" starts it on a Mac with Apple Silicon)`,
+			"err", err)
+	}
+	if _, err := words.Name(ctx); err != nil {
+		logger.WarnContext(ctx, "the Word reader does not run: a Word file waits until it does",
+			"path", cfg.Word.Path,
+			"to_correct", `install the Word reader with "make word-install"`,
+			"err", err)
+	}
+}

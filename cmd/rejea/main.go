@@ -37,6 +37,9 @@ func main() {
 	stop()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "rejea:", err)
+		if fix := advice(err); fix != "" {
+			fmt.Fprintln(os.Stderr, "  To correct:", fix)
+		}
 		os.Exit(1)
 	}
 }
@@ -48,7 +51,7 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 	}
 	cfg, err := config.Load(getenv)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w:\n%w", errSettings, err)
 	}
 	if args[0] == "health" {
 		return health(ctx, cfg)
@@ -73,6 +76,12 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 		return err
 	}
 
+	// The service stops here, with the reason, when a part that it cannot
+	// work without is missing or wrong: the schema, the file store, the
+	// port. If not, the reason shows only at the first request.
+	if err := database.Current(ctx, pool); err != nil {
+		return err
+	}
 	store, err := storage.New(ctx, logger, cfg.Storage)
 	if err != nil {
 		return err
@@ -105,6 +114,7 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 	if err != nil {
 		return err
 	}
+	warnOfMissingReaders(ctx, logger, cfg, parser, words)
 	workers := ingest.Workers(docs, store, pdfs, parser, words, logger, cfg.Ingest)
 	jobs, err := queue.NewClient(pool, logger, workers, failureRule, ingest.Schedule(cfg.Ingest), cfg.Queue)
 	if err != nil {
@@ -127,7 +137,7 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 
 	listener, err := net.Listen("tcp", cfg.HTTPAddr)
 	if err != nil {
-		return err
+		return fmt.Errorf("the HTTP server cannot listen on %s: %w", cfg.HTTPAddr, err)
 	}
 	logger.Info("http server listening", "addr", listener.Addr().String())
 	return server.Run(ctx, listener, handler, logger, cfg.Server)

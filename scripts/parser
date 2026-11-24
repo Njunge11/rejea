@@ -4,6 +4,7 @@
 #   scripts/parser start    installs the parser if it is not installed,
 #                           starts it, and waits until it answers
 #   scripts/parser stop     stops it
+#   scripts/parser status   succeeds if the parser runs or starts
 #
 # The parser runs on a Mac with Apple Silicon only: the vision model uses
 # the GPU through MLX. Its log is parser/.run/parser.log.
@@ -37,7 +38,11 @@ start)
 			exit 1
 		fi
 		echo "parser: install, 2.2 GB. This takes some minutes."
-		parser/install.sh
+		if ! parser/install.sh; then
+			echo "parser: the install stopped. The reason is above." >&2
+			echo "  To correct: if a download failed, run this command again: the install starts again." >&2
+			exit 1
+		fi
 	fi
 	if running; then
 		echo "parser: it starts already. Wait until it answers."
@@ -52,7 +57,9 @@ start)
 	until answers; do
 		if ! running; then
 			echo "parser: it stopped. The end of $log:" >&2
-			tail -n 20 "$log" >&2
+			tail -n 20 "$log" | sed 's/^/    /' >&2
+			echo "  To correct: read the reason above, then run this command again." >&2
+			rm -f "$pid_file"
 			exit 1
 		fi
 		sleep 5
@@ -63,6 +70,9 @@ start)
 	done
 	echo "parser: ready, at http://$host:$port"
 	;;
+status)
+	answers || running
+	;;
 stop)
 	if running; then
 		kill "$(cat "$pid_file")"
@@ -71,7 +81,7 @@ stop)
 	rm -f "$pid_file"
 	;;
 *)
-	echo "usage: scripts/parser start | stop" >&2
+	echo "usage: scripts/parser start | stop | status" >&2
 	exit 1
 	;;
 esac

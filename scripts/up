@@ -1,7 +1,9 @@
 #!/bin/sh
 # Starts all of Rejea on this machine: the database, the file store and the
-# service in Docker, and the parser on the machine itself. It first tells
-# each thing that is missing.
+# service in Docker, and the parser on the machine itself.
+#
+# Before it starts a thing, it examines the machine and names each thing
+# that is missing or wrong, with its correction.
 set -eu
 cd "$(dirname "$0")/.."
 
@@ -9,36 +11,128 @@ mac_with_gpu=false
 if [ "$(uname -s)-$(uname -m)" = "Darwin-arm64" ]; then
 	mac_with_gpu=true
 fi
+python="${REJEA_PARSER_PYTHON:-python3.12}"
+parser_installed=false
+if [ -x parser/.venv-paddle/bin/paddlex ] && [ -x parser/.venv-mlx/bin/mlx_vlm.server ]; then
+	parser_installed=true
+fi
 
-# Each thing that is missing, all at one time.
-missing=""
+# The faults, all at one time.
+faults=""
+fault() {
+	faults="$faults
+  - $1
+    To correct: $2"
+}
+
+# port_free <port> <its setting> <the part that needs it>
+port_free() {
+	case "$1" in
+	"" | *[!0-9]*)
+		fault "$2 is \"$1\". It must be a port number, such as 8080." "correct $2 in .env."
+		return 0
+		;;
+	esac
+	command -v nc >/dev/null 2>&1 || return 0
+	nc -z 127.0.0.1 "$1" >/dev/null 2>&1 || return 0
+	user=""
+	if command -v lsof >/dev/null 2>&1; then
+		user="$(lsof +c 0 -nP -iTCP:"$1" -sTCP:LISTEN 2>/dev/null | awk 'NR == 2 { print " by the program " $1 " (process " $2 ")" }')"
+	fi
+	fault "Port $1 of this machine is in use$user. $3 needs it." \
+		"stop that program, or set $2 in .env to a free port."
+}
+
+docker_ready=false
 if ! command -v docker >/dev/null 2>&1; then
-	missing="$missing
-  - Docker is not installed: https://docs.docker.com/get-started/get-docker/"
+	fault "Docker is not installed." "install it: https://docs.docker.com/get-started/get-docker/"
 elif ! docker info >/dev/null 2>&1; then
-	missing="$missing
-  - Docker does not run: start Docker, then run this command again"
+	fault "Docker is installed, but it does not run." "start Docker, then run this command again."
 elif ! docker compose version >/dev/null 2>&1; then
-	missing="$missing
-  - Docker Compose is not installed: https://docs.docker.com/compose/install/"
+	fault "Docker Compose is not installed." "install it: https://docs.docker.com/compose/install/"
+else
+	docker_ready=true
 fi
-if [ "$mac_with_gpu" = true ] && [ ! -x parser/.venv-paddle/bin/paddlex ] &&
-	! command -v "${REJEA_PARSER_PYTHON:-python3.12}" >/dev/null 2>&1; then
-	missing="$missing
-  - Python 3.12 is not installed, and the parser needs it: brew install python@3.12"
+
+# A port is examined only when Rejea itself does not have it already.
+if [ "$docker_ready" = true ]; then
+	running="$(docker compose ps --status running --services 2>/dev/null || true)"
+	case "$running" in *rejea*) ;; *) port_free "${REJEA_PORT:-8080}" REJEA_PORT "The service" ;; esac
+	case "$running" in *postgres*) ;; *) port_free "${REJEA_DB_PORT:-5433}" REJEA_DB_PORT "The database" ;; esac
+	case "$running" in *storage*) ;; *) port_free "${REJEA_STORAGE_PORT:-8333}" REJEA_STORAGE_PORT "The file store" ;; esac
 fi
-if [ -n "$missing" ]; then
-	echo "rejea: cannot start. Missing:$missing" >&2
+
+if [ "$mac_with_gpu" = true ]; then
+	if ! scripts/parser status; then
+		port_free "${REJEA_PARSER_PORT:-8112}" REJEA_PARSER_PORT "The parser"
+		port_free "${REJEA_PARSER_VLM_PORT:-8111}" REJEA_PARSER_VLM_PORT "The vision model of the parser"
+	fi
+	if [ "$parser_installed" = false ]; then
+		if ! command -v "$python" >/dev/null 2>&1; then
+			fault "Python 3.12 is not installed ($python is not a command). The parser needs it." \
+				"install it (brew install python@3.12), or set REJEA_PARSER_PYTHON in .env to a Python 3.12 of this machine."
+		elif ! "$python" -c 'import sys; raise SystemExit(sys.version_info[:2] != (3, 12))' 2>/dev/null; then
+			fault "$python is $("$python" --version 2>&1). The parser needs Python 3.12." \
+				"set REJEA_PARSER_PYTHON in .env to a Python 3.12 of this machine (brew install python@3.12)."
+		fi
+	fi
+fi
+
+# The first run downloads the images, and on a Mac the parser and its
+# models.
+needed_gb=3
+if [ "$mac_with_gpu" = true ] && [ "$parser_installed" = false ]; then
+	needed_gb=8
+fi
+free_gb=$(($(df -Pk . | awk 'NR == 2 { print $4 }') / 1024 / 1024))
+if [ "$free_gb" -lt "$needed_gb" ]; then
+	fault "The disk has $free_gb GB free. Rejea needs about $needed_gb GB." "make space on the disk, then run this command again."
+fi
+
+if [ -z "$faults" ] && ! docker compose config --quiet 2>/dev/null; then
+	fault "Compose cannot read compose.yaml with the values of .env: $(docker compose config --quiet 2>&1 | tail -n 1)" \
+		"correct the value in .env. The form of each value is in .env.example."
+fi
+
+if [ -n "$faults" ]; then
+	echo "rejea: cannot start.$faults" >&2
 	exit 1
 fi
 
-echo "rejea: build and start the database, the file store and the service"
-docker compose up --detach --build --wait
+# report tells which container did not start, with the end of its log: the
+# log has the reason.
+report() {
+	echo >&2
+	echo "rejea: a container did not start." >&2
+	docker compose ps --all --format '{{.Service}} {{.State}} {{.ExitCode}} {{.Health}}' | while read -r service state code health; do
+		case "$state $code $health" in
+		"exited 0"* | "created "* | "running "*" healthy" | "running "*" starting") continue ;;
+		esac
+		echo >&2
+		echo "  The container \"$service\" is $state${health:+ and $health}. The end of its log:" >&2
+		docker compose logs --no-log-prefix --tail 8 "$service" 2>&1 | sed 's/^/    /' >&2
+	done
+	echo >&2
+	echo "  To correct: read the reason above, correct it, then run this command again." >&2
+	echo "  All of a log: docker compose logs <container>" >&2
+	exit 1
+}
+
+# The service starts last: the parser then answers when the service asks
+# for it.
+echo "rejea: build the images, then start the database and the file store"
+docker compose build
+docker compose up --detach --wait postgres storage || report
 
 if [ "$mac_with_gpu" = true ]; then
 	scripts/parser start
-else
-	echo "rejea: no parser on this machine: it runs on a Mac with Apple Silicon only."
+fi
+
+echo "rejea: start the service"
+docker compose up --detach --wait || report
+
+if [ "$mac_with_gpu" = false ]; then
+	echo "rejea: this machine gets no parser: the parser runs on a Mac with Apple Silicon only."
 	echo "       A Word file needs no parser. A PDF waits until a parser answers at REJEA_PARSER_URL."
 fi
 

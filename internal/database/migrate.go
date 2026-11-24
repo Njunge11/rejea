@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"embed"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io/fs"
 
@@ -39,13 +40,60 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) (int, error) {
 	db := stdlib.OpenDBFromPool(pool)
 	defer db.Close() //nolint:errcheck // This does not close the pool.
 
+	provider, err := migrations(db)
+	if err != nil {
+		return 0, err
+	}
+	results, err := provider.Up(ctx)
+	if err != nil {
+		return len(results), fmt.Errorf("apply the migrations: %w", err)
+	}
+	return len(results), nil
+}
+
+// The reasons for which Current fails.
+var (
+	// ErrNotMigrated: the database does not have each migration of this
+	// binary.
+	ErrNotMigrated = errors.New("the database schema is not up to date")
+	// ErrNewerSchema: the database has a migration that this binary does
+	// not have.
+	ErrNewerSchema = errors.New("the database schema is newer than this service")
+)
+
+// Current confirms that the database has the migrations of this binary,
+// and no more. It applies no migration. In a database that was never
+// migrated, goose makes its empty version table.
+func Current(ctx context.Context, pool *pgxpool.Pool) error {
+	db := stdlib.OpenDBFromPool(pool)
+	defer db.Close() //nolint:errcheck // This does not close the pool.
+
+	provider, err := migrations(db)
+	if err != nil {
+		return err
+	}
+	current, target, err := provider.GetVersions(ctx)
+	if err != nil {
+		return fmt.Errorf("read the version of the database schema: %w", err)
+	}
+	if current < target {
+		return fmt.Errorf("%w: it has version %d, and the service needs version %d", ErrNotMigrated, current, target)
+	}
+	if current > target {
+		return fmt.Errorf("%w: it has version %d, and the service has version %d", ErrNewerSchema, current, target)
+	}
+	return nil
+}
+
+// migrations gives the list of migrations and the means to apply them.
+func migrations(db *sql.DB) (*goose.Provider, error) {
 	files, err := fs.Sub(migrationFiles, "migrations")
 	if err != nil {
-		return 0, fmt.Errorf("read the migration files: %w", err)
+		return nil, fmt.Errorf("read the migration files: %w", err)
 	}
 	locker, err := lock.NewPostgresSessionLocker()
 	if err != nil {
-		return 0, fmt.Errorf("make the migration lock: %w", err)
+		return nil, fmt.Errorf("make the migration lock: %w", err)
 	}
 	provider, err := goose.NewProvider(goose.DialectPostgres, db, files,
 		goose.WithSessionLocker(locker),
@@ -55,13 +103,9 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) (int, error) {
 		)),
 	)
 	if err != nil {
-		return 0, fmt.Errorf("load the migrations: %w", err)
+		return nil, fmt.Errorf("load the migrations: %w", err)
 	}
-	results, err := provider.Up(ctx)
-	if err != nil {
-		return len(results), fmt.Errorf("apply the migrations: %w", err)
-	}
-	return len(results), nil
+	return provider, nil
 }
 
 // MigrationsHash gives a value that changes when the set of migrations

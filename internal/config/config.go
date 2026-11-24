@@ -27,6 +27,9 @@ import (
 type Config struct {
 	// DatabaseURL is the connection URL of the PostgreSQL database.
 	DatabaseURL string
+	// StartCheckTimeout is the longest wait for the answer of another
+	// service when this service starts.
+	StartCheckTimeout time.Duration
 	// HTTPAddr is the address that the HTTP server listens on.
 	HTTPAddr string
 	// LogLevel is the lowest level that the service logs.
@@ -59,14 +62,18 @@ func Load(getenv func(string) string) (Config, error) {
 
 	// The largest size of one file is a limit of three parts.
 	maxFileBytes := env.size("REJEA_MAX_FILE_BYTES", 1<<30) // 1 GiB
+	// The longest wait for the answer of another service when this
+	// service starts.
+	startCheck := env.duration("REJEA_START_CHECK_TIMEOUT", 10*time.Second)
 	// Each job of the parse queue has one PDF open.
 	parseWorkers := env.count("REJEA_PARSE_WORKERS", 1)
 
 	cfg := Config{
-		DatabaseURL: env.required("DATABASE_URL"),
-		HTTPAddr:    env.text("REJEA_HTTP_ADDR", "127.0.0.1:8080"),
-		LogLevel:    env.logLevel("REJEA_LOG_LEVEL"),
-		LogJSON:     env.oneOf("REJEA_LOG_FORMAT", "text", "json") == "json",
+		DatabaseURL:       env.required("DATABASE_URL"),
+		StartCheckTimeout: startCheck,
+		HTTPAddr:          env.text("REJEA_HTTP_ADDR", "127.0.0.1:8080"),
+		LogLevel:          env.logLevel("REJEA_LOG_LEVEL"),
+		LogJSON:           env.oneOf("REJEA_LOG_FORMAT", "text", "json") == "json",
 		Storage: storage.Config{
 			// The migrate command does not use the bucket, so these two
 			// have no default and are not required here.
@@ -78,6 +85,7 @@ func Load(getenv func(string) string) (Config, error) {
 			MaxFileBytes:   maxFileBytes,
 			ReadTimeout:    env.duration("REJEA_S3_READ_TIMEOUT", time.Minute),
 			RangeBytes:     env.size("REJEA_S3_RANGE_BYTES", 8<<20), // 8 MiB
+			CheckTimeout:   startCheck,
 		},
 		Queue: queue.Config{
 			FileWorkers:  env.count("REJEA_FILE_WORKERS", 1),
