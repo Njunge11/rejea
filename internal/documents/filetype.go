@@ -29,6 +29,9 @@ func IsArchive(filename string) bool { return endingFrom(filename, archiveEnding
 // file.
 func IsDocumentFile(filename string) bool { return endingFrom(filename, documentEndings) != "" }
 
+// IsPDF tells if a file name has the ending of a PDF.
+func IsPDF(filename string) bool { return endingFrom(filename, []string{".pdf"}) != "" }
+
 func endingFrom(filename string, endings []string) string {
 	name := strings.ToLower(filename)
 	for _, ending := range endings {

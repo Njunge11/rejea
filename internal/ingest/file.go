@@ -34,6 +34,9 @@ type fileWorker struct {
 // and Word file out of the archive and records them. The package documents
 // has the rules for the hash and for the files of an archive.
 //
+// The work on the file of a PDF or a Word file ends there, and the worker
+// starts the parse of the document: a job of the parse queue.
+//
 // An error makes River run the job again after a wait. A new attempt skips
 // each stage that is complete.
 func (w *fileWorker) Work(ctx context.Context, job *river.Job[queue.FileArgs]) error {
@@ -47,8 +50,9 @@ func (w *fileWorker) Work(ctx context.Context, job *river.Job[queue.FileArgs]) e
 	if err != nil {
 		return err
 	}
-	if doc.Status == documents.StatusDuplicate || doc.Status == documents.StatusUnpacked {
-		w.logger.DebugContext(ctx, "file job skipped: each stage is complete", "document", id)
+	if doc.Status != documents.StatusUploaded {
+		// The work on the file is complete, or the document is a duplicate.
+		w.logger.DebugContext(ctx, "file job skipped: each stage is complete", "document", id, "status", doc.Status)
 		return nil
 	}
 	if doc.FileHash != "" {
@@ -73,7 +77,8 @@ func (w *fileWorker) Work(ctx context.Context, job *river.Job[queue.FileArgs]) e
 		}
 	}
 	if !documents.IsArchive(doc.StorageKey) {
-		return nil
+		_, err := w.docs.StartParse(ctx, id)
+		return err
 	}
 
 	start = time.Now()

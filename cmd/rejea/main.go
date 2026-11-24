@@ -22,6 +22,7 @@ import (
 	"github.com/Njunge11/rejea/internal/database"
 	"github.com/Njunge11/rejea/internal/documents"
 	"github.com/Njunge11/rejea/internal/ingest"
+	"github.com/Njunge11/rejea/internal/pdf"
 	"github.com/Njunge11/rejea/internal/queue"
 	"github.com/Njunge11/rejea/internal/server"
 	"github.com/Njunge11/rejea/internal/storage"
@@ -71,6 +72,13 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 		return err
 	}
 
+	pdfs, err := pdf.New(logger, cfg.PDF)
+	if err != nil {
+		return err
+	}
+	// The jobs stop before PDFium: this call runs after the wait for them.
+	defer pdfs.Close() //nolint:errcheck // The service stops.
+
 	// The workers run in this process. They stop when ctx is cancelled:
 	// River takes no new job and waits for the jobs in work.
 	ctx, cancel := context.WithCancel(ctx)
@@ -83,7 +91,7 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 	docs := documents.New(pool, store, inserter, cfg.Documents)
 
 	failureRule := []rivertype.Middleware{ingest.FailureRule(docs, logger, cfg.Ingest.FailureSaveTimeout)}
-	workers := ingest.Workers(docs, store, logger, cfg.Ingest)
+	workers := ingest.Workers(docs, store, pdfs, logger, cfg.Ingest)
 	jobs, err := queue.NewClient(pool, logger, workers, failureRule, ingest.Schedule(cfg.Ingest), cfg.Queue)
 	if err != nil {
 		return err

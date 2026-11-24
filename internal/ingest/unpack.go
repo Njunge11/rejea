@@ -228,7 +228,7 @@ func (u *unpacker) add(name string, content io.Reader) error {
 		limit:  u.cfg.MaxFileBytes,
 		fault:  fmt.Sprintf("the file %q in the archive has more than %d bytes", name, u.cfg.MaxFileBytes),
 	}, sum)}
-	if err := u.store.Upload(u.ctx, key, stream); err != nil {
+	if err := u.store.Upload(u.ctx, key, "", stream); err != nil {
 		// The upload fails when its stream fails. The error of the stream
 		// is then the cause, and it tells if a new attempt can help.
 		if stream.err != nil {

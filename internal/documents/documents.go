@@ -34,6 +34,9 @@ const (
 	// StatusUnpacked is the status of an archive after each file in it
 	// became a document of its own. The work on the archive stops there.
 	StatusUnpacked = "unpacked"
+	// StatusParsing is the status of a PDF or a Word file from the end of
+	// the work on its file until its text is in the database.
+	StatusParsing = "parsing"
 	// StatusDuplicate is the status of a file that has the same content as
 	// a file of a different document. Its work stops there.
 	StatusDuplicate = "duplicate"
@@ -43,7 +46,7 @@ const (
 )
 
 // statuses is each status that a document can have now.
-var statuses = []string{StatusUploading, StatusUploaded, StatusUnpacked, StatusDuplicate, StatusFailed}
+var statuses = []string{StatusUploading, StatusUploaded, StatusUnpacked, StatusParsing, StatusDuplicate, StatusFailed}
 
 // Config is the limits of the rules.
 type Config struct {

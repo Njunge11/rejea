@@ -23,7 +23,6 @@ These points are not in the plan. Each one is settled before its item starts.
 - **C.** The test questions (item 24) and the 30 labelled documents (item 37) come from your documents.
 - **D.** The property schemas of the document types `sop`, `guide` and `technical`. The plan has an example for `sop` only. Needed at item 36.
 - **E.** The columns of the graph tables. The plan says "following HippoRAG 2". Needed at item 39.
-- **F.** The image resolution of a rendered page. Needed at item 16.
 
 ## Upload (plan steps 1 and 2)
 
@@ -124,10 +123,21 @@ These points are not in the plan. Each one is settled before its item starts.
     - A page with one turned table of 23 columns (GDP, first quarter 2026, page 11): 40 seconds at 216 DPI, and all 578 numbers agree. At 144 DPI it takes 32 seconds, and 108 numbers are missing and 21 are wrong.
     - Memory: 2.0 GB for the MLX server and 0.9 GB for the parse API. Start with the models on the disk: 20 seconds.
 
-- [ ] **16. Parse worker: render pages** (needs point F)
+- [x] **16. Parse worker: render pages**
   - Render each PDF page to an image with PDFium, store it in S3, save `pages` (image key, width, height) and `page_count`.
   - The file worker adds the parse job to the `parse` queue. The status becomes `parsing`.
+  - PDFium is the WebAssembly build in the Go module go-pdfium: no C library on the machine, and PDFium has no access to the machine.
+  - The service uses no disk: PDFium reads the PDF from S3 in pieces. An image is a PNG with the key `documents/<id>/pages/<n>.png`.
+  - An image shows the page as a PDF viewer shows it: on white paper, with its annotations and the values in the fields of a form.
+  - A page is recorded when its image is in S3, so a new attempt renders only the pages that are not recorded. `page_count` is recorded last.
+  - A file that is not a PDF, a PDF with a password and a PDF with no page fail at once with the reason.
+  - The time limit of a job stops a render that is in work.
+  - Settings with defaults: resolution of a page image (216 DPI), pixels in one page image (100,000,000; a larger page gets a lower resolution).
   - Proof: a 10-page PDF gives 10 images and 10 `pages` rows.
+  - Measured on this Mac (M2 Pro), 2026-11-24:
+    - A 10-page PDF: 5 seconds, of which the send to S3 from this network is the largest part. The render and the PNG of one page take 0.2 seconds.
+    - The parser reads the images of the two KNBS pages of item 15 with the same result: all 578 numbers of the GDP page and all 126 numbers of the consumer price page agree with the PDF.
+    - Memory of the service: 59 MB with no work, and about 130 MB more for each PDF in work. The start of the service takes 1 second more.
 
 - [ ] **17. Parse port and the PaddleOCR adapter**
   - One small interface for a parser, and the adapter that calls the parser service over HTTP.

@@ -13,6 +13,7 @@ import (
 
 	"github.com/Njunge11/rejea/internal/documents"
 	"github.com/Njunge11/rejea/internal/ingest"
+	"github.com/Njunge11/rejea/internal/pdf"
 	"github.com/Njunge11/rejea/internal/queue"
 	"github.com/Njunge11/rejea/internal/server"
 	"github.com/Njunge11/rejea/internal/storage"
@@ -35,6 +36,7 @@ type Config struct {
 	Queue     queue.Config
 	Documents documents.Config
 	Ingest    ingest.Config
+	PDF       pdf.Config
 	Server    server.Config
 }
 
@@ -50,6 +52,8 @@ func Load(getenv func(string) string) (Config, error) {
 
 	// The largest size of one file is a limit of three parts.
 	maxFileBytes := env.size("REJEA_MAX_FILE_BYTES", 1<<30) // 1 GiB
+	// Each job of the parse queue has one PDF open.
+	parseWorkers := env.count("REJEA_PARSE_WORKERS", 1)
 
 	cfg := Config{
 		DatabaseURL: env.required("DATABASE_URL"),
@@ -68,7 +72,7 @@ func Load(getenv func(string) string) (Config, error) {
 		},
 		Queue: queue.Config{
 			FileWorkers:  env.count("REJEA_FILE_WORKERS", 1),
-			ParseWorkers: env.count("REJEA_PARSE_WORKERS", 1),
+			ParseWorkers: parseWorkers,
 			IndexWorkers: env.count("REJEA_INDEX_WORKERS", 1),
 			JobTimeout:   env.duration("REJEA_JOB_TIMEOUT", 60*time.Minute),
 			MaxAttempts:  env.count("REJEA_JOB_MAX_ATTEMPTS", 8),
@@ -88,6 +92,11 @@ func Load(getenv func(string) string) (Config, error) {
 			MaxArchiveFiles:     env.count("REJEA_MAX_ARCHIVE_FILES", 1000),
 			MaxUnpackedBytes:    env.size("REJEA_MAX_UNPACKED_BYTES", 1_000_000_000), // 1 GB
 			MaxArchiveListBytes: env.size("REJEA_MAX_ARCHIVE_LIST_BYTES", 16<<20),    // 16 MiB
+		},
+		PDF: pdf.Config{
+			DPI:           env.count("REJEA_PAGE_DPI", 216),
+			MaxPagePixels: env.count("REJEA_MAX_PAGE_PIXELS", 100_000_000),
+			MaxOpen:       parseWorkers,
 		},
 		Server: server.Config{
 			ReadHeaderTimeout: env.duration("REJEA_HTTP_READ_HEADER_TIMEOUT", 10*time.Second),

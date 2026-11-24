@@ -58,6 +58,19 @@ func (FileArgs) Kind() string { return "file" }
 // InsertOpts puts the job in the file queue.
 func (FileArgs) InsertOpts() river.InsertOpts { return river.InsertOpts{Queue: File} }
 
+// ParseArgs is the job of the parse queue: the work that turns the file of
+// a document into pages and blocks. The package documents adds it and the
+// parse worker does it.
+type ParseArgs struct {
+	DocumentID uuid.UUID `json:"document_id"`
+}
+
+// Kind is the name of the job in the database.
+func (ParseArgs) Kind() string { return "parse" }
+
+// InsertOpts puts the job in the parse queue.
+func (ParseArgs) InsertOpts() river.InsertOpts { return river.InsertOpts{Queue: Parse} }
+
 // ExpireUploadsArgs is the job that fails the uploads that no client
 // confirmed. River adds it at a fixed interval.
 type ExpireUploadsArgs struct{}

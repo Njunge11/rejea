@@ -190,16 +190,22 @@ func (d *download) Read(p []byte) (int, error) {
 // of the stream is not known at the start, so a large stream goes to S3 in
 // parts, from memory, with no copy on a disk. An error is a Fault, also
 // when the stream itself failed: the caller knows the errors of its stream.
-func (s *Store) Upload(ctx context.Context, key string, content io.Reader) error {
-	_, err := s.transfer.UploadObject(ctx, &transfermanager.UploadObjectInput{
+//
+// The content type is what S3 and CloudFront tell a browser that reads the
+// file. With "", S3 gives the file its default type.
+func (s *Store) Upload(ctx context.Context, key, contentType string, content io.Reader) error {
+	input := &transfermanager.UploadObjectInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(key),
 		Body:   content,
 		// One checksum for the full file, also when the file went in parts.
 		// The AWS SDK can then check each later download of the file.
 		ChecksumType: transfertypes.ChecksumTypeFullObject,
-	})
-	if err != nil {
+	}
+	if contentType != "" {
+		input.ContentType = aws.String(contentType)
+	}
+	if _, err := s.transfer.UploadObject(ctx, input); err != nil {
 		return &Fault{fmt.Errorf("upload %q: %w", key, err)}
 	}
 	return nil
