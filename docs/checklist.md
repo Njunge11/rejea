@@ -232,11 +232,19 @@ These points are not in the plan. Each one is settled before its item starts.
   - Proof: the blocks of the 12 documents of item 19, at limits of 4,096, 512, 128 and 32 tokens, checked with the Python library: no chunk over the limit, each block in a chunk, each split table equal to the original cell by cell, the heading path and the pages of each chunk, and no two chunks of one section that fit in one. 48 runs, 0 faults. The small limits found two faults that other documents can cause at 4,096, and both are corrected: the header rows of a table were in no part when no row fits with them, and rows held together by one cell were cut as text.
   - Not proved: the library on Linux counts the same as on the Mac. CI builds the service with it, and item 22 runs it.
 
-- [ ] **21. Embed port, the Cloudflare adapter, the registry and the configurator**
+- [x] **21. Embed port, the Cloudflare adapter, the registry and the configurator**
   - One small interface for embeddings, and the adapter for Qwen3-Embedding-0.6B on Cloudflare Workers AI.
   - The registry (provider name to adapter) and the configurator (reads the config and connects them).
   - Retries, timeouts and the usage log are shared code, not adapter code.
   - Proof: a text comes back as 1,024 numbers.
+  - Built: the port `internal/embed` (one method for documents, one for a search question, as the Embedder of LangChain), the adapter `internal/cloudflare`, the registry and the configurator in `internal/models`.
+  - The new attempts are those of the library `hashicorp/go-retryablehttp`: for a request with no answer, status 429 and a status from 500, with the `Retry-After` header.
+  - A search question goes with the instruction of the Qwen3 model card. A chunk goes as it is.
+  - Cloudflare publishes no token limit for one request, and it refused some batches as "input too big". The client sends a refused batch again as two halves. This is our own choice: no Cloudflare document gives it.
+  - The service sends one small request when it starts. No credentials: a warning, and `make up` says it also. A wrong token, account ID, model name or number of dimensions: the service stops and names the setting.
+  - Proved by runs: one text gave 1 vector of 1,024 numbers with the length 1. The 80 chunks of the 12 test documents gave 80 vectors, each equal to the vector of the same chunk alone. Cloudflare refused 4 batches in that run, and the halves passed.
+  - Proved by runs: 11 fault cases of the settings, and `make up` with good values, with no values and with a wrong token.
+  - It writes no row: item 22 saves the vectors.
 
 - [ ] **22. Index worker: chunk and embed**
   - The parse worker adds the index job to the `index` queue.

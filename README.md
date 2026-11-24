@@ -39,7 +39,7 @@ The first `make up` downloads 0.8 GB of container images, and on a Mac 0.5 GB of
 When a thing is missing or wrong, the message names it and gives the correction:
 
 - `make up` examines the machine before it starts a thing: Docker, the ports (with the program that uses one), Python, the disk space, the values of `.env`. If a container does not start, it shows the end of the log of that container.
-- The service stops when it starts, with the reason: a setting, the database, the schema, the file store, its keys, its bucket, the port. It only warns when the parser or the Word reader does not answer: the file waits.
+- The service stops when it starts, with the reason: a setting, the database, the schema, the file store, its keys, its bucket, the port. It only warns when the parser or the Word reader does not answer, or when the embedding model has no credentials: the file waits.
 
 Linux has no parser at this time: a Word file goes through, and a PDF waits. Windows is not supported.
 
@@ -66,6 +66,24 @@ The service reads `.docx` and `.doc` files with the command line program of [off
 The chunker cuts the blocks of a document into chunks at its headings. Each chunk starts with its heading path, and has `REJEA_CHUNK_MAX_TOKENS` tokens or less. A table that is larger is split at its rows, and each part starts with the header rows.
 
 The limit is in tokens of the embedding model, Qwen3-Embedding-0.6B. The service counts them with the [tokenizers](https://github.com/huggingface/tokenizers) library of Hugging Face, through [its Go binding](https://github.com/daulet/tokenizers). The image of the service has the library and the tokenizer of the model.
+
+## Embeddings
+
+The embedding model turns each chunk and each search question into a vector of 1,024 numbers. The model is Qwen3-Embedding-0.6B on [Cloudflare Workers AI](https://developers.cloudflare.com/workers-ai/). A Cloudflare account is free, and it gives 10,000 neurons each day: about 9 million tokens of this model.
+
+1. Make an account at [dash.cloudflare.com](https://dash.cloudflare.com/sign-up).
+2. In the dashboard, open **AI**, then **Workers AI**, then **REST API**.
+3. Make a Workers AI API token there, and copy the token and the account ID.
+4. Put the two values in `.env`, then run `make up`:
+
+```sh
+CLOUDFLARE_ACCOUNT_ID=...
+CLOUDFLARE_API_TOKEN=...
+```
+
+When the service starts, it sends one small request to the model. With no values, it starts and warns: a document is parsed, and it waits for its embeddings. With a wrong value (the token, the account ID, the name of the model, the number of dimensions), it stops and names the setting to correct.
+
+The code for a provider is an adapter behind one interface ([internal/embed](internal/embed/embed.go)). The registry in [internal/models](internal/models/models.go) has the name of each provider, and `REJEA_EMBED_PROVIDER` selects one. The new attempts, the time limit and the usage log are the same code for each provider. The usage log is one line for each request: the model, the number of texts, the tokens that the provider counted, the time.
 
 ## File storage
 

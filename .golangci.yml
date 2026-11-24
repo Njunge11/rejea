@@ -47,7 +47,7 @@ linters:
             - {pkg: "net/http$", desc: "the database package does no HTTP work"}
         parts:
           list-mode: lax
-          files: ["**/internal/storage/*.go", "**/internal/queue/*.go", "**/internal/pdf/*.go", "**/internal/parse/*.go", "**/internal/tokens/*.go", "!$test"]
+          files: ["**/internal/storage/*.go", "**/internal/queue/*.go", "**/internal/pdf/*.go", "**/internal/parse/*.go", "**/internal/tokens/*.go", "**/internal/embed/*.go", "!$test"]
           deny:
             - {pkg: "github.com/Njunge11/rejea/internal/", desc: "this package is a base part: it uses no other part of the service"}
         # The chunker is a base part that knows the types of a block.
@@ -58,6 +58,23 @@ linters:
             - "github.com/Njunge11/rejea/internal/parse"
           deny:
             - {pkg: "github.com/Njunge11/rejea/internal/", desc: "the chunker uses the block types of the package parse, and no other part of the service"}
+        # An adapter of a model provider knows the port that it serves.
+        adapters:
+          list-mode: lax
+          files: ["**/internal/cloudflare/*.go", "!$test"]
+          allow:
+            - "github.com/Njunge11/rejea/internal/embed"
+          deny:
+            - {pkg: "github.com/Njunge11/rejea/internal/", desc: "an adapter uses the port of its model, and no other part of the service"}
+        # The registry and the configurator know the ports and the adapters.
+        models:
+          list-mode: lax
+          files: ["**/internal/models/*.go", "!$test"]
+          allow:
+            - "github.com/Njunge11/rejea/internal/embed"
+            - "github.com/Njunge11/rejea/internal/cloudflare"
+          deny:
+            - {pkg: "github.com/Njunge11/rejea/internal/", desc: "the package models connects a port and its adapter, and uses no other part of the service"}
     forbidigo:
       analyze-types: true
       forbid:

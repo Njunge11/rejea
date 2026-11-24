@@ -29,6 +29,7 @@ import (
 	"github.com/Njunge11/rejea/internal/queue"
 	"github.com/Njunge11/rejea/internal/server"
 	"github.com/Njunge11/rejea/internal/storage"
+	"github.com/Njunge11/rejea/internal/tokens"
 )
 
 func main() {
@@ -115,6 +116,16 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 		return err
 	}
 	warnOfMissingReaders(ctx, logger, cfg, parser, words)
+	// The tokenizer of the embedding model. The index worker uses it and
+	// the embedding client from the next change.
+	counter, err := tokens.New(cfg.Tokens)
+	if err != nil {
+		return err
+	}
+	defer counter.Close() //nolint:errcheck // The service stops.
+	if _, err := startEmbedder(ctx, logger, cfg, counter); err != nil {
+		return err
+	}
 	workers := ingest.Workers(docs, store, pdfs, parser, words, logger, cfg.Ingest)
 	jobs, err := queue.NewClient(pool, logger, workers, failureRule, ingest.Schedule(cfg.Ingest), cfg.Queue)
 	if err != nil {

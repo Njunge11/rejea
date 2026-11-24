@@ -12,8 +12,11 @@ import (
 	"time"
 
 	"github.com/Njunge11/rejea/internal/chunk"
+	"github.com/Njunge11/rejea/internal/cloudflare"
 	"github.com/Njunge11/rejea/internal/documents"
+	"github.com/Njunge11/rejea/internal/embed"
 	"github.com/Njunge11/rejea/internal/ingest"
+	"github.com/Njunge11/rejea/internal/models"
 	"github.com/Njunge11/rejea/internal/parse"
 	"github.com/Njunge11/rejea/internal/pdf"
 	"github.com/Njunge11/rejea/internal/queue"
@@ -47,6 +50,7 @@ type Config struct {
 	Word      parse.WordConfig
 	Chunk     chunk.Config
 	Tokens    tokens.Config
+	Models    models.Config
 	Server    server.Config
 }
 
@@ -133,6 +137,35 @@ func Load(getenv func(string) string) (Config, error) {
 		},
 		Tokens: tokens.Config{
 			Path: env.text("REJEA_TOKENIZER_PATH", "models/qwen3-embedding-0.6b/tokenizer.json"),
+		},
+		Models: models.Config{
+			Embed: embed.Config{
+				Provider:   env.oneOf("REJEA_EMBED_PROVIDER", models.EmbedProviders()...),
+				Model:      env.text("REJEA_EMBED_MODEL", "@cf/qwen/qwen3-embedding-0.6b"),
+				Dimensions: env.count("REJEA_EMBED_DIMENSIONS", 1024),
+				// Cloudflare documents 32 texts for one request, and no
+				// limit for the tokens of a request. Measured in November
+				// 2026: it refused some requests in these limits ("input
+				// too big"). The client sends a refused batch again as two
+				// halves.
+				BatchSize:   env.count("REJEA_EMBED_BATCH_SIZE", 32),
+				BatchTokens: env.count("REJEA_EMBED_BATCH_TOKENS", 16000),
+				Timeout:     env.duration("REJEA_EMBED_TIMEOUT", 2*time.Minute),
+				// The retrieval instruction of the Qwen3 model card.
+				QueryInstruction: env.text("REJEA_EMBED_QUERY_INSTRUCTION",
+					"Given a web search query, retrieve relevant passages that answer the query"),
+			},
+			MaxAttempts:  env.count("REJEA_MODEL_MAX_ATTEMPTS", 3),
+			RetryWaitMin: env.duration("REJEA_MODEL_RETRY_WAIT_MIN", time.Second),
+			RetryWaitMax: env.duration("REJEA_MODEL_RETRY_WAIT_MAX", 30*time.Second),
+			Cloudflare: cloudflare.Config{
+				// The names that the tools of Cloudflare use. No default:
+				// each developer has an account of their own.
+				AccountID:      env.text("CLOUDFLARE_ACCOUNT_ID", ""),
+				APIToken:       env.text("CLOUDFLARE_API_TOKEN", ""),
+				BaseURL:        env.text("REJEA_CLOUDFLARE_API_URL", "https://api.cloudflare.com/client/v4"),
+				MaxAnswerBytes: env.size("REJEA_MODEL_MAX_ANSWER_BYTES", 16<<20), // 16 MiB
+			},
 		},
 		Server: server.Config{
 			ReadHeaderTimeout: env.duration("REJEA_HTTP_READ_HEADER_TIMEOUT", 10*time.Second),

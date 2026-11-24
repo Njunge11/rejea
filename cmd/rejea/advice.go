@@ -8,6 +8,7 @@ import (
 
 	"github.com/Njunge11/rejea/internal/config"
 	"github.com/Njunge11/rejea/internal/database"
+	"github.com/Njunge11/rejea/internal/embed"
 	"github.com/Njunge11/rejea/internal/parse"
 	"github.com/Njunge11/rejea/internal/storage"
 )
@@ -51,6 +52,13 @@ func advice(err error) string {
 		return `Give REJEA_S3_BUCKET in .env the name of a bucket that the store has. The bucket of the store of compose.yaml has the name "rejea".`
 	case errors.Is(err, storage.ErrRegion):
 		return `Give REJEA_S3_REGION in .env the AWS Region of the bucket.`
+
+	case errors.Is(err, embed.ErrRefused):
+		return `Give CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN in .env the values of your Cloudflare account: see "Embeddings" in the README. The token needs the permissions "Workers AI Read" and "Workers AI Edit".`
+	case errors.Is(err, embed.ErrNoModel):
+		return `Give REJEA_EMBED_MODEL in .env the name of an embedding model of the provider. The default is @cf/qwen/qwen3-embedding-0.6b.`
+	case errors.Is(err, embed.ErrAnswer):
+		return `Give REJEA_EMBED_DIMENSIONS in .env the number of dimensions of the model in REJEA_EMBED_MODEL. The column chunks.embedding has 1,024 dimensions: a model with a different number also needs a migration.`
 
 	case errors.Is(err, syscall.EADDRINUSE):
 		return `Stop the other program that uses this port, or change the port in REJEA_HTTP_ADDR in .env.`
