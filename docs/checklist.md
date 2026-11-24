@@ -145,10 +145,14 @@ These points are not in the plan. Each one is settled before its item starts.
 
 - [ ] **18. Parse worker: blocks**
   - Send each page image to the parser. Save `blocks`. Record the parser name and version on the document.
+  - A second stage of the parse worker of item 16, after the render. It sends the PNG that item 16 stored in S3, not a new render.
+  - The blocks of a page are saved when the parser answers, so a new attempt parses only the pages with no blocks. The parser takes 8 to 40 seconds for a page on this Mac, and one attempt of a job has 60 minutes.
   - Proof: a PDF has its blocks, with boxes as fractions of the page.
 
 - [ ] **19. Word files**
   - Read `.docx` and `.doc` directly with office_oxide: headings, paragraphs and tables, without coordinates. A Word file skips the render.
+  - A Word file has its parse job and the status `parsing` from item 16. The parse worker returns at once for it now: this item adds the Word stage at that place.
+  - Same methods as item 16: a fault in the content of the file fails the document at once with the reason, a new attempt skips a stage that is complete, and each change of a document goes through `documents`.
   - Proof: a Word file has its blocks, with no page number and no box.
   - **Step check of the plan:** 10 real PDFs (one scanned, one with many tables) and 2 Word files have correct headings, tables and page numbers, and the block boxes agree with the page image.
 
