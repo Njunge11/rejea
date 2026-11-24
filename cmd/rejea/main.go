@@ -103,14 +103,10 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 	// River takes no new job and waits for the jobs in work.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	// The rules for documents. The HTTP server and the workers call them.
 	inserter, err := queue.NewInserter(pool, logger, cfg.Queue)
 	if err != nil {
 		return err
 	}
-	docs := documents.New(pool, store, inserter, cfg.Documents)
-
-	failureRule := []rivertype.Middleware{ingest.FailureRule(docs, logger, cfg.Ingest.FailureSaveTimeout)}
 	parser, err := parse.NewPaddleOCR(cfg.Parse)
 	if err != nil {
 		return err
@@ -138,6 +134,10 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 	if err != nil {
 		return err
 	}
+	// The rules for documents. The HTTP server and the workers call them.
+	// With no embedding model, embedder is nil, and the search tells why.
+	docs := documents.New(pool, store, inserter, embedder, cfg.Documents)
+	failureRule := []rivertype.Middleware{ingest.FailureRule(docs, logger, cfg.Ingest.FailureSaveTimeout)}
 	workers := ingest.Workers(docs, store, pdfs, parser, words, chunker, embedder, logger, cfg.Ingest)
 	jobs, err := queue.NewClient(pool, logger, workers, failureRule, ingest.Schedule(cfg.Ingest), cfg.Queue)
 	if err != nil {

@@ -76,6 +76,26 @@ type Config struct {
 	// ReindexBatchSize is the number of documents that go to the index
 	// work again in one transaction.
 	ReindexBatchSize int
+	// SearchLimit is the number of results of a search when the caller
+	// gives no number.
+	SearchLimit int
+	// MaxSearchLimit is the largest number of results that a caller can
+	// ask for.
+	MaxSearchLimit int
+	// SearchCandidates is the number of chunks that the keyword search and
+	// the vector search each give to the merge.
+	SearchCandidates int
+	// SearchRankConstant is the constant k of reciprocal rank fusion: the
+	// score of a chunk is the sum of 1 / (k + rank).
+	SearchRankConstant int
+	// MaxQueryLength is the largest number of characters of a question.
+	MaxQueryLength int
+	// MaxSearchDocuments is the largest number of document IDs in the
+	// filter of a search.
+	MaxSearchDocuments int
+	// SearchTimeout is the longest time of one search: the vector of the
+	// question and the query of the database.
+	SearchTimeout time.Duration
 }
 
 // Document is a document as the database keeps it.
@@ -127,12 +147,16 @@ type Service struct {
 	store *storage.Store
 	// jobs adds the jobs of the workers. It runs no job.
 	jobs *river.Client[pgx.Tx]
-	cfg  Config
+	// embedder gives the vector of a search question. It is nil when the
+	// service has no embedding model: the search then tells why.
+	embedder QueryEmbedder
+	cfg      Config
 }
 
-// New makes a Service.
-func New(pool *pgxpool.Pool, store *storage.Store, jobs *river.Client[pgx.Tx], cfg Config) *Service {
-	return &Service{pool: pool, store: store, jobs: jobs, cfg: cfg}
+// New makes a Service. The store and the embedder can be nil for a caller
+// that reads no file and runs no search.
+func New(pool *pgxpool.Pool, store *storage.Store, jobs *river.Client[pgx.Tx], embedder QueryEmbedder, cfg Config) *Service {
+	return &Service{pool: pool, store: store, jobs: jobs, embedder: embedder, cfg: cfg}
 }
 
 // Get reads one document. The error is ErrNotFound when no document has

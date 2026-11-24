@@ -87,6 +87,9 @@ func problemOf(err error) problem {
 	if conflict, ok := errors.AsType[*documents.Conflict](err); ok {
 		return problem{Status: http.StatusConflict, Detail: conflict.Detail}
 	}
+	if unavailable, ok := errors.AsType[*documents.Unavailable](err); ok {
+		return problem{Status: http.StatusServiceUnavailable, Detail: unavailable.Detail}
+	}
 	if errors.Is(err, documents.ErrNotFound) {
 		return problem{Status: http.StatusNotFound, Detail: "No document has this id."}
 	}

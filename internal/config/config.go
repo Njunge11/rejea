@@ -106,6 +106,14 @@ func Load(getenv func(string) string) (Config, error) {
 			ListLimit:        env.count("REJEA_LIST_LIMIT", 50),
 			MaxListLimit:     env.count("REJEA_MAX_LIST_LIMIT", 1000),
 			ReindexBatchSize: env.count("REJEA_REINDEX_BATCH_SIZE", 500),
+
+			SearchLimit:        env.count("REJEA_SEARCH_LIMIT", 10),
+			MaxSearchLimit:     env.count("REJEA_SEARCH_MAX_LIMIT", 50),
+			SearchCandidates:   env.count("REJEA_SEARCH_CANDIDATES", 50),
+			SearchRankConstant: env.count("REJEA_SEARCH_RANK_CONSTANT", 60),
+			MaxQueryLength:     env.count("REJEA_SEARCH_MAX_QUERY_LENGTH", 2000),
+			MaxSearchDocuments: env.count("REJEA_SEARCH_MAX_DOCUMENTS", 1000),
+			SearchTimeout:      env.duration("REJEA_SEARCH_TIMEOUT", 20*time.Second),
 		},
 		Ingest: ingest.Config{
 			FailureSaveTimeout:  env.duration("REJEA_FAILURE_SAVE_TIMEOUT", 10*time.Second),
@@ -187,6 +195,22 @@ func Load(getenv func(string) string) (Config, error) {
 	if cfg.Documents.ListLimit > cfg.Documents.MaxListLimit {
 		env.fault("REJEA_LIST_LIMIT (%d) must not be more than REJEA_MAX_LIST_LIMIT (%d)",
 			cfg.Documents.ListLimit, cfg.Documents.MaxListLimit)
+	}
+	if cfg.Documents.SearchLimit > cfg.Documents.MaxSearchLimit {
+		env.fault("REJEA_SEARCH_LIMIT (%d) must not be more than REJEA_SEARCH_MAX_LIMIT (%d)",
+			cfg.Documents.SearchLimit, cfg.Documents.MaxSearchLimit)
+	}
+	// A result comes from the candidates, so a search cannot give more
+	// results than candidates. pgvector permits 1000 at most for
+	// hnsw.ef_search, which gets this number.
+	if cfg.Documents.SearchCandidates < cfg.Documents.MaxSearchLimit || cfg.Documents.SearchCandidates > 1000 {
+		env.fault("REJEA_SEARCH_CANDIDATES (%d) must be a number from REJEA_SEARCH_MAX_LIMIT (%d) to 1000",
+			cfg.Documents.SearchCandidates, cfg.Documents.MaxSearchLimit)
+	}
+	// The answer must come before the server stops the write of it.
+	if cfg.Documents.SearchTimeout >= cfg.Server.WriteTimeout {
+		env.fault("REJEA_SEARCH_TIMEOUT (%s) must be shorter than REJEA_HTTP_WRITE_TIMEOUT (%s)",
+			cfg.Documents.SearchTimeout, cfg.Server.WriteTimeout)
 	}
 	if err := errors.Join(env.faults...); err != nil {
 		return Config{}, err

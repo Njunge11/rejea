@@ -13,7 +13,7 @@ A RAG (retrieval-augmented generation) engine for PDF and Word documents, with h
 
 ## Status
 
-Built: the schema, the migrations, the job queues, upload URLs, the confirm of an upload, the file hash, the duplicate check, the failure rule, the unpack of archives (zip, tar, tar.gz), the job that fails old uploads, the status of one document and of the list of documents, the retry of a failed document, the parser service, the page images of a PDF, the blocks of a PDF and of a Word file, the chunker, the embeddings, the index step that saves the chunks of a document with their vectors, the command that makes the chunks again, and the question file of the test set. Not built: the rest of ingestion, retrieval, generation.
+Built: the schema, the migrations, the job queues, upload URLs, the confirm of an upload, the file hash, the duplicate check, the failure rule, the unpack of archives (zip, tar, tar.gz), the job that fails old uploads, the status of one document and of the list of documents, the retry of a failed document, the parser service, the page images of a PDF, the blocks of a PDF and of a Word file, the chunker, the embeddings, the index step that saves the chunks of a document with their vectors, the command that makes the chunks again, the question file of the test set, and the search endpoint. Not built: the rest of ingestion, the reranker, generation.
 
 ## Run
 
@@ -111,6 +111,54 @@ CLOUDFLARE_API_TOKEN=...
 When the service starts, it sends one small request to the model. With no values, it starts and warns: a document is parsed, and its index work fails with the correction as its reason. With a wrong value (the token, the account ID, the name of the model, the number of dimensions), it stops and names the setting to correct.
 
 The code for a provider is an adapter behind one interface ([internal/embed](internal/embed/embed.go)). The registry in [internal/models](internal/models/models.go) has the name of each provider, and `REJEA_EMBED_PROVIDER` selects one. The new attempts, the time limit and the usage log are the same code for each provider. The usage log is one line for each request: the model, the number of texts, the tokens that the provider counted, the time.
+
+## Search
+
+`POST /search` gives the chunks that agree best with a question, each with its document and its pages.
+
+```sh
+curl -s http://localhost:8080/search \
+  -H 'Content-Type: application/json' \
+  -d '{"query": "What was the overall inflation rate in April 2011?", "limit": 1}'
+```
+
+```json
+{
+  "results": [
+    {
+      "chunk_id": "01a20e3d-05ab-78aa-87b3-c63c6b8628dc",
+      "document": { "id": "01a20e10-5d4b-71d4-80a6-306d539111bc", "filename": "cpi-a.pdf", "title": null },
+      "page_start": 1,
+      "page_end": 3,
+      "heading_path": ["CPI AND INFLATION RATES FOR THE MONTH OF APRIL 2011"],
+      "text": "CPI AND INFLATION RATES FOR THE MONTH OF APRIL 2011\n\nKenya National Bureau of Statistics hereby ...",
+      "block_ids": ["01a20e11-0e87-7256-bd54-63ee78dc598d", "01a20e11-0e87-725b-84c5-d9714f94e008"],
+      "score": 0.03279,
+      "keyword_rank": 1,
+      "vector_rank": 1
+    }
+  ]
+}
+```
+
+The method is hybrid search. The service runs two searches for one question and merges their lists.
+
+- **Keyword search** (BM25, with `pg_textsearch`) finds the exact words and numbers of the question.
+- **Vector search** (with `pgvector`) finds text with the same meaning in other words.
+- **Reciprocal rank fusion** merges the two lists: the score of a chunk is the sum of `1 / (60 + rank)` for each list that has it. A chunk that is high in the two lists comes first.
+
+The request:
+
+| Field | Value |
+| --- | --- |
+| `query` | The question. Necessary. |
+| `limit` | The largest number of results. Default 10, largest 50. |
+| `filters.document_ids` | Search in these documents only. |
+| `filters.metadata` | Search in the documents whose metadata has each name and value of this object, for example `{"department": "finance"}`. |
+
+A result has no pages (`null`) for a Word file. `keyword_rank` or `vector_rank` is `null` when that search did not find the chunk. `score` puts the results in order: it does not tell how good a result is. The vector search always gives its nearest chunks, so a question with no answer in the documents also gets results.
+
+The search reads the documents with the status `indexed`, and those in the index work again (`make reindex`), which keep their old chunks until the new chunks are saved. It needs the embedding model: with no model, the answer is 503 and the log gives the correction.
 
 ## Test set
 
