@@ -7,12 +7,18 @@ export
 export CGO_LDFLAGS := -L$(CURDIR)/lib
 export MACOSX_DEPLOYMENT_TARGET := 15.5
 
-.PHONY: db-up db-down migrate serve parser-install parser word-install tokenizer-install build test lint vet docker-check check
+.PHONY: up down db-up db-down migrate serve parser-install parser word-install tokenizer-install build test lint vet docker-check check
 
-db-up: ## Build and start the database, and wait until it is healthy.
-	docker compose up -d --build --wait
+up: ## Start all of Rejea on this machine: the one command for a new clone.
+	scripts/up
 
-db-down: ## Stop the database. The data stays in its volume.
+down: ## Stop all of Rejea. The data stays in its volumes.
+	scripts/down
+
+db-up: ## Start the database and the file store only, for a service that runs on the machine (make serve).
+	docker compose up --detach --build --wait postgres storage
+
+db-down: ## Stop the database and the file store. The data stays in its volumes.
 	docker compose down
 
 migrate: ## Bring the database schema up to date.
@@ -45,7 +51,8 @@ lint: ## Check the format and the code.
 vet: ## Find suspect code.
 	go vet ./...
 
-docker-check: ## Check the Dockerfile and the Compose file.
+docker-check: ## Check the Dockerfiles and the Compose file.
+	docker build --check .
 	docker build --check docker/postgres
 	docker compose config --quiet
 

@@ -8,8 +8,10 @@
 /lib/
 /models/
 
-# The Python environments of the parser service
+# The Python environments of the parser service, and its log and
+# process number when "make up" runs it
 /parser/.venv-*/
+/parser/.run/
 
 # Test and coverage output
 *.test

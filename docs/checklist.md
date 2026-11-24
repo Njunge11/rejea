@@ -4,7 +4,7 @@ Each item is one change, pushed to `main`. Build them in sequence. Tick the box 
 
 Sources: the plan ("Document Knowledge Base: Implementation Plan", 10 build steps), the agreed ingest design (three queues, failure and retry flow), and the code in this repository on 2026-11-22.
 
-Rule of each item: `make check` passes, CI is green, and the item has its own proof.
+Rule of each item: `make check` passes, CI is green, and the item has its own proof. After each item, `make up` on a new clone still starts all of Rejea: a new part that the service needs goes into `compose.yaml`, the image of the service or `scripts/up` in the same change.
 
 ## Built already
 
@@ -13,6 +13,19 @@ Rule of each item: `make check` passes, CI is green, and the item has its own pr
 - One River queue with a job time limit, and a test job that writes a row.
 - S3 bucket behind CloudFront with signed URLs (AWS, no code reads it yet).
 - CI, lint, the commit message check, the test database helper.
+
+## Setup
+
+- [x] **One command for a new clone: `make up`**
+  - Docker Compose starts the database, the file store and the service, each with a health check. The migrations run in a container that stops before the service starts. `scripts/up` first names each tool that is missing, and it starts the parser on a Mac. `make down` stops all of it.
+  - No settings file is necessary: each setting has a default. A later item that needs a value with no default (an API key) adds it to the check of `scripts/up`.
+  - The image of the service (`Dockerfile`): two stages, Docker Official base images with version and digest, a user that is not root. It has the tokenizers library, the tokenizer of the model and the Word reader.
+  - The file store is SeaweedFS 4.55, with the API of S3. The storage package has two new settings: `REJEA_S3_ENDPOINT`, and `REJEA_S3_PUBLIC_ENDPOINT` for the address in an upload URL. With no endpoint, the bucket is in AWS S3 as before.
+  - Choice of the store: SeaweedFS, RustFS 1.0.6 and the Versity gateway 1.11.0 each passed the same 18 calls of the storage package (upload URL with a right and a wrong size, exists, download, a 20 MiB upload in parts, range reads, an upload that fails, delete). Only SeaweedFS makes its bucket from a setting and answers the preflight request of a browser with no more setup. Its cost: an image of 280 MB to download and 260 MB of memory, against 24 MB of memory for the Versity gateway. MinIO has no more releases.
+  - The parser stays on the Mac: Docker gives a container no GPU on a Mac. The service reaches it at `host.docker.internal`.
+  - Proof: a copy of the repository with only its committed files and no `.env`, in an empty folder, with empty volumes: `make up` ended with exit 0 after 168 seconds. Then `heading123.docx` (6 blocks) and `labour.pdf` (13 pages, 97 blocks, 118 seconds) went through upload URL, upload, confirm and parse. The files and the rows stayed after a restart of the store and the service. A second `make up` took 6 seconds. `make down` stopped the containers and the two parser processes. With no Docker, `make up` names it and stops.
+  - Not proved on a Mac: a first run with an empty Docker cache and an empty pip cache. Not proved at all: a Mac with an Intel processor. CI runs `make up` on Linux (amd64) for each push.
+  - Not built: a parser on Linux, and Windows.
 
 ## Not decided in the plan
 
@@ -314,6 +327,5 @@ These points are not in the plan. Each one is settled before its item starts.
 
 ## Named earlier, not in the ten steps
 
-- A Dockerfile for a release of the Go service.
 - CloudFront logs and a custom domain (AWS only).
 - From the "Later" column of the plan: formats beyond PDF and Word, spreadsheets, audio, video, roles and permissions.

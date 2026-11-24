@@ -74,5 +74,8 @@ jobs:
       - run: make tokenizer-install
       - run: make vet
       - run: make build
-      - run: make db-up
+      # The one command of a new clone: it builds the image of the service
+      # and waits until each container is healthy. The tests use its
+      # database.
+      - run: make up
       - run: make test

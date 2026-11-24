@@ -1,0 +1,8 @@
+#!/bin/sh
+# Stops all of Rejea on this machine. The data stays: the database and the
+# files are in Docker volumes.
+set -eu
+cd "$(dirname "$0")/.."
+
+scripts/parser stop
+docker compose down

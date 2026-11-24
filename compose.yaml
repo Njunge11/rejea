@@ -1,16 +1,50 @@
-# The database for local development. The Go service runs on the host.
+# The services of Rejea on one machine.
+#
+#   make up      starts all of them, and the parser on a Mac
+#   make db-up   starts the database and the file store only, for a service
+#                that runs on the machine itself (make serve)
+#
+# The parser is not here: Docker gives a container no GPU on a Mac.
 name: rejea
+
+# The service image, and the settings that are different in a container:
+# the addresses of the other services and the paths in the image. Each
+# other setting comes from .env, if that file is there.
+x-rejea: &rejea
+  build: .
+  image: rejea
+  env_file:
+    - path: .env
+      required: false
+  environment:
+    DATABASE_URL: postgres://rejea:rejea@postgres:5432/rejea
+    REJEA_HTTP_ADDR: 0.0.0.0:8080
+    REJEA_S3_BUCKET: rejea
+    REJEA_S3_REGION: us-east-1
+    REJEA_S3_ENDPOINT: http://storage:8333
+    # A browser reaches the file store through the port of the machine.
+    REJEA_S3_PUBLIC_ENDPOINT: http://localhost:${REJEA_STORAGE_PORT:-8333}
+    AWS_ACCESS_KEY_ID: ${REJEA_STORAGE_ACCESS_KEY:-rejea}
+    AWS_SECRET_ACCESS_KEY: ${REJEA_STORAGE_SECRET_KEY:-rejea-local-only}
+    # A profile of .env is for the machine: the container has no AWS files.
+    AWS_PROFILE: ""
+    # The parser runs on the machine itself.
+    REJEA_PARSER_URL: http://host.docker.internal:${REJEA_PARSER_PORT:-8112}
+    REJEA_WORD_READER_PATH: /usr/local/bin/office-oxide
+    REJEA_TOKENIZER_PATH: /usr/local/share/rejea/tokenizer.json
+    REJEA_TEMP_DIR: ""
 
 services:
   postgres:
     build: docker/postgres
+    restart: unless-stopped
     environment:
       POSTGRES_USER: rejea
       POSTGRES_PASSWORD: rejea
       POSTGRES_DB: rejea
     ports:
       # Host port 5433: a PostgreSQL on the host can keep 5432.
-      - "127.0.0.1:5433:5432"
+      - "127.0.0.1:${REJEA_DB_PORT:-5433}:5432"
     volumes:
       # This path is for PostgreSQL 17. From version 18 the image keeps its
       # data in /var/lib/postgresql.
@@ -21,5 +55,56 @@ services:
       timeout: 3s
       retries: 30
 
+  # The file store: SeaweedFS, which has the API of S3. It makes the bucket
+  # and takes the two keys when it starts. For a new version, change the
+  # version and the digest.
+  storage:
+    image: chrislusf/seaweedfs:4.55@sha256:7ca46aeae2f223b37e5d91593c17ab37738eec6df6ab69b48a0487f7643342b9
+    restart: unless-stopped
+    environment:
+      AWS_ACCESS_KEY_ID: ${REJEA_STORAGE_ACCESS_KEY:-rejea}
+      AWS_SECRET_ACCESS_KEY: ${REJEA_STORAGE_SECRET_KEY:-rejea-local-only}
+      S3_BUCKET: rejea
+    ports:
+      - "127.0.0.1:${REJEA_STORAGE_PORT:-8333}:8333"
+    volumes:
+      - storage-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8333/healthz"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # Brings the database schema up to date, then stops.
+  migrate:
+    <<: *rejea
+    command: ["migrate"]
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  rejea:
+    <<: *rejea
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      storage:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${REJEA_PORT:-8080}:8080"
+    extra_hosts:
+      # Docker Desktop has this name. Docker on Linux gets it here.
+      - host.docker.internal:host-gateway
+    healthcheck:
+      test: ["CMD", "rejea", "health"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
 volumes:
   postgres-data:
+  storage-data:

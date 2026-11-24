@@ -1,0 +1,9 @@
+# The build of the service image gets only the files that it uses. Each
+# other file, such as .env, stays out of the image.
+*
+!go.mod
+!go.sum
+!cmd
+!internal
+!scripts/install-tokenizer
+!scripts/install-word-reader

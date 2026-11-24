@@ -1,0 +1,50 @@
+#!/bin/sh
+# Starts all of Rejea on this machine: the database, the file store and the
+# service in Docker, and the parser on the machine itself. It first tells
+# each thing that is missing.
+set -eu
+cd "$(dirname "$0")/.."
+
+mac_with_gpu=false
+if [ "$(uname -s)-$(uname -m)" = "Darwin-arm64" ]; then
+	mac_with_gpu=true
+fi
+
+# Each thing that is missing, all at one time.
+missing=""
+if ! command -v docker >/dev/null 2>&1; then
+	missing="$missing
+  - Docker is not installed: https://docs.docker.com/get-started/get-docker/"
+elif ! docker info >/dev/null 2>&1; then
+	missing="$missing
+  - Docker does not run: start Docker, then run this command again"
+elif ! docker compose version >/dev/null 2>&1; then
+	missing="$missing
+  - Docker Compose is not installed: https://docs.docker.com/compose/install/"
+fi
+if [ "$mac_with_gpu" = true ] && [ ! -x parser/.venv-paddle/bin/paddlex ] &&
+	! command -v "${REJEA_PARSER_PYTHON:-python3.12}" >/dev/null 2>&1; then
+	missing="$missing
+  - Python 3.12 is not installed, and the parser needs it: brew install python@3.12"
+fi
+if [ -n "$missing" ]; then
+	echo "rejea: cannot start. Missing:$missing" >&2
+	exit 1
+fi
+
+echo "rejea: build and start the database, the file store and the service"
+docker compose up --detach --build --wait
+
+if [ "$mac_with_gpu" = true ]; then
+	scripts/parser start
+else
+	echo "rejea: no parser on this machine: it runs on a Mac with Apple Silicon only."
+	echo "       A Word file needs no parser. A PDF waits until a parser answers at REJEA_PARSER_URL."
+fi
+
+echo
+echo "Rejea runs."
+echo "  service     http://localhost:${REJEA_PORT:-8080}/healthz"
+echo "  file store  http://localhost:${REJEA_STORAGE_PORT:-8333}"
+echo "  logs        docker compose logs --follow rejea"
+echo "  stop        make down"

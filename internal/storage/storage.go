@@ -34,6 +34,16 @@ type Config struct {
 	// Bucket is the name of the S3 bucket and Region is its AWS Region.
 	Bucket string
 	Region string
+	// Endpoint is the address of a file store that is not AWS S3 but has
+	// its API, such as the store of compose.yaml. With "", the bucket is
+	// in AWS S3.
+	Endpoint string
+	// PublicEndpoint is the address at which a client of the service
+	// reaches that store: an upload URL starts with it. With "", it is
+	// Endpoint. The two are different when the service is in a container:
+	// the service reaches the store by its name in the container network,
+	// and a browser reaches it through a port of the machine.
+	PublicEndpoint string
 	// UploadURLLife is the time for which an upload URL can start an upload.
 	UploadURLLife time.Duration
 	// MaxFileBytes is the largest file that a client can upload.
@@ -128,19 +138,38 @@ func New(ctx context.Context, logger *slog.Logger, cfg Config) (*Store, error) {
 		return nil, fmt.Errorf("the AWS credentials live for %s, but an upload URL lives for %s: use a longer session",
 			(left + cfg.UploadURLLife).Round(time.Second), cfg.UploadURLLife)
 	}
-	client := s3.NewFromConfig(awsCfg)
+	client := s3.NewFromConfig(awsCfg, at(cfg.Endpoint))
+	// The address is a part of the signature of an upload URL, so the URL
+	// is signed for the address that its client uses.
+	signer := client
+	if cfg.PublicEndpoint != "" && cfg.PublicEndpoint != cfg.Endpoint {
+		signer = s3.NewFromConfig(awsCfg, at(cfg.PublicEndpoint))
+	}
 	return &Store{
 		bucket:        cfg.Bucket,
 		uploadURLLife: cfg.UploadURLLife,
 		rangeBytes:    cfg.RangeBytes,
 		client:        client,
-		presign:       s3.NewPresignClient(client),
+		presign:       s3.NewPresignClient(signer),
 		transfer: transfermanager.New(client, func(o *transfermanager.Options) {
 			// The context of a job that ran out of time is cancelled, but
 			// the parts of its upload must be removed from S3 all the same.
 			o.FailTimeout = cfg.ReadTimeout
 		}),
 	}, nil
+}
+
+// at makes an S3 client use the file store at the given address. Such a
+// store has the bucket in the path of the address, not in its host name:
+// a host name for each bucket needs DNS records that a local store does not
+// have. With "", the client uses AWS S3.
+func at(endpoint string) func(*s3.Options) {
+	return func(o *s3.Options) {
+		if endpoint != "" {
+			o.BaseEndpoint = aws.String(endpoint)
+			o.UsePathStyle = true
+		}
+	}
 }
 
 // UploadURL gives a URL to which a client sends one file with an HTTP PUT,

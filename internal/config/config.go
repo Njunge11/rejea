@@ -70,12 +70,14 @@ func Load(getenv func(string) string) (Config, error) {
 		Storage: storage.Config{
 			// The migrate command does not use the bucket, so these two
 			// have no default and are not required here.
-			Bucket:        env.text("REJEA_S3_BUCKET", ""),
-			Region:        env.text("REJEA_S3_REGION", ""),
-			UploadURLLife: env.duration("REJEA_UPLOAD_URL_LIFE", time.Hour),
-			MaxFileBytes:  maxFileBytes,
-			ReadTimeout:   env.duration("REJEA_S3_READ_TIMEOUT", time.Minute),
-			RangeBytes:    env.size("REJEA_S3_RANGE_BYTES", 8<<20), // 8 MiB
+			Bucket:         env.text("REJEA_S3_BUCKET", ""),
+			Region:         env.text("REJEA_S3_REGION", ""),
+			Endpoint:       env.text("REJEA_S3_ENDPOINT", ""),
+			PublicEndpoint: env.text("REJEA_S3_PUBLIC_ENDPOINT", ""),
+			UploadURLLife:  env.duration("REJEA_UPLOAD_URL_LIFE", time.Hour),
+			MaxFileBytes:   maxFileBytes,
+			ReadTimeout:    env.duration("REJEA_S3_READ_TIMEOUT", time.Minute),
+			RangeBytes:     env.size("REJEA_S3_RANGE_BYTES", 8<<20), // 8 MiB
 		},
 		Queue: queue.Config{
 			FileWorkers:  env.count("REJEA_FILE_WORKERS", 1),

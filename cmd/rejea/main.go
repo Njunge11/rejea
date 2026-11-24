@@ -2,6 +2,7 @@
 //
 //	rejea migrate   brings the database schema up to date
 //	rejea serve     runs the HTTP server
+//	rejea health    asks the HTTP server of this machine if it is ready
 package main
 
 import (
@@ -11,6 +12,7 @@ import (
 	"io"
 	"log/slog"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -41,12 +43,15 @@ func main() {
 
 // run writes the result of a command to stdout and the log to stderr.
 func run(ctx context.Context, args []string, getenv func(string) string, stdout, stderr io.Writer) error {
-	if len(args) != 1 || (args[0] != "migrate" && args[0] != "serve") {
-		return errors.New("usage: rejea migrate | rejea serve")
+	if len(args) != 1 || (args[0] != "migrate" && args[0] != "serve" && args[0] != "health") {
+		return errors.New("usage: rejea migrate | rejea serve | rejea health")
 	}
 	cfg, err := config.Load(getenv)
 	if err != nil {
 		return err
+	}
+	if args[0] == "health" {
+		return health(ctx, cfg)
 	}
 	logger := newLogger(cfg, stderr)
 	// A dependency that logs through the default logger of slog or through
@@ -126,6 +131,30 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 	}
 	logger.Info("http server listening", "addr", listener.Addr().String())
 	return server.Run(ctx, listener, handler, logger, cfg.Server)
+}
+
+// health asks the HTTP server of this machine if it is ready. It is the
+// health check of the container of the service: the image has no program
+// that sends an HTTP request. The caller gives the time limit.
+func health(ctx context.Context, cfg config.Config) error {
+	_, port, err := net.SplitHostPort(cfg.HTTPAddr)
+	if err != nil {
+		return fmt.Errorf("the address of the HTTP server: %w", err)
+	}
+	address := "http://" + net.JoinHostPort("127.0.0.1", port) + "/healthz"
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, address, nil)
+	if err != nil {
+		return err
+	}
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close() //nolint:errcheck // The answer is read.
+	if response.StatusCode != http.StatusOK {
+		return fmt.Errorf("%s answers %s", address, response.Status)
+	}
+	return nil
 }
 
 // newLogger makes the one logger of the service. Each part that logs gets it

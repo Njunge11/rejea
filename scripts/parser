@@ -1,0 +1,73 @@
+#!/bin/sh
+# Runs the parser service on this machine, in the background.
+#
+#   scripts/parser start    installs the parser if it is not installed,
+#                           starts it, and waits until it answers
+#   scripts/parser stop     stops it
+#
+# The parser runs on a Mac with Apple Silicon only: the vision model uses
+# the GPU through MLX. Its log is parser/.run/parser.log.
+set -eu
+cd "$(dirname "$0")/.."
+
+host="${REJEA_PARSER_HOST:-127.0.0.1}"
+port="${REJEA_PARSER_PORT:-8112}"
+python="${REJEA_PARSER_PYTHON:-python3.12}"
+run="parser/.run"
+pid_file="$run/parser.pid"
+log="$run/parser.log"
+
+answers() {
+	curl --silent --fail --max-time 2 --output /dev/null "http://$host:$port/health"
+}
+
+running() {
+	[ -f "$pid_file" ] && kill -0 "$(cat "$pid_file")" 2>/dev/null
+}
+
+case "${1:-}" in
+start)
+	if answers; then
+		echo "parser: it runs already, at http://$host:$port"
+		exit 0
+	fi
+	if [ ! -x parser/.venv-paddle/bin/paddlex ] || [ ! -x parser/.venv-mlx/bin/mlx_vlm.server ]; then
+		if ! command -v "$python" >/dev/null 2>&1; then
+			echo "parser: $python is not installed. Install Python 3.12 (brew install python@3.12), or set REJEA_PARSER_PYTHON in .env" >&2
+			exit 1
+		fi
+		echo "parser: install, 2.2 GB. This takes some minutes."
+		parser/install.sh
+	fi
+	mkdir -p "$run"
+	# With nohup, the parser stays when this terminal closes.
+	nohup parser/start.sh >"$log" 2>&1 &
+	echo $! >"$pid_file"
+	echo "parser: start. A first start downloads the models, 2.1 GB."
+	waited=0
+	until answers; do
+		if ! running; then
+			echo "parser: it stopped. The end of $log:" >&2
+			tail -n 20 "$log" >&2
+			exit 1
+		fi
+		sleep 5
+		waited=$((waited + 5))
+		if [ $((waited % 30)) -eq 0 ]; then
+			echo "parser: not ready after ${waited} s: $(tail -n 1 "$log" | cut -c 1-100)"
+		fi
+	done
+	echo "parser: ready, at http://$host:$port"
+	;;
+stop)
+	if running; then
+		kill "$(cat "$pid_file")"
+		echo "parser: stopped"
+	fi
+	rm -f "$pid_file"
+	;;
+*)
+	echo "usage: scripts/parser start | stop" >&2
+	exit 1
+	;;
+esac

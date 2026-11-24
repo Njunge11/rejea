@@ -15,59 +15,61 @@ A RAG (retrieval-augmented generation) engine for PDF and Word documents, with h
 
 Built: the schema, the migrations, the job queues, upload URLs, the confirm of an upload, the file hash, the duplicate check, the failure rule, the unpack of archives (zip, tar, tar.gz), the job that fails old uploads, the status of one document and of the list of documents, the retry of a failed document, the parser service, the page images of a PDF, the blocks of a PDF and of a Word file, and the chunker. Not built: the rest of ingestion, retrieval, generation.
 
-## Requirements
-
-- Go 1.26
-- A C compiler (the Xcode command line tools, or gcc): the service links a C library
-- Docker
-- golangci-lint, for `make check`
-- Lefthook, for the Git hooks
-
 ## Run
 
+Requirements: Docker with Compose, and `make`. On a Mac with Apple Silicon also Python 3.12, for the parser.
+
 ```sh
-lefthook install   # hooks: lint before a commit, check of the commit message
-cp .env.example .env
-make tokenizer-install   # the tokenizers library in lib/ and the tokenizer of the embedding model in models/, 50 MB
-make db-up      # PostgreSQL 17 with pgvector and pg_textsearch, on port 5433
-make migrate
-make serve      # http://127.0.0.1:8080/healthz
+git clone https://github.com/Njunge11/rejea.git
+cd rejea
+make up
 ```
+
+`make up` needs no settings file. It first names each tool that is missing. Then it starts:
+
+- the database, the file store and the service, each in a container ([compose.yaml](compose.yaml)). The migrations run before the service starts.
+- the parser, on the Mac itself: Docker gives a container no GPU on a Mac. Its log is `parser/.run/parser.log`.
+
+The service is at `http://localhost:8080`, and `GET /healthz` answers `ok`. `make down` stops all of it. The data stays in two Docker volumes.
+
+The first `make up` downloads 0.8 GB of container images, and on a Mac 2.2 GB of Python packages and 2.1 GB of models for the parser. On an M2 Pro, with the downloads done, the first run takes 3 minutes and each later run 6 seconds.
+
+Linux has no parser at this time: a Word file goes through, and a PDF waits. Windows is not supported.
+
+## Settings
+
+Each setting has a default: [.env.example](.env.example) lists them. To change one, copy the file to `.env` and change the value. Compose and `make` read `.env`.
+
+The ports of the machine are settings: `REJEA_PORT` (8080), `REJEA_DB_PORT` (5433), `REJEA_STORAGE_PORT` (8333) and `REJEA_PARSER_PORT` (8112). Each port listens on this machine only.
 
 ## Parser
 
 The parser turns a page image into blocks: each with its box, its type and its text. It is PaddleOCR-VL-1.6, and it runs on Apple Silicon only: the vision model runs on the GPU through MLX.
 
-```sh
-make parser-install   # two Python 3.12 environments, 2.2 GB
-make parser           # http://127.0.0.1:8112/layout-parsing; the first start downloads 2.1 GB of models
-```
+On an M2 Pro with 16 GB, a page takes 3 to 40 seconds and the parser uses 3 GB of memory.
 
-On an M2 Pro with 16 GB, a page takes 3 to 40 seconds and the service uses 3 GB of memory.
-
-`make serve` sends each page of a PDF to the parser. While the parser does not run, a PDF waits and the service tries again.
+The service sends each page of a PDF to the parser. While the parser does not run, a PDF waits and the service tries again.
 
 ## Word reader
 
-The service reads `.docx` and `.doc` files with the command line program of [office_oxide](https://github.com/yfedoseev/office_oxide), one process for each file.
-
-```sh
-make word-install   # bin/office-oxide, 4 MB
-```
-
-While the program is not installed, a Word file waits and the service tries again.
+The service reads `.docx` and `.doc` files with the command line program of [office_oxide](https://github.com/yfedoseev/office_oxide), one process for each file. The image of the service has the program.
 
 ## Chunks
 
 The chunker cuts the blocks of a document into chunks at its headings. Each chunk starts with its heading path, and has `REJEA_CHUNK_MAX_TOKENS` tokens or less. A table that is larger is split at its rows, and each part starts with the header rows.
 
-The limit is in tokens of the embedding model, Qwen3-Embedding-0.6B. The service counts them with the [tokenizers](https://github.com/huggingface/tokenizers) library of Hugging Face, through [its Go binding](https://github.com/daulet/tokenizers). `make tokenizer-install` gets the library and the tokenizer of the model. Use `make build`, `make serve` and `make test`: they tell the Go compiler where the library is.
+The limit is in tokens of the embedding model, Qwen3-Embedding-0.6B. The service counts them with the [tokenizers](https://github.com/huggingface/tokenizers) library of Hugging Face, through [its Go binding](https://github.com/daulet/tokenizers). The image of the service has the library and the tokenizer of the model.
 
 ## File storage
 
-The files are in an S3 bucket. `make serve` needs it. `make migrate` and `make test` do not.
+The files are in a store with the API of S3.
 
-- Set `REJEA_S3_BUCKET` and `REJEA_S3_REGION` in `.env`.
+`make up` starts [SeaweedFS](https://github.com/seaweedfs/seaweedfs) as this store, in a container with the bucket `rejea`. Its two keys are the settings `REJEA_STORAGE_ACCESS_KEY` and `REJEA_STORAGE_SECRET_KEY`. The defaults are for a store that only this machine reaches: change them before another machine can reach it.
+
+For a bucket in AWS S3:
+
+- Set `REJEA_S3_BUCKET` and `REJEA_S3_REGION` in `.env`, and remove `REJEA_S3_ENDPOINT`, `REJEA_S3_PUBLIC_ENDPOINT` and the two AWS keys.
+- Run the service on the machine itself (see "Develop"). The containers of `make up` use the store of `compose.yaml`.
 - The service gets its AWS credentials from the default sources of the AWS SDK. Give it an IAM role, not the access key of a user.
 - The role needs five actions, and no more:
   - `s3:GetObject` and `s3:PutObject` on the objects of the bucket.
@@ -86,11 +88,23 @@ duration_seconds = 43200
 
 S3 refuses an upload URL when the credentials that signed it are expired. Thus the session (`duration_seconds`) must be longer than `REJEA_UPLOAD_URL_LIFE`. The service does not start if it is not.
 
-## Check
+## Develop
+
+To change the code, run the service on the machine itself. This needs Go 1.26, a C compiler (the Xcode command line tools, or gcc), golangci-lint and Lefthook.
 
 ```sh
-make check      # lint, tests, Docker checks
+lefthook install         # hooks: lint before a commit, check of the commit message
+cp .env.example .env
+make tokenizer-install   # the tokenizers library in lib/ and the tokenizer of the embedding model in models/, 50 MB
+make word-install        # the Word reader in bin/, 4 MB
+make db-up               # the database and the file store, in containers
+make migrate
+make serve               # http://127.0.0.1:8080/healthz
+make parser              # the parser, in a second terminal
+make check               # lint, vet, build, tests, Docker checks
 ```
+
+Use `make build`, `make serve` and `make test`, not the bare `go` commands: they tell the Go compiler where the tokenizers library is.
 
 ## Commits
 
