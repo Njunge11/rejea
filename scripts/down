@@ -3,6 +3,8 @@
 # files are in Docker volumes.
 set -eu
 cd "$(dirname "$0")/.."
+. scripts/ui.sh
 
 scripts/parser stop
 docker compose down
+ui_ok "Rejea is stopped. The data stays: \"make up\" starts it again."

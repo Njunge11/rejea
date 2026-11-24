@@ -34,6 +34,8 @@ The service is at `http://localhost:8080`, and `GET /healthz` answers `ok`. `mak
 
 The first `make up` downloads 0.8 GB of container images, and on a Mac 0.5 GB of Python packages (2.2 GB on the disk) and 2 GB of models for the parser. On an M2 Pro, a first run with empty caches took 18 minutes, most of it for the downloads. A later start takes 30 seconds.
 
+`make up` first lists what the run installs, with the sizes. It then shows each of its 4 steps with the time, and one line that moves for each long download. In a pipe, or with `NO_COLOR` set, the output is plain text.
+
 When a thing is missing or wrong, the message names it and gives the correction:
 
 - `make up` examines the machine before it starts a thing: Docker, the ports (with the program that uses one), Python, the disk space, the values of `.env`. If a container does not start, it shows the end of the log of that container.

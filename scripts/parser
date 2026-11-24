@@ -1,22 +1,30 @@
 #!/bin/sh
 # Runs the parser service on this machine, in the background.
 #
-#   scripts/parser start    installs the parser if it is not installed,
-#                           starts it, and waits until it answers
+#   scripts/parser start    installs the parser and gets its models if they
+#                           are not there, starts it, and waits until it
+#                           answers
 #   scripts/parser stop     stops it
 #   scripts/parser status   succeeds if the parser runs or starts
+#   scripts/parser has packages | model
+#                           succeeds if that part is on this machine
 #
 # The parser runs on a Mac with Apple Silicon only: the vision model uses
-# the GPU through MLX. Its log is parser/.run/parser.log.
+# the GPU through MLX. Its logs are in parser/.run/.
 set -eu
 cd "$(dirname "$0")/.."
+. scripts/ui.sh
 
 host="${REJEA_PARSER_HOST:-127.0.0.1}"
 port="${REJEA_PARSER_PORT:-8112}"
 python="${REJEA_PARSER_PYTHON:-python3.12}"
+model="PaddlePaddle/PaddleOCR-VL-1.6"
+model_mb=1930 # The size of the files of the model.
 run="parser/.run"
 pid_file="$run/parser.pid"
 log="$run/parser.log"
+install_log="$run/install.log"
+model_log="$run/model.log"
 
 answers() {
 	curl --silent --fail --max-time 2 --output /dev/null "http://$host:$port/health"
@@ -26,62 +34,122 @@ running() {
 	[ -f "$pid_file" ] && kill -0 "$(cat "$pid_file")" 2>/dev/null
 }
 
+installed() {
+	[ -x parser/.venv-paddle/bin/paddlex ] && [ -x parser/.venv-mlx/bin/mlx_vlm.server ]
+}
+
+# The vision model is in the cache of Hugging Face after its download. The
+# cache has a link to a file of the model only when that file is complete.
+hub="${HF_HUB_CACHE:-${HF_HOME:-$HOME/.cache/huggingface}/hub}"
+
+model_here() {
+	for file in "$hub/models--$(echo "$model" | sed 's#/#--#')"/snapshots/*/model.safetensors; do
+		[ -e "$file" ] && return 0
+	done
+	return 1
+}
+
+# hub_kb prints the size of the cache.
+hub_kb() {
+	kb="$(du -sk "$hub" 2>/dev/null | cut -f 1)"
+	echo "${kb:-0}"
+}
+
+# model_progress prints how much of the model is on the disk: the growth of
+# the cache from the start of the download, and the part that an earlier
+# download left.
+model_progress() {
+	echo "$((($(hub_kb) - model_base_kb) / 1024)) MB of $model_mb MB"
+}
+
 case "${1:-}" in
 start)
 	if answers; then
-		echo "parser: it runs already, at http://$host:$port"
+		ui_ok "the parser runs already"
 		exit 0
 	fi
-	if [ ! -x parser/.venv-paddle/bin/paddlex ] || [ ! -x parser/.venv-mlx/bin/mlx_vlm.server ]; then
+	mkdir -p "$run"
+
+	if ! installed; then
 		if ! command -v "$python" >/dev/null 2>&1; then
-			echo "parser: $python is not installed. Install Python 3.12 (brew install python@3.12), or set REJEA_PARSER_PYTHON in .env" >&2
+			ui_fault "Python 3.12 is not installed ($python is not a command). The parser needs it." \
+				"install it (brew install python@3.12), or set REJEA_PARSER_PYTHON in .env to a Python 3.12 of this machine."
 			exit 1
 		fi
-		echo "parser: install, 2.2 GB. This takes some minutes."
-		if ! parser/install.sh; then
-			echo "parser: the install stopped. The reason is above." >&2
-			echo "  To correct: if a download failed, run this command again: the install starts again." >&2
+		ui_note "The packages: two Python environments, 2.2 GB on the disk."
+		parser/install.sh >"$install_log" 2>&1 &
+		if ! ui_watch "install the packages" "$install_log" $!; then
+			ui_fault "The install of the parser packages stopped." \
+				"read the reason below. If a download failed, run this command again."
+			ui_log_end "$install_log"
 			exit 1
 		fi
+		ui_ok "packages"
 	fi
-	if running; then
-		echo "parser: it starts already. Wait until it answers."
-	else
-		mkdir -p "$run"
+
+	if ! model_here; then
+		# The download command of Hugging Face continues a download that
+		# stopped. Its output is a log: the line shows the size on the disk.
+		ui_note "The vision model $model: 1.9 GB."
+		part_kb="$(find "$hub" -name '*.incomplete' -exec du -sk {} + 2>/dev/null | awk '{ sum += $1 } END { print sum + 0 }')"
+		model_base_kb=$(($(hub_kb) - part_kb))
+		parser/.venv-mlx/bin/hf download "$model" >"$model_log" 2>&1 &
+		ui_detail=model_progress
+		if ! ui_watch "download the model" "$model_log" $!; then
+			ui_fault "The download of the vision model stopped." \
+				"read the reason below, then run this command again: the download continues."
+			ui_log_end "$model_log"
+			exit 1
+		fi
+		ui_detail=""
+		ui_ok "vision model"
+	fi
+
+	if ! running; then
 		# With nohup, the parser stays when this terminal closes.
 		nohup parser/start.sh >"$log" 2>&1 &
 		echo $! >"$pid_file"
-		echo "parser: start. A first start downloads the models, 2.1 GB."
 	fi
-	waited=0
-	until answers; do
-		if ! running; then
-			echo "parser: it stopped. The end of $log:" >&2
-			tail -n 20 "$log" | sed 's/^/    /' >&2
-			echo "  To correct: read the reason above, then run this command again." >&2
-			rm -f "$pid_file"
-			exit 1
-		fi
-		sleep 5
-		waited=$((waited + 5))
-		if [ $((waited % 30)) -eq 0 ]; then
-			echo "parser: not ready after ${waited} s. Its log is $log"
-		fi
-	done
-	echo "parser: ready, at http://$host:$port"
+	if ! ui_watch "start the parser" "$log" "$(cat "$pid_file")" answers; then
+		rm -f "$pid_file"
+		ui_fault "The parser stopped before it was ready." \
+			"read the reason below, then run this command again."
+		ui_log_end "$log"
+		exit 1
+	fi
+	ui_ok "the parser answers at http://$host:$port"
 	;;
 status)
 	answers || running
 	;;
+has)
+	case "${2:-}" in
+	packages) installed ;;
+	model) model_here ;;
+	*) echo "usage: scripts/parser has packages | model" >&2; exit 1 ;;
+	esac
+	;;
 stop)
 	if running; then
-		kill "$(cat "$pid_file")"
-		echo "parser: stopped"
+		pid="$(cat "$pid_file")"
+		children="$(pgrep -P "$pid" || true)"
+		kill "$pid"
+		# The vision model server does not obey the stop signal while it
+		# downloads a model. After 10 seconds, the processes are killed.
+		waited=0
+		# shellcheck disable=SC2086 # The list has one process for each word.
+		while [ "$waited" -lt 10 ] && kill -0 "$pid" $children 2>/dev/null; do
+			sleep 1
+			waited=$((waited + 1))
+		done
+		# shellcheck disable=SC2086
+		kill -9 "$pid" $children 2>/dev/null || true
+		ui_ok "the parser is stopped"
 	fi
 	rm -f "$pid_file"
 	;;
 *)
-	echo "usage: scripts/parser start | stop | status" >&2
+	echo "usage: scripts/parser start | stop | status | has packages | has model" >&2
 	exit 1
 	;;
 esac

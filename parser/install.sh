@@ -15,16 +15,16 @@ python="${REJEA_PARSER_PYTHON:-python3.12}"
 "$python" -m venv .venv-paddle
 PIP_CONSTRAINT="$PWD/constraints-paddle.txt"
 export PIP_CONSTRAINT
-.venv-paddle/bin/python -m pip install --quiet --upgrade pip
+.venv-paddle/bin/python -m pip install --upgrade pip
 # The guide installs PaddlePaddle from the package index of Paddle. The file
 # on PyPI is the same file (same SHA-256), and PyPI also has the pinned
 # versions of the other packages.
-.venv-paddle/bin/python -m pip install --quiet paddlepaddle==3.2.1 "paddleocr[doc-parser]==3.7.0"
+.venv-paddle/bin/python -m pip install paddlepaddle==3.2.1 "paddleocr[doc-parser]==3.7.0"
 .venv-paddle/bin/paddlex --install serving
 
 "$python" -m venv .venv-mlx
 PIP_CONSTRAINT="$PWD/constraints-mlx.txt"
-.venv-mlx/bin/python -m pip install --quiet --upgrade pip
-.venv-mlx/bin/python -m pip install --quiet mlx-vlm==0.8.0
+.venv-mlx/bin/python -m pip install --upgrade pip
+.venv-mlx/bin/python -m pip install mlx-vlm==0.8.0
 
 echo "The parser service is installed. Start it with: make parser"

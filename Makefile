@@ -15,10 +15,10 @@ need-docker = $(call need,docker,Install Docker: https://docs.docker.com/get-sta
 .PHONY: up down db-up db-down migrate serve parser-install parser word-install tokenizer-install build test lint vet docker-check check
 
 up: ## Start all of Rejea on this machine: the one command for a new clone.
-	scripts/up
+	@scripts/up
 
 down: ## Stop all of Rejea. The data stays in its volumes.
-	scripts/down
+	@scripts/down
 
 db-up: ## Start the database and the file store only, for a service that runs on the machine (make serve).
 	$(need-docker)
