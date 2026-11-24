@@ -13,6 +13,10 @@ import (
 // file.
 type Block struct {
 	ID uuid.UUID
+	// Page is the number of the page of the block, and 0 for a document
+	// with no pages. ListBlocks gives it. ReplaceBlocks gets the page as
+	// an argument.
+	Page int
 	// Seq is the place of the block in the reading order: of its page, or
 	// of its Word file. The first block has the number 1.
 	Seq  int

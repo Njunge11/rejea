@@ -71,6 +71,19 @@ func (ParseArgs) Kind() string { return "parse" }
 // InsertOpts puts the job in the parse queue.
 func (ParseArgs) InsertOpts() river.InsertOpts { return river.InsertOpts{Queue: Parse} }
 
+// IndexArgs is the job of the index queue: the work that turns the blocks
+// of a document into chunks with their embeddings. The package documents
+// adds it and the index worker does it.
+type IndexArgs struct {
+	DocumentID uuid.UUID `json:"document_id"`
+}
+
+// Kind is the name of the job in the database.
+func (IndexArgs) Kind() string { return "index" }
+
+// InsertOpts puts the job in the index queue.
+func (IndexArgs) InsertOpts() river.InsertOpts { return river.InsertOpts{Queue: Index} }
+
 // ExpireUploadsArgs is the job that fails the uploads that no client
 // confirmed. River adds it at a fixed interval.
 type ExpireUploadsArgs struct{}

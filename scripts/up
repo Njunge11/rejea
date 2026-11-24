@@ -199,7 +199,7 @@ ui_step 4 4 "Service"
 docker compose up --detach --wait || report
 ui_step_done "migrations" "service"
 if [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ] || [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
-	ui_warn "No embedding model is set: a document is parsed, and it waits for its embeddings."
+	ui_warn "No embedding model is set: a document is parsed, and its index work fails until one is set."
 	ui_note "To correct: set CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN in .env (see \"Embeddings\" in the README), then run this command again."
 fi
 

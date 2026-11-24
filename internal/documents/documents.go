@@ -37,6 +37,12 @@ const (
 	// StatusParsing is the status of a PDF or a Word file from the end of
 	// the work on its file until its text is in the database.
 	StatusParsing = "parsing"
+	// StatusIndexing is the status from the end of the parse until the
+	// chunks of the document and their embeddings are in the database.
+	StatusIndexing = "indexing"
+	// StatusIndexed is the status of a document that the search can find.
+	// The work on the document is complete.
+	StatusIndexed = "indexed"
 	// StatusDuplicate is the status of a file that has the same content as
 	// a file of a different document. Its work stops there.
 	StatusDuplicate = "duplicate"
@@ -46,7 +52,10 @@ const (
 )
 
 // statuses is each status that a document can have now.
-var statuses = []string{StatusUploading, StatusUploaded, StatusUnpacked, StatusParsing, StatusDuplicate, StatusFailed}
+var statuses = []string{
+	StatusUploading, StatusUploaded, StatusUnpacked, StatusParsing, StatusIndexing, StatusIndexed,
+	StatusDuplicate, StatusFailed,
+}
 
 // Config is the limits of the rules.
 type Config struct {

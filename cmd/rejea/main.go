@@ -20,6 +20,7 @@ import (
 
 	"github.com/riverqueue/river/rivertype"
 
+	"github.com/Njunge11/rejea/internal/chunk"
 	"github.com/Njunge11/rejea/internal/config"
 	"github.com/Njunge11/rejea/internal/database"
 	"github.com/Njunge11/rejea/internal/documents"
@@ -116,17 +117,25 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 		return err
 	}
 	warnOfMissingReaders(ctx, logger, cfg, parser, words)
-	// The tokenizer of the embedding model. The index worker uses it and
-	// the embedding client from the next change.
+	// The tokenizer of the embedding model: the chunker and the embedding
+	// client count tokens with it.
 	counter, err := tokens.New(cfg.Tokens)
 	if err != nil {
 		return err
 	}
 	defer counter.Close() //nolint:errcheck // The service stops.
-	if _, err := startEmbedder(ctx, logger, cfg, counter); err != nil {
+	chunker, err := chunk.New(counter, cfg.Chunk)
+	if err != nil {
 		return err
 	}
-	workers := ingest.Workers(docs, store, pdfs, parser, words, logger, cfg.Ingest)
+	if err := checkDimensions(ctx, pool, cfg); err != nil {
+		return err
+	}
+	embedder, err := startEmbedder(ctx, logger, cfg, counter)
+	if err != nil {
+		return err
+	}
+	workers := ingest.Workers(docs, store, pdfs, parser, words, chunker, embedder, logger, cfg.Ingest)
 	jobs, err := queue.NewClient(pool, logger, workers, failureRule, ingest.Schedule(cfg.Ingest), cfg.Queue)
 	if err != nil {
 		return err

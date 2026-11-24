@@ -36,6 +36,8 @@ type parseWorker struct {
 // has one stage: the Word reader gives its blocks from the file itself,
 // with no page image.
 //
+// When the parse is complete, the document goes to the index work.
+//
 // An error makes River run the job again after a wait. A new attempt skips
 // a stage that is complete, and does only the pages that are left of a
 // stage that is not.
@@ -54,14 +56,17 @@ func (w *parseWorker) Work(ctx context.Context, job *river.Job[queue.ParseArgs])
 		return nil
 	}
 	if !documents.IsPDF(doc.StorageKey) {
-		if doc.Parser != "" {
-			return nil
+		if doc.Parser == "" {
+			err = w.readWord(ctx, doc)
+			if parse.IsContentError(err) {
+				// A new attempt reads the same file and finds the same fault.
+				return river.JobCancel(err)
+			}
+			if err != nil {
+				return err
+			}
 		}
-		err = w.readWord(ctx, doc)
-		if parse.IsContentError(err) {
-			// A new attempt reads the same file and finds the same fault.
-			return river.JobCancel(err)
-		}
+		_, err = w.docs.StartIndex(ctx, id)
 		return err
 	}
 	if doc.PageCount == 0 {
@@ -75,9 +80,12 @@ func (w *parseWorker) Work(ctx context.Context, job *river.Job[queue.ParseArgs])
 		}
 	}
 	if doc.Parser == "" {
-		return w.parsePages(ctx, doc)
+		if err := w.parsePages(ctx, doc); err != nil {
+			return err
+		}
 	}
-	return nil
+	_, err = w.docs.StartIndex(ctx, id)
+	return err
 }
 
 // renderPages makes an image of each page of a PDF, sends each image to

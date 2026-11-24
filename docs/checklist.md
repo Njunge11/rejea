@@ -246,10 +246,20 @@ These points are not in the plan. Each one is settled before its item starts.
   - Proved by runs: 11 fault cases of the settings, and `make up` with good values, with no values and with a wrong token.
   - It writes no row: item 22 saves the vectors.
 
-- [ ] **22. Index worker: chunk and embed**
+- [x] **22. Index worker: chunk and embed**
   - The parse worker adds the index job to the `index` queue.
   - The worker makes the chunks, embeds them in batches, and saves `chunks` with pages and block ids. The status becomes `indexed`.
   - Proof: each chunk of a document has text, pages and an embedding.
+  - Built: the status `indexing` (our own addition to the statuses of the plan). The parse worker moves a parsed document to `indexing` and adds the index job in one transaction, as the file worker does for the parse (transactional enqueue of River).
+  - The worker gets the embeddings with no open transaction. Then one transaction replaces the chunks of the document and sets `indexed`. A new attempt does all of the work again and leaves no part of an old attempt.
+  - The vectors go to the database with `pgvector-go`, the Go library of the pgvector author. Migration 6 adds an index on `chunks.document_id`.
+  - The service stops at its start when `REJEA_EMBED_DIMENSIONS` is not the number of dimensions of the column `chunks.embedding`.
+  - Proved by a run through the API: 11 documents (10 PDF files of 57 pages, 1 Word file) went from upload to `indexed` in 11 minutes, most of it the parse. 77 chunks: each has text, blocks and a vector of 1,024 numbers with the length 1, and each chunk of a PDF has its pages. The index work of one document took 1 to 36 seconds.
+  - Proved: 6 saved vectors are equal to a new embedding of their saved text (cosine 1.0000).
+  - Proved: 11 failed documents, sent again with 4 index workers at the same time, were indexed in 42 seconds, with 77 chunks and no double rows.
+  - Proved fault cases, each with its reason on the document: no credentials (then indexed after the credentials and a retry), no answer from Cloudflare, a PDF with no text. A stop of the service during the index work: the job ran again at the next start, 24 chunks, no double rows.
+  - Not proved: a document of more than 13 pages, and more than 4 documents at the same time.
+  - A document that was parsed before this item keeps the status `parsing`: item 23 gives the command for it.
 
 - [ ] **23. Chunk again without a new parse**
   - A command that makes the chunks of a document again from its saved blocks.

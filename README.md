@@ -13,7 +13,7 @@ A RAG (retrieval-augmented generation) engine for PDF and Word documents, with h
 
 ## Status
 
-Built: the schema, the migrations, the job queues, upload URLs, the confirm of an upload, the file hash, the duplicate check, the failure rule, the unpack of archives (zip, tar, tar.gz), the job that fails old uploads, the status of one document and of the list of documents, the retry of a failed document, the parser service, the page images of a PDF, the blocks of a PDF and of a Word file, and the chunker. Not built: the rest of ingestion, retrieval, generation.
+Built: the schema, the migrations, the job queues, upload URLs, the confirm of an upload, the file hash, the duplicate check, the failure rule, the unpack of archives (zip, tar, tar.gz), the job that fails old uploads, the status of one document and of the list of documents, the retry of a failed document, the parser service, the page images of a PDF, the blocks of a PDF and of a Word file, the chunker, the embeddings, and the index step that saves the chunks of a document with their vectors. Not built: the rest of ingestion, retrieval, generation.
 
 ## Run
 
@@ -67,6 +67,14 @@ The chunker cuts the blocks of a document into chunks at its headings. Each chun
 
 The limit is in tokens of the embedding model, Qwen3-Embedding-0.6B. The service counts them with the [tokenizers](https://github.com/huggingface/tokenizers) library of Hugging Face, through [its Go binding](https://github.com/daulet/tokenizers). The image of the service has the library and the tokenizer of the model.
 
+## Index
+
+After the parse, a document has the status `indexing`. The index worker cuts its blocks into chunks, gets the vector of each chunk from the embedding model, and saves the chunks in one transaction. The document then has the status `indexed`. Each chunk has its heading path, its text, its pages, its blocks and its vector.
+
+A fault that a new attempt can correct (the provider gives no answer) makes the job run again after a wait. After `REJEA_JOB_MAX_ATTEMPTS` attempts, the document has the status `failed` and the reason. `POST /documents/{id}/retry` starts a failed document again: it skips the parse that is complete. A document with no text fails at once.
+
+`REJEA_INDEX_WORKERS` is the number of documents in the index work at the same time.
+
 ## Embeddings
 
 The embedding model turns each chunk and each search question into a vector of 1,024 numbers. The model is Qwen3-Embedding-0.6B on [Cloudflare Workers AI](https://developers.cloudflare.com/workers-ai/). A Cloudflare account is free, and it gives 10,000 neurons each day: about 9 million tokens of this model.
@@ -81,7 +89,7 @@ CLOUDFLARE_ACCOUNT_ID=...
 CLOUDFLARE_API_TOKEN=...
 ```
 
-When the service starts, it sends one small request to the model. With no values, it starts and warns: a document is parsed, and it waits for its embeddings. With a wrong value (the token, the account ID, the name of the model, the number of dimensions), it stops and names the setting to correct.
+When the service starts, it sends one small request to the model. With no values, it starts and warns: a document is parsed, and its index work fails with the correction as its reason. With a wrong value (the token, the account ID, the name of the model, the number of dimensions), it stops and names the setting to correct.
 
 The code for a provider is an adapter behind one interface ([internal/embed](internal/embed/embed.go)). The registry in [internal/models](internal/models/models.go) has the name of each provider, and `REJEA_EMBED_PROVIDER` selects one. The new attempts, the time limit and the usage log are the same code for each provider. The usage log is one line for each request: the model, the number of texts, the tokens that the provider counted, the time.
 

@@ -53,6 +53,8 @@ func advice(err error) string {
 	case errors.Is(err, storage.ErrRegion):
 		return `Give REJEA_S3_REGION in .env the AWS Region of the bucket.`
 
+	case errors.Is(err, errDimensions):
+		return `Give REJEA_EMBED_DIMENSIONS and REJEA_EMBED_MODEL in .env a model with the dimensions of the column. For a model with a different number, change the column chunks.embedding with a migration first.`
 	case errors.Is(err, embed.ErrRefused):
 		return `Give CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN in .env the values of your Cloudflare account: see "Embeddings" in the README. The token needs the permissions "Workers AI Read" and "Workers AI Edit".`
 	case errors.Is(err, embed.ErrNoModel):
