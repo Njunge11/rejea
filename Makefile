@@ -2,7 +2,7 @@
 -include .env
 export
 
-.PHONY: db-up db-down migrate serve parser-install parser test lint vet docker-check check
+.PHONY: db-up db-down migrate serve parser-install parser word-install test lint vet docker-check check
 
 db-up: ## Build and start the database, and wait until it is healthy.
 	docker compose up -d --build --wait
@@ -21,6 +21,9 @@ parser-install: ## Install the parser service (Apple Silicon only).
 
 parser: ## Run the parser service. The first start downloads 2.1 GB of models.
 	parser/start.sh
+
+word-install: ## Install the Word reader in bin/.
+	scripts/install-word-reader
 
 test: ## Run all tests. The database must be up.
 	go test -race ./...

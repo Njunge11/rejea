@@ -96,7 +96,11 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 	if err != nil {
 		return err
 	}
-	workers := ingest.Workers(docs, store, pdfs, parser, logger, cfg.Ingest)
+	words, err := parse.NewWord(cfg.Word)
+	if err != nil {
+		return err
+	}
+	workers := ingest.Workers(docs, store, pdfs, parser, words, logger, cfg.Ingest)
 	jobs, err := queue.NewClient(pool, logger, workers, failureRule, ingest.Schedule(cfg.Ingest), cfg.Queue)
 	if err != nil {
 		return err

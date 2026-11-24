@@ -1,9 +1,13 @@
-// Package parse turns the image of a page into blocks: the pieces of the
-// page, each with its type, its text and its place on the page.
+// Package parse turns the content of a document into blocks: the pieces of
+// the document, each with its type and its text.
 //
-// Parser is the port: the service knows a parser only through it. An
-// adapter makes one parser fit the port. PaddleOCR is the adapter for the
-// parser service of this repository (make parser).
+// A PDF is read from the images of its pages, and each block has its place
+// on the page. Parser is the port for that: the service knows a parser
+// only through it. An adapter makes one parser fit the port. PaddleOCR is
+// the adapter for the parser service of this repository (make parser).
+//
+// A Word file is read from the file itself, by Word. Its blocks have no
+// place on a page.
 package parse
 
 import "context"
@@ -19,15 +23,19 @@ type Parser interface {
 	Name() string
 }
 
-// Block is one piece of a page.
+// Block is one piece of a page, or of a Word file.
 type Block struct {
 	Type Type
+	// Level is the level of a heading: 1 is the top. It is 0 when the
+	// block is not a heading, and when the parser gives no level.
+	Level int
 	// Text is the content. A table is HTML: table, tr and td elements, and
 	// br for a new line in a cell. A chart is the values that the parser
 	// read from it, one line for each row, with " | " between the columns.
-	// A picture has no text.
+	// A picture is the text that the parser read in it.
 	Text string
-	// Box is the place of the block on the page.
+	// Box is the place of the block on the page. A block of a Word file
+	// has no box.
 	Box Box
 }
 
@@ -52,6 +60,8 @@ const (
 	Paragraph Type = "paragraph"
 	// Table is a table.
 	Table Type = "table"
+	// List is a list: one line for each item.
+	List Type = "list"
 	// Figure is a picture, a chart or a seal.
 	Figure Type = "figure"
 	// Caption is the title of a figure or of a table.

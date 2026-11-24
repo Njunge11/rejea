@@ -9,15 +9,18 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-// Block is one row of the blocks table: one piece of a page.
+// Block is one row of the blocks table: one piece of a page, or of a Word
+// file.
 type Block struct {
 	ID uuid.UUID
-	// Seq is the place of the block in the reading order of its page. The
-	// first block has the number 1.
+	// Seq is the place of the block in the reading order: of its page, or
+	// of its Word file. The first block has the number 1.
 	Seq  int
 	Type string
+	// Level is the level of a heading. 0 is saved as no level.
+	Level int
 	// Box is left, top, right, bottom, each as a fraction of the page from
-	// 0 to 1.
+	// 0 to 1. A block with no box has nil.
 	Box  []float32
 	Text string
 }
@@ -45,21 +48,22 @@ func ListPagesToParse(ctx context.Context, db DB, documentID uuid.UUID) ([]Page,
 	return pages, nil
 }
 
-// ReplacePageBlocks removes the blocks of one page of a document and adds
-// the given blocks.
-func ReplacePageBlocks(ctx context.Context, db DB, documentID uuid.UUID, page int, blocks []Block) error {
+// ReplaceBlocks removes the blocks of one page of a document and adds the
+// given blocks. A nil page is for a document with no pages, a Word file:
+// the blocks are all those of the document.
+func ReplaceBlocks(ctx context.Context, db DB, documentID uuid.UUID, page *int, blocks []Block) error {
 	batch := &pgx.Batch{}
-	batch.Queue(`delete from blocks where document_id = $1 and page_number = $2`, documentID, page)
+	batch.Queue(`delete from blocks where document_id = $1 and page_number is not distinct from $2`, documentID, page)
 	for _, block := range blocks {
 		batch.Queue(
-			`insert into blocks (id, document_id, page_number, seq, type, bbox, text)
-			 values ($1, $2, $3, $4, $5, $6, $7)`,
-			block.ID, documentID, page, block.Seq, block.Type, block.Box, block.Text,
+			`insert into blocks (id, document_id, page_number, seq, type, level, bbox, text)
+			 values ($1, $2, $3, $4, $5, nullif($6, 0), $7, $8)`,
+			block.ID, documentID, page, block.Seq, block.Type, block.Level, block.Box, block.Text,
 		)
 	}
 	// Close runs each query that is left, and gives the first error.
 	if err := db.SendBatch(ctx, batch).Close(); err != nil {
-		return fmt.Errorf("save %d blocks of page %d of the document %s: %w", len(blocks), page, documentID, err)
+		return fmt.Errorf("save %d blocks of the document %s: %w", len(blocks), documentID, err)
 	}
 	return nil
 }

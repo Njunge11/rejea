@@ -30,6 +30,10 @@ type Config struct {
 	// ReadCharts makes the parser read the values of each chart. A chart
 	// then takes some seconds more. If not, a chart has no text.
 	ReadCharts bool
+	// ReadImageText makes the parser read the text in each picture, such
+	// as the numbers in an infographic. A picture then takes some seconds
+	// more. If not, a picture has no text.
+	ReadImageText bool
 }
 
 // PaddleOCR is the adapter for the parser service of this repository: the
@@ -76,6 +80,7 @@ type paddleRequest struct {
 	Visualize            bool `json:"visualize"`
 	ReturnMarkdownImages bool `json:"returnMarkdownImages"`
 	UseChartRecognition  bool `json:"useChartRecognition"`
+	UseOcrForImageBlock  bool `json:"useOcrForImageBlock"`
 }
 
 // paddleAnswer is the body of an answer. An answer with an error has the
@@ -140,7 +145,9 @@ func (p *PaddleOCR) Parse(ctx context.Context, image []byte) ([]Block, error) {
 	ctx, cancel := context.WithTimeout(ctx, p.cfg.Timeout)
 	defer cancel()
 
-	body, err := json.Marshal(paddleRequest{File: image, FileType: 1, UseChartRecognition: p.cfg.ReadCharts})
+	body, err := json.Marshal(paddleRequest{
+		File: image, FileType: 1, UseChartRecognition: p.cfg.ReadCharts, UseOcrForImageBlock: p.cfg.ReadImageText,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("make the request for the parser: %w", err)
 	}

@@ -39,6 +39,7 @@ type Config struct {
 	Ingest    ingest.Config
 	PDF       pdf.Config
 	Parse     parse.Config
+	Word      parse.WordConfig
 	Server    server.Config
 }
 
@@ -106,6 +107,12 @@ func Load(getenv func(string) string) (Config, error) {
 			Timeout:        env.duration("REJEA_PARSER_TIMEOUT", 5*time.Minute),
 			MaxAnswerBytes: env.size("REJEA_PARSER_MAX_ANSWER_BYTES", 16<<20), // 16 MiB
 			ReadCharts:     env.oneOf("REJEA_PARSER_READ_CHARTS", "true", "false") == "true",
+			ReadImageText:  env.oneOf("REJEA_PARSER_READ_IMAGE_TEXT", "true", "false") == "true",
+		},
+		Word: parse.WordConfig{
+			Path:    env.text("REJEA_WORD_READER_PATH", "bin/office-oxide"),
+			Timeout: env.duration("REJEA_WORD_READER_TIMEOUT", time.Minute),
+			TempDir: env.text("REJEA_TEMP_DIR", ""),
 		},
 		Server: server.Config{
 			ReadHeaderTimeout: env.duration("REJEA_HTTP_READ_HEADER_TIMEOUT", 10*time.Second),

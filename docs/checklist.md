@@ -172,12 +172,31 @@ These points are not in the plan. Each one is settled before its item starts.
     - A second run of a document that has its blocks parses nothing.
     - A zip with two PDFs and two parse workers: each PDF gets its blocks.
     - A Word file gets no block: item 19.
-- [ ] **19. Word files**
-  - Read `.docx` and `.doc` directly with office_oxide: headings, paragraphs and tables, without coordinates. A Word file skips the render.
-  - A Word file has its parse job and the status `parsing` from item 16. The parse worker returns at once for it now: this item adds the Word stage at that place.
-  - Same methods as item 16: a fault in the content of the file fails the document at once with the reason, a new attempt skips a stage that is complete, and each change of a document goes through `documents`.
+- [x] **19. Word files**
+  - Read `.docx` and `.doc` directly with office_oxide: headings, paragraphs, tables and lists, without coordinates. A Word file skips the render.
+  - The Word stage of the parse worker: it gives the file to the Word reader and saves the blocks and the name of the reader in one transaction. The blocks have no page and no box. `blocks.seq` is the place in the reading order of the file.
+  - The reader is the command line program of office_oxide 0.1.17, one process for each file, with the strict limits of the library. Reason: the guide of the library says that it has no time limit, and that a file from an unknown source is read under a time limit or in a process of its own. Thus the build needs no CGO, the service stops a process that takes too long, and a fault in the program does not stop the service.
+  - `make word-install` downloads the program of one release to `bin/` and checks its SHA-256 hash.
+  - The program reads a file from the disk only. The reader makes a copy of the file in the folder for files of a short life, and removes it when the program ends.
+  - Package `parse`: `Word` (the reader), the block type `list`, and `Block.Level` for the level of a heading. Migration 5: `blocks.level`.
+  - What the reader leaves out: the text at the top and at the bottom of each page, the comments of reviewers, and a picture with no description.
+  - Failure: a file that the program cannot read (not a Word file, a password, damage, a limit, the time limit) fails the document at once with the reason. While the program is not installed, the job fails and River runs it again.
+  - Settings with defaults: the program (`bin/office-oxide`), the time limit for one file (1 minute), the folder for the copy (that of the operating system).
   - Proof: a Word file has its blocks, with no page number and no box.
+  - Measured on this Mac (M2 Pro), 2026-11-24, with 9 public Word files of Apache POI:
+    - Each file has its blocks in 5 to 35 ms. Each word of the plain text of the file is in the blocks, but for the comments of reviewers.
+    - A `.docx` with headings of levels 1, 2 and 3 has these levels. A `.doc` with a table has the table as HTML. A file with 6 tables, 2 headings and 1 footnote has the same counts as its XML.
+    - A file with a password and a file that is not a Word file fail at attempt 1 with the reason.
+    - A zip with two Word files: each has its blocks. A second run reads nothing again. No copy of a file stays on the disk.
+    - Facts of the library: it gives heading level 6 for a level 7 heading, and it gives each list of a `.doc` file as a numbered list.
   - **Step check of the plan:** 10 real PDFs (one scanned, one with many tables) and 2 Word files have correct headings, tables and page numbers, and the block boxes agree with the page image.
+  - Result of the step check, 2026-11-24. The 10 PDFs are KNBS reports with 57 pages in total. All 12 files went through the service in 703 seconds with no error.
+    - The 9 PDFs with a text layer: 96.9% to 100% of the words of the PDF are in the blocks of the same page, and 95.9% to 100% of the numbers.
+    - Boxes: for 299 of 306 blocks, the text of the PDF in the box is the text of the block.
+    - The scanned PDF has no text layer to compare. On its page image, the boxes fit, and the heading, the table and its numbers are correct.
+    - Page images of 5 PDFs with the boxes drawn: the headings, tables, footers and page numbers have the correct types.
+    - The 2 Word files have the headings, the levels, the tables and the footnote of their XML.
+    - Fix from this check: the parser did not read the text in pictures. One infographic report had only 86.4% of its words. The setting `REJEA_PARSER_READ_IMAGE_TEXT` (default true) raises it to 96.9%, and that report takes 37% more time.
 
 ## Chunk and index (plan step 4)
 
@@ -186,6 +205,8 @@ These points are not in the plan. Each one is settled before its item starts.
   - Logic only, with tests. It writes no rows, because a `chunks` row needs its embedding.
   - The parser gives no level for a heading. Its API has a second endpoint, `/restructure-pages`, which sets the levels of the headings across the pages of a document and joins a table that continues on the next page. Decide here if the chunker uses it.
   - The blocks of the types header, footer, page_number and aside are not body text. PaddleOCR leaves them, and footnotes, out of its own Markdown.
+  - The parser writes a superscript and underlined text in the notation of formulas, such as `31^{st}` and `$ \underline{\text{info@knbs.or.ke}} $`: 11 of 500 blocks in the step check of item 19. The text stays as the parser gives it. Decide here if the chunk text gets a clean form for the search.
+  - A Word file gives the level of each heading (`blocks.level`). A PDF gives none.
 
 - [ ] **21. Embed port, the Cloudflare adapter, the registry and the configurator**
   - One small interface for embeddings, and the adapter for Qwen3-Embedding-0.6B on Cloudflare Workers AI.

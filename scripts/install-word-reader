@@ -1,0 +1,44 @@
+#!/bin/sh
+# Installs the Word reader: the command line program of office_oxide, which
+# the service runs for each Word file. It downloads the program of one
+# release from GitHub, checks its SHA-256 hash, and puts it in bin/.
+#
+# For a new version, change the version and the four hashes. The hashes are
+# on the release page of https://github.com/yfedoseev/office_oxide.
+set -eu
+cd "$(dirname "$0")/.."
+
+version="0.1.17"
+case "$(uname -s)-$(uname -m)" in
+	Darwin-arm64) platform="macos-aarch64" hash="472a79fa14f06bffcb5d25e78a18bf51b914f4d020bd91e88a79bc06b31f788b" ;;
+	Darwin-x86_64) platform="macos-x86_64" hash="5da6e85484eb7a581a3473836c95d96410d294530dcaf1755edabb90e3170c60" ;;
+	Linux-x86_64) platform="linux-x86_64" hash="61ba672fbcf0db641a95a0f93bd9d87cf403f0404778edddd7d0edf5b280764d" ;;
+	Linux-aarch64 | Linux-arm64) platform="linux-aarch64" hash="0a21436d35c9d064cdbfce3d54c3f03f90df06669cd728571b02055b05470f4f" ;;
+	*)
+		echo "word reader: no program for $(uname -s) $(uname -m)" >&2
+		exit 1
+		;;
+esac
+
+archive="office_oxide-$platform-$version.tar.gz"
+work="$(mktemp -d -t rejea-word-reader.XXXXXX)"
+trap 'rm -rf "$work"' EXIT
+
+curl --fail --silent --show-error --location \
+	--output "$work/$archive" \
+	"https://github.com/yfedoseev/office_oxide/releases/download/v$version/$archive"
+
+if command -v sha256sum >/dev/null 2>&1; then
+	found="$(sha256sum "$work/$archive" | cut -d ' ' -f 1)"
+else
+	found="$(shasum -a 256 "$work/$archive" | cut -d ' ' -f 1)"
+fi
+if [ "$found" != "$hash" ]; then
+	echo "word reader: the hash of $archive is $found, not $hash" >&2
+	exit 1
+fi
+
+tar -xzf "$work/$archive" -C "$work" ./office-oxide
+mkdir -p bin
+mv "$work/office-oxide" bin/office-oxide
+echo "word reader: $(bin/office-oxide --version) is in bin/office-oxide"

@@ -27,29 +27,61 @@ func (s *Service) PagesToParse(ctx context.Context, id uuid.UUID) ([]PageImage, 
 // A second call for the same page puts the new blocks in the place of the
 // old ones.
 func (s *Service) SaveBlocks(ctx context.Context, id uuid.UUID, page int, blocks []parse.Block) error {
-	rows := make([]database.Block, len(blocks))
-	for i, block := range blocks {
-		blockID, err := newID()
-		if err != nil {
-			return err
-		}
-		rows[i] = database.Block{
-			ID:   blockID,
-			Seq:  i + 1,
-			Type: string(block.Type),
-			Box: []float32{
-				float32(block.Box.Left), float32(block.Box.Top),
-				float32(block.Box.Right), float32(block.Box.Bottom),
-			},
-			Text: block.Text,
-		}
+	rows, err := blockRows(blocks, true)
+	if err != nil {
+		return err
 	}
 	return pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
-		if err := database.ReplacePageBlocks(ctx, tx, id, page, rows); err != nil {
+		if err := database.ReplaceBlocks(ctx, tx, id, &page, rows); err != nil {
 			return err
 		}
 		return database.SetPageParsed(ctx, tx, id, page, time.Now())
 	})
+}
+
+// SaveWordBlocks records the blocks of a Word file, in their reading
+// order, and the name of the reader that gave them. Both are one
+// transaction: a document that has a parser has its blocks. The blocks
+// have no page and no box.
+//
+// A second call puts the new blocks in the place of the old ones.
+func (s *Service) SaveWordBlocks(ctx context.Context, id uuid.UUID, blocks []parse.Block, reader string) error {
+	rows, err := blockRows(blocks, false)
+	if err != nil {
+		return err
+	}
+	return pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
+		if err := database.ReplaceBlocks(ctx, tx, id, nil, rows); err != nil {
+			return err
+		}
+		return database.SetParser(ctx, tx, id, reader)
+	})
+}
+
+// blockRows makes the rows of the blocks of one page, or of one Word file.
+// Each block gets its ID and its place in the reading order.
+func blockRows(blocks []parse.Block, withBox bool) ([]database.Block, error) {
+	rows := make([]database.Block, len(blocks))
+	for i, block := range blocks {
+		blockID, err := newID()
+		if err != nil {
+			return nil, err
+		}
+		rows[i] = database.Block{
+			ID:    blockID,
+			Seq:   i + 1,
+			Type:  string(block.Type),
+			Level: block.Level,
+			Text:  block.Text,
+		}
+		if withBox {
+			rows[i].Box = []float32{
+				float32(block.Box.Left), float32(block.Box.Top),
+				float32(block.Box.Right), float32(block.Box.Bottom),
+			}
+		}
+	}
+	return rows, nil
 }
 
 // SetParser records the name of the parser that read a document. A

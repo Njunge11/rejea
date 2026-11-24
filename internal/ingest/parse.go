@@ -27,12 +27,14 @@ type parseWorker struct {
 	store  *storage.Store
 	pdfs   *pdf.Reader
 	parser parse.Parser
+	words  *parse.Word
 	logger *slog.Logger
 }
 
 // Work does two stages for a PDF: it makes an image of each page, then the
 // parser reads each image and gives the blocks of the page. A Word file
-// has no page image.
+// has one stage: the Word reader gives its blocks from the file itself,
+// with no page image.
 //
 // An error makes River run the job again after a wait. A new attempt skips
 // a stage that is complete, and does only the pages that are left of a
@@ -52,7 +54,15 @@ func (w *parseWorker) Work(ctx context.Context, job *river.Job[queue.ParseArgs])
 		return nil
 	}
 	if !documents.IsPDF(doc.StorageKey) {
-		return nil
+		if doc.Parser != "" {
+			return nil
+		}
+		err = w.readWord(ctx, doc)
+		if parse.IsContentError(err) {
+			// A new attempt reads the same file and finds the same fault.
+			return river.JobCancel(err)
+		}
+		return err
 	}
 	if doc.PageCount == 0 {
 		err = w.renderPages(ctx, doc)
@@ -190,4 +200,34 @@ func (w *parseWorker) pageImage(ctx context.Context, key string) ([]byte, error)
 		return nil, fmt.Errorf("read the page image %s: %w", key, err)
 	}
 	return image, nil
+}
+
+// readWord gives a Word file to the Word reader and records its blocks.
+// The name of the reader is recorded with the blocks: it tells that the
+// stage is complete.
+func (w *parseWorker) readWord(ctx context.Context, doc documents.Document) error {
+	start := time.Now()
+	reader, err := w.words.Name(ctx)
+	if err != nil {
+		return err
+	}
+	file, err := w.store.Download(ctx, doc.StorageKey)
+	if err != nil {
+		return err
+	}
+	defer file.Close() //nolint:errcheck // The read found each error.
+	blocks, err := w.words.Read(ctx, file, documents.Ending(doc.StorageKey))
+	if err != nil {
+		return err
+	}
+	if err := w.docs.SaveWordBlocks(ctx, doc.ID, blocks, reader); err != nil {
+		return err
+	}
+	w.logger.InfoContext(ctx, "word file read",
+		"document", doc.ID,
+		"blocks", len(blocks),
+		"reader", reader,
+		"duration", time.Since(start),
+	)
+	return nil
 }
