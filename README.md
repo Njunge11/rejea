@@ -32,7 +32,7 @@ make up
 
 The service is at `http://localhost:8080`, and `GET /healthz` answers `ok`. `make down` stops all of it. The data stays in two Docker volumes.
 
-The first `make up` downloads 0.8 GB of container images, and on a Mac 2.2 GB of Python packages and 2.1 GB of models for the parser. On an M2 Pro, with the downloads done, the first run takes 3 minutes and each later run 6 seconds.
+The first `make up` downloads 0.8 GB of container images, and on a Mac 0.5 GB of Python packages (2.2 GB on the disk) and 2 GB of models for the parser. On an M2 Pro, a first run with empty caches took 18 minutes, most of it for the downloads. A later start takes 30 seconds.
 
 Linux has no parser at this time: a Word file goes through, and a PDF waits. Windows is not supported.
 

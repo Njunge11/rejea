@@ -39,11 +39,15 @@ start)
 		echo "parser: install, 2.2 GB. This takes some minutes."
 		parser/install.sh
 	fi
-	mkdir -p "$run"
-	# With nohup, the parser stays when this terminal closes.
-	nohup parser/start.sh >"$log" 2>&1 &
-	echo $! >"$pid_file"
-	echo "parser: start. A first start downloads the models, 2.1 GB."
+	if running; then
+		echo "parser: it starts already. Wait until it answers."
+	else
+		mkdir -p "$run"
+		# With nohup, the parser stays when this terminal closes.
+		nohup parser/start.sh >"$log" 2>&1 &
+		echo $! >"$pid_file"
+		echo "parser: start. A first start downloads the models, 2.1 GB."
+	fi
 	waited=0
 	until answers; do
 		if ! running; then
@@ -54,7 +58,7 @@ start)
 		sleep 5
 		waited=$((waited + 5))
 		if [ $((waited % 30)) -eq 0 ]; then
-			echo "parser: not ready after ${waited} s: $(tail -n 1 "$log" | cut -c 1-100)"
+			echo "parser: not ready after ${waited} s. Its log is $log"
 		fi
 	done
 	echo "parser: ready, at http://$host:$port"

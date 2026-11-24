@@ -24,7 +24,9 @@ Rule of each item: `make check` passes, CI is green, and the item has its own pr
   - Choice of the store: SeaweedFS, RustFS 1.0.6 and the Versity gateway 1.11.0 each passed the same 18 calls of the storage package (upload URL with a right and a wrong size, exists, download, a 20 MiB upload in parts, range reads, an upload that fails, delete). Only SeaweedFS makes its bucket from a setting and answers the preflight request of a browser with no more setup. Its cost: an image of 280 MB to download and 260 MB of memory, against 24 MB of memory for the Versity gateway. MinIO has no more releases.
   - The parser stays on the Mac: Docker gives a container no GPU on a Mac. The service reaches it at `host.docker.internal`.
   - Proof: a copy of the repository with only its committed files and no `.env`, in an empty folder, with empty volumes: `make up` ended with exit 0 after 168 seconds. Then `heading123.docx` (6 blocks) and `labour.pdf` (13 pages, 97 blocks, 118 seconds) went through upload URL, upload, confirm and parse. The files and the rows stayed after a restart of the store and the service. A second `make up` took 6 seconds. `make down` stopped the containers and the two parser processes. With no Docker, `make up` names it and stops.
-  - Not proved on a Mac: a first run with an empty Docker cache and an empty pip cache. Not proved at all: a Mac with an Intel processor. CI runs `make up` on Linux (amd64) for each push.
+  - Proof of a first run: a new `git clone` from GitHub, with no Rejea image, an empty Docker build cache, an empty pip cache and empty model caches: `make up` ended with exit 0 after 1,089 seconds (containers 303, parser packages 255, models and parser start 531). The same two files went through with the same block counts.
+  - A second `scripts/parser start` while the parser starts does not start a second parser: it waits for the first.
+  - Not proved: a Mac with an Intel processor. CI runs `make up` on Linux (amd64) for each push.
   - Not built: a parser on Linux, and Windows.
 
 ## Not decided in the plan
