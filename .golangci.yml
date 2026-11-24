@@ -47,7 +47,7 @@ linters:
             - {pkg: "net/http$", desc: "the database package does no HTTP work"}
         parts:
           list-mode: lax
-          files: ["**/internal/storage/*.go", "**/internal/queue/*.go", "**/internal/pdf/*.go", "!$test"]
+          files: ["**/internal/storage/*.go", "**/internal/queue/*.go", "**/internal/pdf/*.go", "**/internal/parse/*.go", "!$test"]
           deny:
             - {pkg: "github.com/Njunge11/rejea/internal/", desc: "this package is a base part: it uses no other part of the service"}
     forbidigo:

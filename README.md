@@ -13,7 +13,7 @@ A RAG (retrieval-augmented generation) engine for PDF and Word documents, with h
 
 ## Status
 
-Built: the schema, the migrations, the job queues, upload URLs, the confirm of an upload, the file hash, the duplicate check, the failure rule, the unpack of archives (zip, tar, tar.gz), the job that fails old uploads, the status of one document and of the list of documents, the retry of a failed document, the parser service, and the page images of a PDF. Not built: the rest of ingestion, retrieval, generation.
+Built: the schema, the migrations, the job queues, upload URLs, the confirm of an upload, the file hash, the duplicate check, the failure rule, the unpack of archives (zip, tar, tar.gz), the job that fails old uploads, the status of one document and of the list of documents, the retry of a failed document, the parser service, the page images of a PDF, and the adapter that calls the parser. Not built: the rest of ingestion, retrieval, generation.
 
 ## Requirements
 
@@ -41,7 +41,7 @@ make parser-install   # two Python 3.12 environments, 2.2 GB
 make parser           # http://127.0.0.1:8112/layout-parsing; the first start downloads 2.1 GB of models
 ```
 
-On an M2 Pro with 16 GB, a page takes 12 to 40 seconds and the service uses 3 GB of memory.
+On an M2 Pro with 16 GB, a page takes 3 to 40 seconds and the service uses 3 GB of memory.
 
 ## File storage
 

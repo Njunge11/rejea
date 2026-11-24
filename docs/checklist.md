@@ -139,13 +139,26 @@ These points are not in the plan. Each one is settled before its item starts.
     - The parser reads the images of the two KNBS pages of item 15 with the same result: all 578 numbers of the GDP page and all 126 numbers of the consumer price page agree with the PDF.
     - Memory of the service: 59 MB with no work, and about 130 MB more for each PDF in work. The start of the service takes 1 second more.
 
-- [ ] **17. Parse port and the PaddleOCR adapter**
+- [x] **17. Parse port and the PaddleOCR adapter**
   - One small interface for a parser, and the adapter that calls the parser service over HTTP.
+  - Package `parse`: the port `Parser` (a page image in, its blocks out, in reading order) and the adapter `PaddleOCR`.
+  - A block has one of 12 types: title, heading, paragraph, table, figure, caption, formula, footnote, header, footer, page_number, aside. The adapter gives each of the 25 labels of the layout model its type, and fails on a label that it does not know.
+  - A box is four fractions of the page, from 0 to 1. A table is HTML. A chart is the values that the parser read from it.
+  - Each failure of a call is an error that a new attempt can correct. The adapter does no retry: River does.
+  - Settings with defaults: address of the parser (`http://127.0.0.1:8112`), time limit for one page (5 minutes), size of an answer (16 MiB), read the values of charts (true).
+  - Fix of the parser service of item 15: the vision model server reads one block at a time. With its default, mlx-vlm 0.8.0 failed on a page with many blocks, and the parse API answered 500 for 3 of 18 requests. The speed is the same.
   - Proof: the adapter gives the blocks of one page image, each with box, type, text and reading order.
+  - Measured on this Mac (M2 Pro), 2026-11-24:
+    - The 13 pages of the consumer price report of March 2026: 111 seconds with charts on, 3 to 13 seconds a page, no failure.
+    - The numbers that came through the adapter agree with the PDF: all 126 of the consumer price table page and all 578 of the GDP table page. The boxes agree with the page image.
+    - Charts: 5 charts of the report and 2 test charts (one with no data labels) gave each value correctly. A page with a chart takes 3 to 5 seconds more.
 
 - [ ] **18. Parse worker: blocks**
   - Send each page image to the parser. Save `blocks`. Record the parser name and version on the document.
   - A second stage of the parse worker of item 16, after the render. It sends the PNG that item 16 stored in S3, not a new render.
+  - `rejea serve` makes the adapter of item 17 from `cfg.Parse` and gives it to the workers. No code calls it before this item.
+  - Migration: the comment of `blocks.type` gets the 12 types of the package `parse`.
+  - The parse API has no version in its answers. The name of the model is in `parser/pipeline.yaml`, and the versions are in `parser/constraints-paddle.txt`.
   - The blocks of a page are saved when the parser answers, so a new attempt parses only the pages with no blocks. The parser takes 8 to 40 seconds for a page on this Mac, and one attempt of a job has 60 minutes.
   - Proof: a PDF has its blocks, with boxes as fractions of the page.
 
@@ -161,6 +174,8 @@ These points are not in the plan. Each one is settled before its item starts.
 - [ ] **20. Chunker**
   - Split at headings. Split a long section at paragraphs, merge short ones, keep each chunk under 4,096 tokens. Start each chunk with the title and the heading path.
   - Logic only, with tests. It writes no rows, because a `chunks` row needs its embedding.
+  - The parser gives no level for a heading. Its API has a second endpoint, `/restructure-pages`, which sets the levels of the headings across the pages of a document and joins a table that continues on the next page. Decide here if the chunker uses it.
+  - The blocks of the types header, footer, page_number and aside are not body text. PaddleOCR leaves them, and footnotes, out of its own Markdown.
 
 - [ ] **21. Embed port, the Cloudflare adapter, the registry and the configurator**
   - One small interface for embeddings, and the adapter for Qwen3-Embedding-0.6B on Cloudflare Workers AI.

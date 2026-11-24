@@ -13,6 +13,7 @@ import (
 
 	"github.com/Njunge11/rejea/internal/documents"
 	"github.com/Njunge11/rejea/internal/ingest"
+	"github.com/Njunge11/rejea/internal/parse"
 	"github.com/Njunge11/rejea/internal/pdf"
 	"github.com/Njunge11/rejea/internal/queue"
 	"github.com/Njunge11/rejea/internal/server"
@@ -37,6 +38,7 @@ type Config struct {
 	Documents documents.Config
 	Ingest    ingest.Config
 	PDF       pdf.Config
+	Parse     parse.Config
 	Server    server.Config
 }
 
@@ -97,6 +99,12 @@ func Load(getenv func(string) string) (Config, error) {
 			DPI:           env.count("REJEA_PAGE_DPI", 216),
 			MaxPagePixels: env.count("REJEA_MAX_PAGE_PIXELS", 100_000_000),
 			MaxOpen:       parseWorkers,
+		},
+		Parse: parse.Config{
+			URL:            env.text("REJEA_PARSER_URL", "http://127.0.0.1:8112"),
+			Timeout:        env.duration("REJEA_PARSER_TIMEOUT", 5*time.Minute),
+			MaxAnswerBytes: env.size("REJEA_PARSER_MAX_ANSWER_BYTES", 16<<20), // 16 MiB
+			ReadCharts:     env.oneOf("REJEA_PARSER_READ_CHARTS", "true", "false") == "true",
 		},
 		Server: server.Config{
 			ReadHeaderTimeout: env.duration("REJEA_HTTP_READ_HEADER_TIMEOUT", 10*time.Second),
