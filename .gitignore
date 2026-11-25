@@ -13,6 +13,11 @@
 /parser/.venv-*/
 /parser/.run/
 
+# The last search report. The saved report, testset/report.json, is in the
+# repository.
+/testset/reports/last.json
+/testset/reports/last.json.part
+
 # Test and coverage output
 *.test
 *.out

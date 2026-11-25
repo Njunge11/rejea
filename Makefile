@@ -12,7 +12,7 @@ need = @command -v $(1) >/dev/null 2>&1 || { echo "$(1) is not installed. $(2)" 
 need-go = $(call need,go,Install Go 1.26: https://go.dev/dl/)
 need-docker = $(call need,docker,Install Docker: https://docs.docker.com/get-started/get-docker/)
 
-.PHONY: up down reindex testset-check db-up db-down migrate serve parser-install parser word-install tokenizer-install build test lint vet docker-check check
+.PHONY: up down reindex testset-check search-report db-up db-down migrate serve parser-install parser word-install tokenizer-install build test lint vet docker-check check
 
 up: ## Start all of Rejea on this machine: the one command for a new clone.
 	@scripts/up
@@ -28,6 +28,12 @@ reindex: ## Make the chunks of each parsed document again, with no new parse. Fo
 testset-check: ## Load and examine the question file of the test set.
 	$(need-go)
 	@go run ./cmd/testset check testset/questions.json
+	@go run ./cmd/testset report testset/report.json >/dev/null && echo "The saved search report testset/report.json is a correct report."
+
+search-report: ## Measure the search with the test set and compare with the saved report. Options: RERANK=both|on|off PAUSE=7s SAVE=1 (save as the new benchmark)
+	$(need-docker)
+	$(need-go)
+	@scripts/search-report $(if $(SAVE),save)
 
 db-up: ## Start the database and the file store only, for a service that runs on the machine (make serve).
 	$(need-docker)

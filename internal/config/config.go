@@ -150,7 +150,11 @@ func Load(getenv func(string) string) (Config, error) {
 			TempDir: env.text("REJEA_TEMP_DIR", ""),
 		},
 		Chunk: chunk.Config{
-			MaxTokens: env.count("REJEA_CHUNK_MAX_TOKENS", 4096),
+			// Measured with the search report (testset/reports): with the
+			// reranker, the search finds the same from 1,024 to 4,096
+			// tokens. A chunk of 1,024 is on fewer pages, so a result
+			// names its source more exactly.
+			MaxTokens: env.count("REJEA_CHUNK_MAX_TOKENS", 1024),
 		},
 		Tokens: tokens.Config{
 			Path: env.text("REJEA_TOKENIZER_PATH", "models/qwen3-embedding-0.6b/tokenizer.json"),
@@ -195,7 +199,7 @@ func Load(getenv func(string) string) (Config, error) {
 				MaxAnswerBytes: maxAnswerBytes,
 				// Cohere cuts a text at 4,096 tokens when the request gives
 				// no number. Its tokens are not the tokens of the embedding
-				// model, so the default is 2 times the default chunk size.
+				// model, so the default is the limit of the embedding model.
 				MaxTextTokens: env.count("REJEA_COHERE_MAX_TEXT_TOKENS", 8192),
 			},
 		},

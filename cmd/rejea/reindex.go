@@ -20,7 +20,11 @@ const usage = `usage:
   rejea serve                         run the service
   rejea health                        ask the service of this machine if it is ready
   rejea reindex --all                 make the chunks of each parsed document again
-  rejea reindex <document-id>...      make the chunks of these documents again`
+  rejea reindex <document-id>...      make the chunks of these documents again
+  rejea search-report [--rerank=both|on|off] [--pause=7s] < testset/questions.json
+                                      measure the search with the questions of a test set, and
+                                      write the report as JSON (--pause waits before each search
+                                      with the reranker, for a provider with a rate limit)`
 
 // validCommand tells if the arguments are a command of the service.
 func validCommand(args []string) bool {
@@ -32,6 +36,8 @@ func validCommand(args []string) bool {
 		return len(args) == 1
 	case "reindex":
 		return len(args) > 1
+	case "search-report":
+		return true
 	}
 	return false
 }

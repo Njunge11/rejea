@@ -35,7 +35,7 @@ import (
 
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	err := run(ctx, os.Args[1:], os.Getenv, os.Stdout, os.Stderr)
+	err := run(ctx, os.Args[1:], os.Getenv, os.Stdin, os.Stdout, os.Stderr)
 	stop()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "rejea:", err)
@@ -47,7 +47,7 @@ func main() {
 }
 
 // run writes the result of a command to stdout and the log to stderr.
-func run(ctx context.Context, args []string, getenv func(string) string, stdout, stderr io.Writer) error {
+func run(ctx context.Context, args []string, getenv func(string) string, stdin io.Reader, stdout, stderr io.Writer) error {
 	if !validCommand(args) {
 		return errors.New(usage)
 	}
@@ -57,6 +57,11 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 	}
 	if args[0] == "health" {
 		return health(ctx, cfg)
+	}
+	if args[0] == "search-report" {
+		// The report writes its progress. The log line of each request to
+		// a model is not a part of it.
+		cfg.LogLevel = max(cfg.LogLevel, slog.LevelWarn)
 	}
 	logger := newLogger(cfg, stderr)
 	// A dependency that logs through the default logger of slog or through
@@ -86,6 +91,12 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 	}
 	if args[0] == "reindex" {
 		return reindex(ctx, pool, logger, cfg, args[1:], stdout)
+	}
+	if args[0] == "search-report" {
+		if err := checkDimensions(ctx, pool, cfg); err != nil {
+			return err
+		}
+		return searchReport(ctx, pool, logger, cfg, args[1:], stdin, stdout, stderr)
 	}
 	store, err := storage.New(ctx, logger, cfg.Storage)
 	if err != nil {

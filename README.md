@@ -13,7 +13,7 @@ A RAG (retrieval-augmented generation) engine for PDF and Word documents, with h
 
 ## Status
 
-Built: the schema, the migrations, the job queues, upload URLs, the confirm of an upload, the file hash, the duplicate check, the failure rule, the unpack of archives (zip, tar, tar.gz), the job that fails old uploads, the status of one document and of the list of documents, the retry of a failed document, the parser service, the page images of a PDF, the blocks of a PDF and of a Word file, the chunker, the embeddings, the index step that saves the chunks of a document with their vectors, the command that makes the chunks again, the question file of the test set, the search endpoint, and the reranker. Not built: the rest of ingestion, generation.
+Built: the schema, the migrations, the job queues, upload URLs, the confirm of an upload, the file hash, the duplicate check, the failure rule, the unpack of archives (zip, tar, tar.gz), the job that fails old uploads, the status of one document and of the list of documents, the retry of a failed document, the parser service, the page images of a PDF, the blocks of a PDF and of a Word file, the chunker, the embeddings, the index step that saves the chunks of a document with their vectors, the command that makes the chunks again, the question file of the test set, the search endpoint, the reranker, and the search report. Not built: the rest of ingestion, generation.
 
 ## Run
 
@@ -63,7 +63,9 @@ The service reads `.docx` and `.doc` files with the command line program of [off
 
 ## Chunks
 
-The chunker cuts the blocks of a document into chunks at its headings. Each chunk starts with its heading path, and has `REJEA_CHUNK_MAX_TOKENS` tokens or less. A table that is larger is split at its rows, and each part starts with the header rows.
+The chunker cuts the blocks of a document into chunks at its headings. Each chunk starts with its heading path, and has `REJEA_CHUNK_MAX_TOKENS` tokens or less (1,024 by default). A table that is larger is split at its rows, and each part starts with the header rows.
+
+The default comes from the [search report](#search-report): with the reranker, the search finds the same from 1,024 to 4,096 tokens, and a chunk of 1,024 tokens is on fewer pages, so a result names its source more exactly.
 
 The limit is in tokens of the embedding model, Qwen3-Embedding-0.6B. The service counts them with the [tokenizers](https://github.com/huggingface/tokenizers) library of Hugging Face, through [its Go binding](https://github.com/daulet/tokenizers). The image of the service has the library and the tokenizer of the model.
 
@@ -168,7 +170,7 @@ The reranker is an optional second stage of the search (retrieve, then rerank). 
 
 The reranker is off by default. `REJEA_RERANK=true` turns it on for each search, and the field `rerank` of a request turns it on or off for that search.
 
-There are two providers. The numbers are for the 42 questions of the test set that have an answer (17 documents, 330 chunks, chunks of 4,096 tokens at most):
+There are two providers. The numbers are for the 42 questions of the test set that have an answer, measured with chunks of 4,096 tokens at most (17 documents, 330 chunks):
 
 | Reranker | It reads | First result correct | Correct in the first 5 | Median time of a search |
 | --- | --- | --- | --- | --- |
@@ -230,6 +232,59 @@ make testset-check
 ```
 
 The command loads the file and examines it. It names each fault with its question and its correction.
+
+## Search report
+
+```sh
+make search-report
+```
+
+The command measures the search with the questions of the test set. The service of `make up` runs each question through its search, with its own settings, without the reranker and with it. The command writes the report to `testset/reports/last.json`, prints it, and prints its differences from the saved report, `testset/report.json`: the benchmark. Run it after each change to the search, to see if the change made the search better or worse.
+
+| Option | Use |
+| --- | --- |
+| `SAVE=1` | Save this report as the new benchmark. Commit the file. |
+| `RERANK=off` or `RERANK=on` | Measure only without the reranker, or only with it. |
+| `PAUSE=7s` | Wait before each search with the reranker. A trial key of Cohere permits 10 requests each minute. |
+
+The measures are those of [trec_eval](https://github.com/usnistgov/trec_eval), the tool of NIST for search measures. A result is on a correct page when it is a chunk of a source document of the question and its pages have a source page.
+
+- **Success at K:** a correct page is in the first K results. The report prints it as a number of questions.
+- **Recall at 10:** the part of the correct pages that the first 10 results have.
+- **MRR:** 1 / the position of the first result on a correct page, as the mean of the questions.
+
+The 6 questions of the type `no_answer` have no correct page, so they are in no measure of the search.
+
+The saved report, with chunks of 1,024 tokens and Cohere `rerank-v5.0-fast`:
+
+```text
+  A correct page is       in first 1  in first 3  in first 5  in first 10  recall at 10  MRR     median time
+  without the reranker    37 of 42    38 of 42    40 of 42    41 of 42    0.968         0.904   521 ms
+  with the reranker       39 of 42    42 of 42    42 of 42    42 of 42    0.986         0.964   1435 ms
+```
+
+Two runs with the same settings can differ by 1 question: a change is real only when it is larger than that.
+
+The chunk size was selected with this command. `testset/reports/` has the report of each size, with the 13 documents of the test set and Cohere `rerank-v5.0-fast`:
+
+| Chunk size | Chunks | Reranker | First result correct | Correct in the first 3 | In the first 5 | In the first 10 | Median time |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 4,096 | 320 | none | 36 of 42 | 41 | 41 | 42 | 0.8 s |
+| 4,096 | 320 | Cohere | 40 of 42 | 41 | 42 | 42 | 2.2 s |
+| 2,048 | 420 | none | 34 of 42 | 39 | 39 | 42 | 0.6 s |
+| 2,048 | 420 | Cohere | 40 of 42 | 42 | 42 | 42 | 1.8 s |
+| 1,024 | 662 | none | 37 of 42 | 39 | 40 | 41 | 0.5 s |
+| 1,024 | 662 | Cohere | 39 of 42 | 42 | 42 | 42 | 1.2 s |
+| 512 | 1,439 | none | 34 of 42 | 38 | 39 | 40 | 0.6 s |
+| 512 | 1,439 | Cohere | 40 of 42 | 41 | 41 | 41 | 1.4 s |
+
+What the numbers show:
+
+- With the reranker, the sizes from 1,024 to 4,096 give the same result: the difference is 1 question of 42.
+- Without the reranker, 4,096 has a correct page in the first 3 results for 2 or 3 questions more than 1,024, and in the first 10 for 1 question more. A part of this comes from the measure: a larger chunk is on more pages, so it is on a correct page more easily.
+- At 512 tokens, one question has no correct page in the first 10 results, with the reranker and without it.
+
+The default is 1,024. A chunk is then on 1.25 pages on average (1.56 at 4,096), so a result names its source more exactly, and a search with the reranker takes two thirds of the time. For a service without a reranker, 4,096 finds a little more: `REJEA_CHUNK_MAX_TOKENS` and `make reindex` change the size.
 
 ## File storage
 

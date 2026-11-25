@@ -175,6 +175,25 @@ func (s *Service) Get(ctx context.Context, id uuid.UUID) (Document, error) {
 	return database.GetDocument(ctx, s.pool, id)
 }
 
+// ByHash reads the documents that have one of the file hashes. A document
+// is the value of its hash. A hash with no document is not in the result.
+func (s *Service) ByHash(ctx context.Context, hashes []string) (map[string]Document, error) {
+	docs, err := database.DocumentsByHash(ctx, s.pool, hashes)
+	if err != nil {
+		return nil, err
+	}
+	found := make(map[string]Document, len(docs))
+	for _, doc := range docs {
+		found[doc.FileHash] = doc
+	}
+	return found, nil
+}
+
+// ChunkCount gives the number of chunks of the documents.
+func (s *Service) ChunkCount(ctx context.Context, ids []uuid.UUID) (int, error) {
+	return database.CountChunks(ctx, s.pool, ids)
+}
+
 // Fail stops the work on a document: it gets the status failed and the
 // reason. Fail reports false when the document does not exist.
 //

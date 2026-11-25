@@ -1,0 +1,48 @@
+#!/bin/sh
+# Measures the search with the questions of the test set.
+#
+#   scripts/search-report [save]
+#
+# The service of "make up" runs the questions through its search, with its
+# own settings, and writes the report to testset/reports/last.json. The
+# script prints the report and its differences from the saved report,
+# testset/report.json: the benchmark. With "save", the new report takes
+# the place of the saved report.
+#
+# RERANK (both, on, off) selects the searches to measure. PAUSE (such as
+# 7s) is a wait before each search with the reranker, for a provider that
+# permits only some requests each minute.
+set -eu
+cd "$(dirname "$0")/.."
+. scripts/ui.sh
+
+saved=testset/report.json
+last=testset/reports/last.json
+
+if ! docker compose ps --status running --services 2>/dev/null | grep -qx rejea; then
+	echo "Rejea does not run, and the report uses its search. Start it first: make up" >&2
+	exit 1
+fi
+
+mkdir -p testset/reports
+# A report that stopped must not look like a complete report.
+rm -f "$last.part"
+docker compose exec -T rejea rejea search-report \
+	--rerank="${RERANK:-both}" --pause="${PAUSE:-0s}" <testset/questions.json >"$last.part"
+mv "$last.part" "$last"
+
+if [ -f "$saved" ]; then
+	go run ./cmd/testset compare "$saved" "$last"
+else
+	go run ./cmd/testset report "$last"
+	echo
+	echo "No report is saved yet: this report has nothing to compare with."
+fi
+
+echo
+if [ "${1:-}" = save ]; then
+	cp "$last" "$saved"
+	ui_ok "The report is saved as the benchmark: $saved. Commit the file."
+else
+	echo "The report is in $last. To save it as the new benchmark: make search-report SAVE=1"
+fi

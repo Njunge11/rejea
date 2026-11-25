@@ -113,3 +113,13 @@ func SetStatusOfMany(ctx context.Context, db DB, ids []uuid.UUID, status string)
 	}
 	return nil
 }
+
+// CountChunks gives the number of chunks of the documents.
+func CountChunks(ctx context.Context, db DB, documentIDs []uuid.UUID) (int, error) {
+	var count int
+	err := db.QueryRow(ctx, `select count(*) from chunks where document_id = any($1)`, documentIDs).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("count the chunks: %w", err)
+	}
+	return count, nil
+}

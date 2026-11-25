@@ -248,3 +248,16 @@ func ChangeStatusOfOld(ctx context.Context, db DB, from string, age time.Duratio
 	}
 	return keys, nil
 }
+
+// DocumentsByHash reads the documents that have one of the file hashes.
+func DocumentsByHash(ctx context.Context, db DB, hashes []string) ([]Document, error) {
+	rows, err := db.Query(ctx, `select `+documentColumns+` from documents where file_hash = any($1)`, hashes)
+	if err != nil {
+		return nil, fmt.Errorf("read the documents of the file hashes: %w", err)
+	}
+	docs, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (Document, error) { return scanDocument(row) })
+	if err != nil {
+		return nil, fmt.Errorf("read the documents of the file hashes: %w", err)
+	}
+	return docs, nil
+}

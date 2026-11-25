@@ -95,6 +95,12 @@ func Load(path string) (Set, error) {
 	if err != nil {
 		return Set{}, fmt.Errorf("read the question file: %w: give the path of a question file (the file of this repository is testset/questions.json)", err)
 	}
+	return Parse(path, raw)
+}
+
+// Parse examines the content of a question file. The path is for the text
+// of an error.
+func Parse(path string, raw []byte) (Set, error) {
 	var set Set
 	decoder := json.NewDecoder(bytes.NewReader(raw))
 	// A field with a wrong name is a fault, not a field with no value.
