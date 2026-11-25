@@ -149,6 +149,11 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdin i
 	if err != nil {
 		return err
 	}
+	// The start proves the settings of the chat model. No part of the
+	// service asks it a question yet.
+	if _, err := startChat(ctx, logger, cfg); err != nil {
+		return err
+	}
 	// The rules for documents. The HTTP server and the workers call them.
 	// With no embedding model, embedder is nil, and the search tells why.
 	// The same is true for the reranker.

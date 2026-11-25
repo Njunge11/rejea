@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Njunge11/rejea/internal/anthropic"
+	"github.com/Njunge11/rejea/internal/chat"
 	"github.com/Njunge11/rejea/internal/chunk"
 	"github.com/Njunge11/rejea/internal/cloudflare"
 	"github.com/Njunge11/rejea/internal/cohere"
@@ -74,8 +76,18 @@ func Load(getenv func(string) string) (Config, error) {
 	// Each job of the parse queue has one PDF open.
 	parseWorkers := env.count("REJEA_PARSE_WORKERS", 1)
 
-	// Each provider of the reranker has a default model of its own.
+	// Each provider of a model has a default model of its own.
+	embedProvider := env.oneOf("REJEA_EMBED_PROVIDER", models.EmbedProviders()...)
 	rerankProvider := env.oneOf("REJEA_RERANK_PROVIDER", models.RerankProviders()...)
+	chatProvider := env.oneOf("REJEA_CHAT_PROVIDER", models.ChatProviders()...)
+	// The keys had the names of their providers before. A settings file
+	// with an old name gets the new name, not a model that is not set.
+	if env.getenv("CLOUDFLARE_API_TOKEN") != "" {
+		env.fault("CLOUDFLARE_API_TOKEN has a new name: change the name of the line to REJEA_EMBED_API_KEY (for the reranker of Cloudflare, give REJEA_RERANK_API_KEY the same token)")
+	}
+	if env.getenv("COHERE_API_KEY") != "" {
+		env.fault("COHERE_API_KEY has a new name: change the name of the line to REJEA_RERANK_API_KEY")
+	}
 	// One limit for the answer of each model provider.
 	maxAnswerBytes := env.size("REJEA_MODEL_MAX_ANSWER_BYTES", 16<<20) // 16 MiB
 	cfg := Config{
@@ -160,9 +172,13 @@ func Load(getenv func(string) string) (Config, error) {
 			Path: env.text("REJEA_TOKENIZER_PATH", "models/qwen3-embedding-0.6b/tokenizer.json"),
 		},
 		Models: models.Config{
+			// Each model has three settings with the same form: the
+			// provider, the model and the API key. No key has a default:
+			// each developer has an account of their own.
 			Embed: embed.Config{
-				Provider:   env.oneOf("REJEA_EMBED_PROVIDER", models.EmbedProviders()...),
-				Model:      env.text("REJEA_EMBED_MODEL", "@cf/qwen/qwen3-embedding-0.6b"),
+				Provider:   embedProvider,
+				Model:      env.text("REJEA_EMBED_MODEL", models.EmbedModel(embedProvider)),
+				APIKey:     env.text("REJEA_EMBED_API_KEY", ""),
 				Dimensions: env.count("REJEA_EMBED_DIMENSIONS", 1024),
 				// Cloudflare documents 32 texts for one request, and no
 				// limit for the tokens of a request. Measured in November
@@ -179,28 +195,38 @@ func Load(getenv func(string) string) (Config, error) {
 			Rerank: rerank.Config{
 				Provider: rerankProvider,
 				Model:    env.text("REJEA_RERANK_MODEL", models.RerankModel(rerankProvider)),
+				APIKey:   env.text("REJEA_RERANK_API_KEY", ""),
 				Timeout:  env.duration("REJEA_RERANK_TIMEOUT", 10*time.Second),
+			},
+			Chat: chat.Config{
+				Provider: chatProvider,
+				Model:    env.text("REJEA_CHAT_MODEL", models.ChatModel(chatProvider)),
+				APIKey:   env.text("REJEA_CHAT_API_KEY", ""),
+				// The largest answer that a request with no stream gets
+				// before the time limits of HTTP.
+				MaxAnswerTokens: env.count("REJEA_CHAT_MAX_ANSWER_TOKENS", 16000),
+				Timeout:         env.duration("REJEA_CHAT_TIMEOUT", 5*time.Minute),
 			},
 			MaxAttempts:  env.count("REJEA_MODEL_MAX_ATTEMPTS", 3),
 			RetryWaitMin: env.duration("REJEA_MODEL_RETRY_WAIT_MIN", time.Second),
 			RetryWaitMax: env.duration("REJEA_MODEL_RETRY_WAIT_MAX", 30*time.Second),
 			Cloudflare: cloudflare.Config{
-				// The names that the tools of Cloudflare use. No default:
-				// each developer has an account of their own.
+				// The name that the tools of Cloudflare use. The API token
+				// is the key of the model that uses the account.
 				AccountID:      env.text("CLOUDFLARE_ACCOUNT_ID", ""),
-				APIToken:       env.text("CLOUDFLARE_API_TOKEN", ""),
 				BaseURL:        env.text("REJEA_CLOUDFLARE_API_URL", "https://api.cloudflare.com/client/v4"),
 				MaxAnswerBytes: maxAnswerBytes,
 			},
 			Cohere: cohere.Config{
-				// No default: each developer has an account of their own.
-				APIKey:         env.text("COHERE_API_KEY", ""),
 				BaseURL:        env.text("REJEA_COHERE_API_URL", "https://api.cohere.com"),
 				MaxAnswerBytes: maxAnswerBytes,
 				// Cohere cuts a text at 4,096 tokens when the request gives
 				// no number. Its tokens are not the tokens of the embedding
 				// model, so the default is the limit of the embedding model.
 				MaxTextTokens: env.count("REJEA_COHERE_MAX_TEXT_TOKENS", 8192),
+			},
+			Anthropic: anthropic.Config{
+				BaseURL: env.text("REJEA_ANTHROPIC_API_URL", "https://api.anthropic.com"),
 			},
 		},
 		Server: server.Config{

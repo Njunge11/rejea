@@ -91,6 +91,8 @@ type Config struct {
 	Provider string
 	// Model is the name that the provider gives the model.
 	Model string
+	// APIKey is the API key of the account at the provider.
+	APIKey string
 	// Dimensions is the number of numbers in one vector. The column
 	// chunks.embedding has the same number.
 	Dimensions int

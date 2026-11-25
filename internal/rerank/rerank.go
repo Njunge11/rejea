@@ -80,6 +80,8 @@ type Config struct {
 	Provider string
 	// Model is the name that the provider gives the model.
 	Model string
+	// APIKey is the API key of the account at the provider.
+	APIKey string
 	// Timeout is the longest time for one request, with its new attempts.
 	Timeout time.Duration
 }
