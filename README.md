@@ -13,7 +13,7 @@ A RAG (retrieval-augmented generation) engine for PDF and Word documents, with h
 
 ## Status
 
-Built: the schema, the migrations, the job queues, upload URLs, the confirm of an upload, the file hash, the duplicate check, the failure rule, the unpack of archives (zip, tar, tar.gz), the job that fails old uploads, the status of one document and of the list of documents, the retry of a failed document, the parser service, the page images of a PDF, the blocks of a PDF and of a Word file, the chunker, the embeddings, the index step that saves the chunks of a document with their vectors, the command that makes the chunks again, the question file of the test set, and the search endpoint. Not built: the rest of ingestion, the reranker, generation.
+Built: the schema, the migrations, the job queues, upload URLs, the confirm of an upload, the file hash, the duplicate check, the failure rule, the unpack of archives (zip, tar, tar.gz), the job that fails old uploads, the status of one document and of the list of documents, the retry of a failed document, the parser service, the page images of a PDF, the blocks of a PDF and of a Word file, the chunker, the embeddings, the index step that saves the chunks of a document with their vectors, the command that makes the chunks again, the question file of the test set, the search endpoint, and the reranker. Not built: the rest of ingestion, generation.
 
 ## Run
 
@@ -134,6 +134,7 @@ curl -s http://localhost:8080/search \
       "text": "CPI AND INFLATION RATES FOR THE MONTH OF APRIL 2011\n\nKenya National Bureau of Statistics hereby ...",
       "block_ids": ["01a20e11-0e87-7256-bd54-63ee78dc598d", "01a20e11-0e87-725b-84c5-d9714f94e008"],
       "score": 0.03279,
+      "rerank_score": null,
       "keyword_rank": 1,
       "vector_rank": 1
     }
@@ -155,10 +156,28 @@ The request:
 | `limit` | The largest number of results. Default 10, largest 50. |
 | `filters.document_ids` | Search in these documents only. |
 | `filters.metadata` | Search in the documents whose metadata has each name and value of this object, for example `{"department": "finance"}`. |
+| `rerank` | `true` or `false`: use the reranker for this search. Default: the setting `REJEA_RERANK`. |
 
 A result has no pages (`null`) for a Word file. `keyword_rank` or `vector_rank` is `null` when that search did not find the chunk. `score` puts the results in order: it does not tell how good a result is. The vector search always gives its nearest chunks, so a question with no answer in the documents also gets results.
 
 The search reads the documents with the status `indexed`, and those in the index work again (`make reindex`), which keep their old chunks until the new chunks are saved. It needs the embedding model: with no model, the answer is 503 and the log gives the correction.
+
+### Reranker
+
+The reranker is an optional second stage of the search (retrieve, then rerank). A reranker model reads the question together with one chunk and gives a score from 0 to 1: how well the chunk answers the question. The search gives the model the best 50 chunks of the merge and puts them in the order of that score. A result then has the score in `rerank_score`.
+
+The reranker is off by default. `REJEA_RERANK=true` turns it on for each search, and the field `rerank` of a request turns it on or off for that search.
+
+The model is bge-reranker-base on Cloudflare Workers AI, with the account of the embedding model. Two facts about this model:
+
+- It reads the first 512 tokens of the question and a chunk together (the model table of Cloudflare AI Search; measured one time). A chunk can have 4,096 tokens (`REJEA_CHUNK_MAX_TOKENS`), so the model does not read the end of a long chunk.
+- Measured on the 42 questions of the test set that have an answer (17 documents, 330 chunks): without the reranker, a source page is the first result for 36 questions and in the first 5 for 41. With the reranker, it is the first result for 33 and in the first 5 for 39. The median time of a search is 0.5 seconds without it and 2.1 seconds with it.
+
+Thus the reranker does not make the search better for these documents with this model and this chunk size, and the default is off.
+
+When the service starts, it sends one small request to the model. With a wrong name of the model, it stops and names the setting to correct. When the model gives no answer to a search, the answer is 503 and tells the client to try again or to send `"rerank": false`.
+
+The code for a provider is an adapter behind one interface ([internal/rerank](internal/rerank/rerank.go)), as for the embedding model. `REJEA_RERANK_PROVIDER` selects the provider.
 
 ## Test set
 

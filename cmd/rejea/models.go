@@ -8,8 +8,10 @@ import (
 
 	"github.com/Njunge11/rejea/internal/config"
 	"github.com/Njunge11/rejea/internal/database"
+	"github.com/Njunge11/rejea/internal/documents"
 	"github.com/Njunge11/rejea/internal/embed"
 	"github.com/Njunge11/rejea/internal/models"
+	"github.com/Njunge11/rejea/internal/rerank"
 )
 
 // startEmbedder makes the client of the embedding model and proves its
@@ -45,6 +47,40 @@ func startEmbedder(ctx context.Context, logger *slog.Logger, cfg config.Config, 
 		return nil, err
 	}
 	return embedder, nil
+}
+
+// startReranker makes the client of the reranker model and proves its
+// settings with one small request. It has the rules of startEmbedder:
+//
+//   - No credentials: a warning, and no client. A search that asks for the
+//     reranker then answers with the reason.
+//   - Settings that are wrong (the credentials, the name of the model): an
+//     error, which stops the service.
+//   - A provider that gives no answer now, or an account with no usage
+//     left: a warning. A later request can succeed.
+func startReranker(ctx context.Context, logger *slog.Logger, cfg config.Config) (documents.Reranker, error) {
+	reranker, err := models.Reranker(cfg.Models, logger)
+	if errors.Is(err, rerank.ErrNotSet) {
+		logger.WarnContext(ctx, "no reranker provider is set: a search that asks for the reranker fails until one is set",
+			"to_correct", `set CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN in .env: see "Reranker" in the README`)
+		return nil, nil //nolint:nilnil // No client and no error: the service starts with no reranker.
+	}
+	if err != nil {
+		return nil, err
+	}
+	ctx, cancel := context.WithTimeout(ctx, cfg.StartCheckTimeout)
+	defer cancel()
+	switch err := reranker.Check(ctx); {
+	case err == nil:
+		logger.InfoContext(ctx, "reranker model ready",
+			"provider", cfg.Models.Rerank.Provider, "model", cfg.Models.Rerank.Model, "default", cfg.Documents.Rerank)
+	case errors.Is(err, rerank.ErrBusy), errors.Is(err, rerank.ErrQuota), errors.Is(err, context.DeadlineExceeded):
+		logger.WarnContext(ctx, "the reranker model does not answer now: a later search can succeed",
+			"provider", cfg.Models.Rerank.Provider, "err", err)
+	default:
+		return nil, err
+	}
+	return reranker, nil
 }
 
 // errDimensions tells that the vectors of the embedding model do not fit

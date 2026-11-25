@@ -49,7 +49,7 @@ func reindex(ctx context.Context, pool *pgxpool.Pool, logger *slog.Logger, cfg c
 		return err
 	}
 	// The rules for the index work use no file, so they get no file store.
-	docs := documents.New(pool, nil, inserter, nil, cfg.Documents)
+	docs := documents.New(pool, nil, inserter, nil, nil, cfg.Documents)
 
 	const next = "The service makes the new chunks: a document has the status indexing until they are saved. If the service does not run, the jobs wait for it."
 	if len(args) == 1 && args[0] == "--all" {

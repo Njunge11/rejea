@@ -17,6 +17,9 @@ type searchRequest struct {
 	Limit int `json:"limit"`
 	// Filters is optional: it keeps the search in a part of the documents.
 	Filters searchFilters `json:"filters"`
+	// Rerank is optional: true or false tells if the search uses the
+	// reranker. With no value, the setting of the service decides.
+	Rerank *bool `json:"rerank"`
 }
 
 type searchFilters struct {
@@ -48,9 +51,13 @@ type searchResult struct {
 	// draws a box on each.
 	BlockIDs []uuid.UUID `json:"block_ids"`
 	// Score is the sum of 1 / (k + rank) for the keyword search and the
-	// vector search. It puts the results in order, and it is not a measure
-	// of how good a result is.
+	// vector search. It puts the results in order when the search does not
+	// use the reranker, and it is not a measure of how good a result is.
 	Score float64 `json:"score"`
+	// RerankScore is the score of the reranker, from 0 to 1: how well the
+	// text answers the question. It puts the results in order when the
+	// search uses the reranker. It is null for a search without it.
+	RerankScore *float64 `json:"rerank_score"`
 	// KeywordRank and VectorRank are the positions of the chunk in the two
 	// searches, from 1. A rank is null when that search did not find the
 	// chunk.
@@ -95,6 +102,7 @@ func search(docs *documents.Service, maxRequestBytes int64) endpoint {
 			Limit:       request.Limit,
 			DocumentIDs: ids,
 			Metadata:    request.Filters.Metadata,
+			Rerank:      request.Rerank,
 		})
 		if err != nil {
 			return err
@@ -110,6 +118,7 @@ func search(docs *documents.Service, maxRequestBytes int64) endpoint {
 				Text:        f.Text,
 				BlockIDs:    f.BlockIDs,
 				Score:       f.Score,
+				RerankScore: f.RerankScore,
 				KeywordRank: positive(f.KeywordRank),
 				VectorRank:  positive(f.VectorRank),
 			}

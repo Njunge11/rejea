@@ -134,9 +134,14 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 	if err != nil {
 		return err
 	}
+	reranker, err := startReranker(ctx, logger, cfg)
+	if err != nil {
+		return err
+	}
 	// The rules for documents. The HTTP server and the workers call them.
 	// With no embedding model, embedder is nil, and the search tells why.
-	docs := documents.New(pool, store, inserter, embedder, cfg.Documents)
+	// The same is true for the reranker.
+	docs := documents.New(pool, store, inserter, embedder, reranker, cfg.Documents)
 	failureRule := []rivertype.Middleware{ingest.FailureRule(docs, logger, cfg.Ingest.FailureSaveTimeout)}
 	workers := ingest.Workers(docs, store, pdfs, parser, words, chunker, embedder, logger, cfg.Ingest)
 	jobs, err := queue.NewClient(pool, logger, workers, failureRule, ingest.Schedule(cfg.Ingest), cfg.Queue)

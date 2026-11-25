@@ -17,12 +17,15 @@ import (
 
 	"github.com/Njunge11/rejea/internal/cloudflare"
 	"github.com/Njunge11/rejea/internal/embed"
+	"github.com/Njunge11/rejea/internal/rerank"
 )
 
 // Config is the settings of the models.
 type Config struct {
 	// Embed is the embedding model.
 	Embed embed.Config
+	// Rerank is the reranker model.
+	Rerank rerank.Config
 	// MaxAttempts is the largest number of attempts for one request to a
 	// provider. The attempts after the first are for a request that got no
 	// answer, or an answer that tells to try again.
@@ -66,6 +69,39 @@ func Embedder(cfg Config, counter embed.Counter, logger *slog.Logger) (*embed.Cl
 		return nil, err
 	}
 	return embed.New(provider, counter, logger, cfg.Embed)
+}
+
+// rerankers is the registry of the rerank port: the name of each provider
+// and the function that makes its adapter. A new provider is one new line.
+var rerankers = map[string]func(cfg Config, client *http.Client) (rerank.Provider, error){
+	"cloudflare": func(cfg Config, client *http.Client) (rerank.Provider, error) {
+		return cloudflare.NewReranker(cfg.Cloudflare, client)
+	},
+}
+
+// RerankProviders gives the names of the providers of the rerank port.
+func RerankProviders() []string {
+	return slices.Sorted(maps.Keys(rerankers))
+}
+
+// Reranker makes the reranker client that the settings name. It sends no
+// request. With no credentials for the provider, its error is
+// rerank.ErrNotSet.
+func Reranker(cfg Config, logger *slog.Logger) (*rerank.Client, error) {
+	open, known := rerankers[cfg.Rerank.Provider]
+	if !known {
+		return nil, fmt.Errorf("the reranker provider is %q: the providers are %s",
+			cfg.Rerank.Provider, strings.Join(RerankProviders(), ", "))
+	}
+	client, err := httpClient(cfg, logger)
+	if err != nil {
+		return nil, err
+	}
+	provider, err := open(cfg, client)
+	if err != nil {
+		return nil, err
+	}
+	return rerank.New(provider, logger, cfg.Rerank)
 }
 
 // httpClient makes the HTTP client that each adapter uses. It makes the new

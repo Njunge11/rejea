@@ -1,10 +1,12 @@
 package documents
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"unicode/utf8"
 
@@ -13,12 +15,20 @@ import (
 
 	"github.com/Njunge11/rejea/internal/database"
 	"github.com/Njunge11/rejea/internal/embed"
+	"github.com/Njunge11/rejea/internal/rerank"
 )
 
 // QueryEmbedder gives the vector of a search question. The client of the
 // embedding model implements it.
 type QueryEmbedder interface {
 	Query(ctx context.Context, text string) ([]float32, error)
+}
+
+// Reranker gives one score for each text: how well the text answers the
+// question. A higher score is better. The client of the reranker model
+// implements it.
+type Reranker interface {
+	Scores(ctx context.Context, query string, texts []string) ([]float64, error)
 }
 
 // searchable is the statuses of the documents that the search reads. A
@@ -41,11 +51,19 @@ type SearchRequest struct {
 	// Metadata keeps the search in the documents whose metadata has each
 	// name and value of this object.
 	Metadata map[string]any
+	// Rerank tells if the search uses the reranker. With nil, the setting
+	// of the service decides.
+	Rerank *bool
 }
 
 // SearchResult is one chunk that the search found. The results of a
 // search are in the order from the best to the worst.
-type SearchResult = database.SearchResult
+type SearchResult struct {
+	database.SearchResult
+	// RerankScore is the score that the reranker gave the chunk for the
+	// question, from 0 to 1. It is nil for a search without the reranker.
+	RerankScore *float64
+}
 
 // Unavailable tells that the service cannot do the work now, and that the
 // request is correct. The detail is for the client. The cause is for the
@@ -67,9 +85,14 @@ func (e *Unavailable) Unwrap() error { return e.Cause }
 // The vector search finds text with the same meaning in other words. A
 // chunk that is high in the two lists comes first.
 //
+// With the reranker, the search has a second stage (retrieve, then
+// rerank): the reranker model reads the question together with each of
+// the best chunks of the merge and gives each a score, and the results are
+// in the order of that score.
+//
 // The error is an InvalidArgument when the request has a value that the
-// rules refuse. It is an Unavailable when the embedding model is not set
-// or gives no answer.
+// rules refuse. It is an Unavailable when a model that the search needs is
+// not set or gives no answer.
 func (s *Service) Search(ctx context.Context, request SearchRequest) ([]SearchResult, error) {
 	query := strings.TrimSpace(request.Query)
 	switch length := utf8.RuneCountInString(query); {
@@ -105,6 +128,15 @@ func (s *Service) Search(ctx context.Context, request SearchRequest) ([]SearchRe
 	if documentIDs == nil {
 		documentIDs = []uuid.UUID{}
 	}
+	rerank := s.cfg.Rerank
+	if request.Rerank != nil {
+		rerank = *request.Rerank
+	}
+	// The reranker selects the results from more chunks than the limit.
+	merged := limit
+	if rerank {
+		merged = max(limit, s.cfg.RerankCandidates)
+	}
 
 	ctx, cancel := context.WithTimeout(ctx, s.cfg.SearchTimeout)
 	defer cancel()
@@ -113,14 +145,14 @@ func (s *Service) Search(ctx context.Context, request SearchRequest) ([]SearchRe
 		return nil, err
 	}
 
-	var results []SearchResult
+	var found []database.SearchResult
 	// One transaction: the scan settings of the vector index apply to the
 	// search only.
 	err = pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
 		if err := database.SetVectorScan(ctx, tx, s.cfg.SearchCandidates); err != nil {
 			return err
 		}
-		results, err = database.SearchChunks(ctx, tx, database.Search{
+		found, err = database.SearchChunks(ctx, tx, database.Search{
 			Text:         query,
 			Vector:       vector,
 			Statuses:     searchable,
@@ -128,7 +160,7 @@ func (s *Service) Search(ctx context.Context, request SearchRequest) ([]SearchRe
 			Metadata:     metadata,
 			Candidates:   s.cfg.SearchCandidates,
 			RankConstant: s.cfg.SearchRankConstant,
-			Limit:        limit,
+			Limit:        merged,
 		})
 		return err
 	})
@@ -138,7 +170,51 @@ func (s *Service) Search(ctx context.Context, request SearchRequest) ([]SearchRe
 		}
 		return nil, err
 	}
-	return results, nil
+	results := make([]SearchResult, len(found))
+	for i, f := range found {
+		results[i] = SearchResult{SearchResult: f}
+	}
+	if !rerank {
+		return results, nil
+	}
+	if err := s.rerank(ctx, query, results); err != nil {
+		return nil, err
+	}
+	return results[:min(limit, len(results))], nil
+}
+
+// rerank gives each result the score of the reranker and puts the results
+// in the order of that score, the best first. Two results with the same
+// score keep the order of the merge. An Unavailable tells the client to
+// try again, or tells that the service has no reranker model.
+func (s *Service) rerank(ctx context.Context, query string, results []SearchResult) error {
+	if s.reranker == nil {
+		return &Unavailable{
+			Detail: `The service has no reranker model. Send "rerank": false for a search without it.`,
+			Cause:  fmt.Errorf(`%w: set CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN in .env and start the service again (see "Reranker" in the README)`, rerank.ErrNotSet),
+		}
+	}
+	texts := make([]string, len(results))
+	for i, r := range results {
+		texts[i] = r.Text
+	}
+	scores, err := s.reranker.Scores(ctx, query, texts)
+	switch {
+	case err == nil:
+	case errors.Is(err, rerank.ErrBusy), errors.Is(err, context.DeadlineExceeded):
+		return &Unavailable{Detail: `The reranker model gives no answer now. Try again, or send "rerank": false for a search without it.`, Cause: err}
+	case errors.Is(err, rerank.ErrQuota):
+		return &Unavailable{Detail: `The reranker model has no usage left for today. Send "rerank": false for a search without it.`, Cause: err}
+	default:
+		return fmt.Errorf("rerank the results: %w", err)
+	}
+	for i := range results {
+		results[i].RerankScore = &scores[i]
+	}
+	slices.SortStableFunc(results, func(a, b SearchResult) int {
+		return cmp.Compare(*b.RerankScore, *a.RerankScore)
+	})
+	return nil
 }
 
 // queryVector gives the vector of the question. An Unavailable tells the

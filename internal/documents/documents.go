@@ -94,8 +94,14 @@ type Config struct {
 	// filter of a search.
 	MaxSearchDocuments int
 	// SearchTimeout is the longest time of one search: the vector of the
-	// question and the query of the database.
+	// question, the query of the database and the scores of the reranker.
 	SearchTimeout time.Duration
+	// Rerank tells if a search uses the reranker when the caller does not
+	// say.
+	Rerank bool
+	// RerankCandidates is the number of chunks of the merge that the
+	// reranker reads.
+	RerankCandidates int
 }
 
 // Document is a document as the database keeps it.
@@ -150,13 +156,17 @@ type Service struct {
 	// embedder gives the vector of a search question. It is nil when the
 	// service has no embedding model: the search then tells why.
 	embedder QueryEmbedder
+	// reranker gives the scores that put the results of a search in a
+	// better order. It is nil when the service has no reranker model: a
+	// search that asks for it then tells why.
+	reranker Reranker
 	cfg      Config
 }
 
-// New makes a Service. The store and the embedder can be nil for a caller
-// that reads no file and runs no search.
-func New(pool *pgxpool.Pool, store *storage.Store, jobs *river.Client[pgx.Tx], embedder QueryEmbedder, cfg Config) *Service {
-	return &Service{pool: pool, store: store, jobs: jobs, embedder: embedder, cfg: cfg}
+// New makes a Service. The store, the embedder and the reranker can be nil
+// for a caller that reads no file and runs no search.
+func New(pool *pgxpool.Pool, store *storage.Store, jobs *river.Client[pgx.Tx], embedder QueryEmbedder, reranker Reranker, cfg Config) *Service {
+	return &Service{pool: pool, store: store, jobs: jobs, embedder: embedder, reranker: reranker, cfg: cfg}
 }
 
 // Get reads one document. The error is ErrNotFound when no document has

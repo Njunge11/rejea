@@ -20,6 +20,7 @@ import (
 	"github.com/Njunge11/rejea/internal/parse"
 	"github.com/Njunge11/rejea/internal/pdf"
 	"github.com/Njunge11/rejea/internal/queue"
+	"github.com/Njunge11/rejea/internal/rerank"
 	"github.com/Njunge11/rejea/internal/server"
 	"github.com/Njunge11/rejea/internal/storage"
 	"github.com/Njunge11/rejea/internal/tokens"
@@ -114,6 +115,8 @@ func Load(getenv func(string) string) (Config, error) {
 			MaxQueryLength:     env.count("REJEA_SEARCH_MAX_QUERY_LENGTH", 2000),
 			MaxSearchDocuments: env.count("REJEA_SEARCH_MAX_DOCUMENTS", 1000),
 			SearchTimeout:      env.duration("REJEA_SEARCH_TIMEOUT", 20*time.Second),
+			Rerank:             env.oneOf("REJEA_RERANK", "false", "true") == "true",
+			RerankCandidates:   env.count("REJEA_RERANK_CANDIDATES", 50),
 		},
 		Ingest: ingest.Config{
 			FailureSaveTimeout:  env.duration("REJEA_FAILURE_SAVE_TIMEOUT", 10*time.Second),
@@ -164,6 +167,11 @@ func Load(getenv func(string) string) (Config, error) {
 				QueryInstruction: env.text("REJEA_EMBED_QUERY_INSTRUCTION",
 					"Given a web search query, retrieve relevant passages that answer the query"),
 			},
+			Rerank: rerank.Config{
+				Provider: env.oneOf("REJEA_RERANK_PROVIDER", models.RerankProviders()...),
+				Model:    env.text("REJEA_RERANK_MODEL", "@cf/baai/bge-reranker-base"),
+				Timeout:  env.duration("REJEA_RERANK_TIMEOUT", 10*time.Second),
+			},
 			MaxAttempts:  env.count("REJEA_MODEL_MAX_ATTEMPTS", 3),
 			RetryWaitMin: env.duration("REJEA_MODEL_RETRY_WAIT_MIN", time.Second),
 			RetryWaitMax: env.duration("REJEA_MODEL_RETRY_WAIT_MAX", 30*time.Second),
@@ -206,6 +214,12 @@ func Load(getenv func(string) string) (Config, error) {
 	if cfg.Documents.SearchCandidates < cfg.Documents.MaxSearchLimit || cfg.Documents.SearchCandidates > 1000 {
 		env.fault("REJEA_SEARCH_CANDIDATES (%d) must be a number from REJEA_SEARCH_MAX_LIMIT (%d) to 1000",
 			cfg.Documents.SearchCandidates, cfg.Documents.MaxSearchLimit)
+	}
+	// The merge has the chunks of two lists at most, so the reranker cannot
+	// read more.
+	if cfg.Documents.RerankCandidates > 2*cfg.Documents.SearchCandidates {
+		env.fault("REJEA_RERANK_CANDIDATES (%d) must not be more than 2 times REJEA_SEARCH_CANDIDATES (%d): the merge of the two searches has no more chunks",
+			cfg.Documents.RerankCandidates, cfg.Documents.SearchCandidates)
 	}
 	// The answer must come before the server stops the write of it.
 	if cfg.Documents.SearchTimeout >= cfg.Server.WriteTimeout {

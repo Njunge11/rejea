@@ -10,6 +10,7 @@ import (
 	"github.com/Njunge11/rejea/internal/database"
 	"github.com/Njunge11/rejea/internal/embed"
 	"github.com/Njunge11/rejea/internal/parse"
+	"github.com/Njunge11/rejea/internal/rerank"
 	"github.com/Njunge11/rejea/internal/storage"
 )
 
@@ -61,6 +62,12 @@ func advice(err error) string {
 		return `Give REJEA_EMBED_MODEL in .env the name of an embedding model of the provider. The default is @cf/qwen/qwen3-embedding-0.6b.`
 	case errors.Is(err, embed.ErrAnswer):
 		return `Give REJEA_EMBED_DIMENSIONS in .env the number of dimensions of the model in REJEA_EMBED_MODEL. The column chunks.embedding has 1,024 dimensions: a model with a different number also needs a migration.`
+	case errors.Is(err, rerank.ErrRefused):
+		return `Give CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN in .env the values of your Cloudflare account: see "Reranker" in the README. The token needs the permissions "Workers AI Read" and "Workers AI Edit".`
+	case errors.Is(err, rerank.ErrNoModel):
+		return `Give REJEA_RERANK_MODEL in .env the name of a reranker model of the provider. The default is @cf/baai/bge-reranker-base.`
+	case errors.Is(err, rerank.ErrInput), errors.Is(err, rerank.ErrAnswer):
+		return `Give REJEA_RERANK_MODEL in .env the name of a reranker model: a model of a different type does not give scores. The default is @cf/baai/bge-reranker-base.`
 
 	case errors.Is(err, syscall.EADDRINUSE):
 		return `Stop the other program that uses this port, or change the port in REJEA_HTTP_ADDR in .env.`
