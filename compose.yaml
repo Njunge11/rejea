@@ -87,6 +87,14 @@ services:
   rejea:
     <<: *rejea
     restart: unless-stopped
+    # The time that the service gets to stop. It gives the jobs in work
+    # REJEA_JOB_STOP_TIMEOUT (10s) to finish, then cancels them and records
+    # them for a new attempt, and it gives the open requests
+    # REJEA_SHUTDOWN_TIMEOUT (10s). Docker kills a container that takes
+    # longer, and a job that is killed stays "running" in the queue for more
+    # than an hour, with its document in the status indexing. Keep this
+    # time longer than the sum of the two settings.
+    stop_grace_period: 30s
     depends_on:
       migrate:
         condition: service_completed_successfully
