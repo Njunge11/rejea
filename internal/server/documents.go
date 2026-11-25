@@ -201,3 +201,62 @@ func listDocuments(docs *documents.Service) endpoint {
 		return writeJSON(w, http.StatusOK, response)
 	}
 }
+
+// viewPage is one page of a document in an answer.
+type viewPage struct {
+	// Number is the number of the page. The first page has the number 1.
+	Number int `json:"number"`
+	// Width and Height are the size of the page image in pixels. A viewer
+	// lays out the pages with them before it loads an image.
+	Width  int `json:"width"`
+	Height int `json:"height"`
+	// ImageURL reads the page image with no credentials, until expires_at.
+	ImageURL string `json:"image_url"`
+}
+
+// listPagesResponse is one part of the pages of a document.
+type listPagesResponse struct {
+	// Pages are in the order of their numbers.
+	Pages []viewPage `json:"pages"`
+	// HasMore tells that pages come after this list. The client gets them
+	// with the number of the last page as starting_after.
+	HasMore bool `json:"has_more"`
+	// ExpiresAt is the time at which the image URLs stop.
+	ExpiresAt time.Time `json:"expires_at"`
+}
+
+// listPages answers GET /documents/{id}/pages.
+func listPages(docs *documents.Service) endpoint {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		id, err := pathID(r)
+		if err != nil {
+			return err
+		}
+		query, err := readQuery(r, "limit", "starting_after")
+		if err != nil {
+			return err
+		}
+		request := documents.PagesRequest{DocumentID: id}
+		if text, given := query["limit"]; given {
+			request.Limit, err = strconv.Atoi(text)
+			if err != nil {
+				return &apiError{status: http.StatusBadRequest, detail: "The limit must be a whole number."}
+			}
+		}
+		if text, given := query["starting_after"]; given {
+			request.After, err = strconv.Atoi(text)
+			if err != nil {
+				return &apiError{status: http.StatusBadRequest, detail: "The starting_after must be the number of a page."}
+			}
+		}
+		list, err := docs.Pages(r.Context(), request)
+		if err != nil {
+			return err
+		}
+		response := listPagesResponse{Pages: make([]viewPage, len(list.Pages)), HasMore: list.HasMore, ExpiresAt: list.ExpiresAt.UTC()}
+		for i, page := range list.Pages {
+			response.Pages[i] = viewPage{Number: page.Number, Width: page.Width, Height: page.Height, ImageURL: page.ImageURL}
+		}
+		return writeJSON(w, http.StatusOK, response)
+	}
+}

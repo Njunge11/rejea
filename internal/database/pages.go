@@ -49,6 +49,30 @@ func ListPageNumbers(ctx context.Context, db DB, documentID uuid.UUID) ([]int, e
 	return numbers, nil
 }
 
+// ListPages gives the pages of a document in the order of their numbers,
+// from the page after the given number. It gives limit pages at most.
+func ListPages(ctx context.Context, db DB, documentID uuid.UUID, after, limit int) ([]Page, error) {
+	rows, err := db.Query(ctx,
+		`select page_number, image_key, width, height from pages
+		 where document_id = $1 and page_number > $2
+		 order by page_number
+		 limit $3`,
+		documentID, after, limit,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("list the pages of the document %s: %w", documentID, err)
+	}
+	pages, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (Page, error) {
+		var page Page
+		err := row.Scan(&page.Number, &page.ImageKey, &page.Width, &page.Height)
+		return page, err
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list the pages of the document %s: %w", documentID, err)
+	}
+	return pages, nil
+}
+
 // SetPageCount saves the number of pages of a document.
 func SetPageCount(ctx context.Context, db DB, id uuid.UUID, count int) error {
 	_, err := db.Exec(ctx, `update documents set page_count = $2 where id = $1`, id, count)

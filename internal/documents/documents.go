@@ -73,6 +73,12 @@ type Config struct {
 	// MaxListLimit is the largest number of documents that a caller can
 	// ask for in one page of the list.
 	MaxListLimit int
+	// PagesLimit is the number of pages in one list of the pages of a
+	// document when the caller gives no number.
+	PagesLimit int
+	// MaxPagesLimit is the largest number of pages that a caller can ask
+	// for in one list.
+	MaxPagesLimit int
 	// ReindexBatchSize is the number of documents that go to the index
 	// work again in one transaction.
 	ReindexBatchSize int

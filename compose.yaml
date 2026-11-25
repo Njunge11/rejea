@@ -28,6 +28,11 @@ x-rejea: &rejea
     AWS_SECRET_ACCESS_KEY: ${REJEA_STORAGE_SECRET_KEY:-rejea-local-only}
     # A profile of .env is for the machine: the container has no AWS files.
     AWS_PROFILE: ""
+    # The files of this service are in the store of this file, which has
+    # no CloudFront: the URL of a page image goes to the store.
+    REJEA_CLOUDFRONT_DOMAIN: ""
+    REJEA_CLOUDFRONT_KEY_PAIR_ID: ""
+    REJEA_CLOUDFRONT_PRIVATE_KEY_FILE: ""
     # The parser runs on the machine itself.
     REJEA_PARSER_URL: http://host.docker.internal:${REJEA_PARSER_PORT:-8112}
     REJEA_WORD_READER_PATH: /usr/local/bin/office-oxide

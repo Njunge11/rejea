@@ -371,9 +371,20 @@ These points are not in the plan. Each one is settled before its item starts.
 - [ ] **31. Chat page**
   - Next.js chat on Eve's `useEveAgent` hook, with citations that a user can click.
 
-- [ ] **32. Endpoint: pages of a document**
+- [x] **32. Endpoint: pages of a document**
   - The size of each page, and a signed CloudFront URL for each page image. Config reads the CloudFront values.
   - Proof: a signed URL opens the image. The same URL without the signature is refused.
+  - Built: `GET /documents/{id}/pages` with `limit` and `starting_after`, as the list of documents has. The answer has `pages` (number, width, height, `image_url`), `has_more` and `expires_at`. The settings are `REJEA_PAGES_LIMIT` (100), `REJEA_MAX_PAGES_LIMIT` (1,000), `REJEA_VIEW_URL_LIFE` (1 hour) and the three `REJEA_CLOUDFRONT_` values.
+  - The technique, from the CloudFront documentation (read on 2026-11-25) and the source code of the AWS SDK for Go (`feature/cloudfront/sign` 1.12.12 of 2026-11-10): a signed URL with a custom policy that has a wildcard, which the documentation gives for more than one file. One signature is for the folder of the page images of one document, so a list of 1,000 pages costs one signature. The signature uses SHA-256 (`Hash-Algorithm=SHA256`), which CloudFront accepts in place of its default, SHA-1. Signed cookies, the other way of the documentation for more than one file, need the web app and the distribution on one site: no custom domain exists yet.
+  - My own choices: with no CloudFront settings, the URL is a presigned URL of the bucket, so `make up` works with no AWS account. `compose.yaml` gives the service of `make up` no CloudFront, because its files are in the store of that file. The key is an RSA key of 2,048 bits only: CloudFront accepts an ECDSA key also, but no run proved one. The service proves the CloudFront settings at its start with one signed request for a file that does not exist: CloudFront examines the signature before it asks the bucket.
+  - Proved by a run with the AWS bucket and the distribution (the service binary with the settings of `.env`, one page image of a test document put in the bucket, and removed after):
+    - The signed URL opens the image: status 200, `image/png`, and the same bytes as the original.
+    - The same URL without the signature: status 403 (`MissingKey`).
+    - A changed signature: 403. The same signature for a different file of the document (`original.pdf`): 403. The signature without `Hash-Algorithm=SHA256`: 403, so SHA-256 is in use.
+  - Proved by a run through the service of `make up` (the local store): the presigned URL opens the image (200, PNG), and the URL without the signature gets 403. Two lists with `limit=2` and `starting_after=2` give the 3 pages of a document. The list of the largest document (78 pages) takes 10 ms.
+  - Proved fault cases, each with its message. Settings: only one of the three CloudFront values, a domain with `https://`, a key file that does not exist, a file that is not a key, an RSA key of 4,096 bits, an Ed25519 key, an ECDSA key, a different RSA key (CloudFront refuses the signature), a key pair ID that CloudFront does not know, a domain with no distribution, a URL life of 0, a URL life of 200 hours for a bucket URL, and a page limit above the largest limit. Requests: a document that does not exist (404), an ID that is not an ID (404), a limit that is not a number, a limit of 5,000, a `starting_after` below zero, an unknown parameter (400 each), and a Word document (an empty list).
+  - Found, for item 33: a page image is a PNG of 1785 x 2526 pixels and 4.4 MB. A viewer that shows many pages loads much data. The distribution has no CORS headers: an `img` element needs none, and a canvas that reads the pixels needs them.
+  - Not proved: a browser that shows the image (item 33), and the service of `make up` with CloudFront (its files are not in the AWS bucket).
 
 - [ ] **33. Page viewer**
   - Shows the page image and draws a box on the blocks of the cited chunk. A toggle hides the boxes.

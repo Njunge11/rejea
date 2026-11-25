@@ -104,10 +104,18 @@ func Load(getenv func(string) string) (Config, error) {
 			Endpoint:       env.text("REJEA_S3_ENDPOINT", ""),
 			PublicEndpoint: env.text("REJEA_S3_PUBLIC_ENDPOINT", ""),
 			UploadURLLife:  env.duration("REJEA_UPLOAD_URL_LIFE", time.Hour),
-			MaxFileBytes:   maxFileBytes,
-			ReadTimeout:    env.duration("REJEA_S3_READ_TIMEOUT", time.Minute),
-			RangeBytes:     env.size("REJEA_S3_RANGE_BYTES", 8<<20), // 8 MiB
-			CheckTimeout:   startCheck,
+			ViewURLLife:    env.duration("REJEA_VIEW_URL_LIFE", time.Hour),
+			// No default: the distribution is in the AWS account of the
+			// developer. With no values, a view URL goes to the bucket.
+			CloudFront: storage.CloudFront{
+				Domain:         env.text("REJEA_CLOUDFRONT_DOMAIN", ""),
+				KeyPairID:      env.text("REJEA_CLOUDFRONT_KEY_PAIR_ID", ""),
+				PrivateKeyFile: env.text("REJEA_CLOUDFRONT_PRIVATE_KEY_FILE", ""),
+			},
+			MaxFileBytes: maxFileBytes,
+			ReadTimeout:  env.duration("REJEA_S3_READ_TIMEOUT", time.Minute),
+			RangeBytes:   env.size("REJEA_S3_RANGE_BYTES", 8<<20), // 8 MiB
+			CheckTimeout: startCheck,
 		},
 		Queue: queue.Config{
 			FileWorkers:  env.count("REJEA_FILE_WORKERS", 1),
@@ -123,6 +131,8 @@ func Load(getenv func(string) string) (Config, error) {
 			UploadMaxAge:     env.duration("REJEA_UPLOAD_MAX_AGE", 24*time.Hour),
 			ListLimit:        env.count("REJEA_LIST_LIMIT", 50),
 			MaxListLimit:     env.count("REJEA_MAX_LIST_LIMIT", 1000),
+			PagesLimit:       env.count("REJEA_PAGES_LIMIT", 100),
+			MaxPagesLimit:    env.count("REJEA_MAX_PAGES_LIMIT", 1000),
 			ReindexBatchSize: env.count("REJEA_REINDEX_BATCH_SIZE", 500),
 
 			SearchLimit:        env.count("REJEA_SEARCH_LIMIT", 10),
@@ -248,6 +258,10 @@ func Load(getenv func(string) string) (Config, error) {
 	if cfg.Documents.ListLimit > cfg.Documents.MaxListLimit {
 		env.fault("REJEA_LIST_LIMIT (%d) must not be more than REJEA_MAX_LIST_LIMIT (%d)",
 			cfg.Documents.ListLimit, cfg.Documents.MaxListLimit)
+	}
+	if cfg.Documents.PagesLimit > cfg.Documents.MaxPagesLimit {
+		env.fault("REJEA_PAGES_LIMIT (%d) must not be more than REJEA_MAX_PAGES_LIMIT (%d)",
+			cfg.Documents.PagesLimit, cfg.Documents.MaxPagesLimit)
 	}
 	if cfg.Documents.SearchLimit > cfg.Documents.MaxSearchLimit {
 		env.fault("REJEA_SEARCH_LIMIT (%d) must not be more than REJEA_SEARCH_MAX_LIMIT (%d)",

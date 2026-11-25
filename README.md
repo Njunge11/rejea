@@ -13,7 +13,7 @@ A RAG (retrieval-augmented generation) engine for PDF and Word documents, with h
 
 ## Status
 
-Built: the schema, the migrations, the job queues, upload URLs, the confirm of an upload, the file hash, the duplicate check, the failure rule, the unpack of archives (zip, tar, tar.gz), the job that fails old uploads, the status of one document and of the list of documents, the retry of a failed document, the parser service, the page images of a PDF, the blocks of a PDF and of a Word file, the chunker, the embeddings, the index step that saves the chunks of a document with their vectors, the command that makes the chunks again, the question file of the test set, the search endpoint, the reranker, the search report, and the chat model port. Not built: the rest of ingestion, generation.
+Built: the schema, the migrations, the job queues, upload URLs, the confirm of an upload, the file hash, the duplicate check, the failure rule, the unpack of archives (zip, tar, tar.gz), the job that fails old uploads, the status of one document and of the list of documents, the retry of a failed document, the parser service, the page images of a PDF, the blocks of a PDF and of a Word file, the chunker, the embeddings, the index step that saves the chunks of a document with their vectors, the command that makes the chunks again, the question file of the test set, the search endpoint, the reranker, the search report, the chat model port, and the endpoint for the pages of a document. Not built: the rest of ingestion, generation.
 
 ## Run
 
@@ -201,6 +201,48 @@ When the service starts, it sends one small request to the model. With a wrong k
 To use the model of Cloudflare, give `REJEA_RERANK_API_KEY` the token of `REJEA_EMBED_API_KEY`: the provider `cloudflare` uses `CLOUDFLARE_ACCOUNT_ID` also.
 
 The code for a provider is an adapter behind one interface ([internal/rerank](internal/rerank/rerank.go)), as for the embedding model. `REJEA_RERANK_PROVIDER` selects the provider.
+
+## Pages of a document
+
+`GET /documents/{id}/pages` gives the pages of a document that have an image, each with its size and a URL that reads the image. A viewer lays out the pages from the sizes, and loads an image when its page comes into view.
+
+```sh
+curl -s "http://localhost:8080/documents/<id>/pages?limit=2"
+```
+
+```json
+{
+  "pages": [
+    { "number": 1, "width": 1785, "height": 2526, "image_url": "http://localhost:8333/rejea/documents/<id>/pages/1.png?X-Amz-..." },
+    { "number": 2, "width": 1785, "height": 2526, "image_url": "http://localhost:8333/rejea/documents/<id>/pages/2.png?X-Amz-..." }
+  ],
+  "has_more": true,
+  "expires_at": "2026-11-25T13:44:18Z"
+}
+```
+
+| Parameter | Use |
+| --- | --- |
+| `limit` | The number of pages in the list. Default: `REJEA_PAGES_LIMIT` (100). Largest: `REJEA_MAX_PAGES_LIMIT` (1,000). |
+| `starting_after` | The number of the last page of the list before. The list starts at the next page. |
+
+`has_more` tells that pages come after the list. An image URL needs no credentials, and it stops at `expires_at` (`REJEA_VIEW_URL_LIFE`, 1 hour): the viewer then asks for the list again. A Word file, and a PDF before its parse, has an empty list.
+
+With the store of `make up`, an image URL is a presigned URL of the bucket. For a bucket in AWS S3 behind a CloudFront distribution, it is a signed CloudFront URL:
+
+1. Make an RSA key pair of 2,048 bits: `openssl genrsa -out private_key.pem 2048`, then `openssl rsa -pubout -in private_key.pem -out public_key.pem`.
+2. In CloudFront, add the public key ("Key management", "Public keys"), put it in a key group, and make that group a trusted key group of the behaviour of the distribution. The origin is the bucket, with origin access control.
+3. Put these lines in `.env`, and run the service on the machine itself (see "Develop"):
+
+```sh
+REJEA_CLOUDFRONT_DOMAIN=d111111abcdef8.cloudfront.net
+REJEA_CLOUDFRONT_KEY_PAIR_ID=K2JCJMDEHXQW5F
+REJEA_CLOUDFRONT_PRIVATE_KEY_FILE=/path/to/private_key.pem
+```
+
+The URLs of one list have one signature: a [custom policy](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-signed-urls.html) for the folder of the page images of the document, which the CloudFront documentation gives for more than one file. The signature uses SHA-256. It permits a read of the page images of that document only: CloudFront refuses the same signature for a different file.
+
+When the service starts, it sends one signed request to the distribution. With a key pair ID that CloudFront does not know, a private key that is not the key of that ID, or a domain with no distribution, it stops and names the setting to correct.
 
 ## Chat model
 

@@ -52,6 +52,18 @@ func advice(err error) string {
 		return `Give AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in .env the two keys of the file store: for the store of compose.yaml, the values of REJEA_STORAGE_ACCESS_KEY and REJEA_STORAGE_SECRET_KEY. For AWS S3, the role needs s3:ListBucket on the bucket: see "File storage" in the README.`
 	case errors.Is(err, storage.ErrNoBucket):
 		return `Give REJEA_S3_BUCKET in .env the name of a bucket that the store has. The bucket of the store of compose.yaml has the name "rejea".`
+	case errors.Is(err, storage.ErrViewSettings):
+		return `Set REJEA_CLOUDFRONT_DOMAIN, REJEA_CLOUDFRONT_KEY_PAIR_ID and REJEA_CLOUDFRONT_PRIVATE_KEY_FILE in .env, or remove the three: with no values, the URL of a page image goes to the bucket. See "Pages of a document" in the README.`
+	case errors.Is(err, storage.ErrViewDomain):
+		return `Give REJEA_CLOUDFRONT_DOMAIN in .env the domain name of the distribution only, with no "https://" and no path.`
+	case errors.Is(err, storage.ErrViewKey):
+		return `Give REJEA_CLOUDFRONT_PRIVATE_KEY_FILE in .env the path of the private key of the public key in REJEA_CLOUDFRONT_KEY_PAIR_ID: an RSA key of 2,048 bits in a PEM file. To make a key: "openssl genrsa -out private_key.pem 2048". See "Pages of a document" in the README.`
+	case errors.Is(err, storage.ErrViewNoAnswer):
+		return `Give REJEA_CLOUDFRONT_DOMAIN in .env the domain name of your distribution: the CloudFront console shows it as "Distribution domain name".`
+	case errors.Is(err, storage.ErrViewKeyPair):
+		return `Give REJEA_CLOUDFRONT_KEY_PAIR_ID in .env the ID of your public key: the CloudFront console shows it in "Key management", "Public keys". The key must be in a key group that the distribution trusts.`
+	case errors.Is(err, storage.ErrViewSignature):
+		return `Give REJEA_CLOUDFRONT_PRIVATE_KEY_FILE in .env the private key of the public key in REJEA_CLOUDFRONT_KEY_PAIR_ID: the file has a different key now. If the key is correct, set the clock of this machine.`
 	case errors.Is(err, storage.ErrRegion):
 		return `Give REJEA_S3_REGION in .env the AWS Region of the bucket.`
 

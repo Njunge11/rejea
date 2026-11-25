@@ -50,6 +50,11 @@ type Config struct {
 	PublicEndpoint string
 	// UploadURLLife is the time for which an upload URL can start an upload.
 	UploadURLLife time.Duration
+	// ViewURLLife is the time for which a view URL can read a file.
+	ViewURLLife time.Duration
+	// CloudFront is the distribution in front of the bucket. A view URL
+	// goes to it when it is set.
+	CloudFront CloudFront
 	// MaxFileBytes is the largest file that a client can upload.
 	MaxFileBytes int64
 	// ReadTimeout is the longest time that a connection to S3 can be silent
@@ -87,10 +92,14 @@ var (
 type Store struct {
 	bucket        string
 	uploadURLLife time.Duration
-	rangeBytes    int64
-	client        *s3.Client
-	presign       *s3.PresignClient
-	transfer      *transfermanager.Client
+	viewURLLife   time.Duration
+	// viewer signs the view URLs of CloudFront. It is nil when the view
+	// URLs go to the bucket itself.
+	viewer     *viewer
+	rangeBytes int64
+	client     *s3.Client
+	presign    *s3.PresignClient
+	transfer   *transfermanager.Client
 }
 
 // Fault is an error of the file storage or of the network. The content of
@@ -133,6 +142,20 @@ func New(ctx context.Context, logger *slog.Logger, cfg Config) (*Store, error) {
 		return nil, fmt.Errorf("the life of an upload URL is %s: S3 permits more than zero and at most %s",
 			cfg.UploadURLLife, maxUploadURLLife)
 	}
+	viewer, err := newViewer(cfg.CloudFront)
+	if err != nil {
+		return nil, err
+	}
+	// A URL of the bucket has the limit of S3. CloudFront has no limit.
+	if cfg.ViewURLLife <= 0 || (viewer == nil && cfg.ViewURLLife > maxUploadURLLife) {
+		return nil, fmt.Errorf("the life of a view URL is %s: it must be more than zero, and S3 permits at most %s",
+			cfg.ViewURLLife, maxUploadURLLife)
+	}
+	// The longest life of a URL that the AWS credentials sign.
+	signedLife := cfg.UploadURLLife
+	if viewer == nil {
+		signedLife = max(signedLife, cfg.ViewURLLife)
+	}
 	if cfg.MaxFileBytes < 1 || cfg.MaxFileBytes > maxPutBytes {
 		return nil, fmt.Errorf("the largest file is %d bytes: S3 permits 1 to %d bytes in one upload request",
 			cfg.MaxFileBytes, int64(maxPutBytes))
@@ -162,18 +185,18 @@ func New(ctx context.Context, logger *slog.Logger, cfg Config) (*Store, error) {
 		// The SDK has no read timeout for S3. Without one, a download on a
 		// connection that goes silent waits until its job is cancelled.
 		config.WithHTTPClient(awshttp.NewBuildableClient().WithReadTimeout(cfg.ReadTimeout)),
-		// S3 refuses an upload URL when the credentials that signed it are
+		// S3 refuses a signed URL when the credentials that signed it are
 		// expired, even if the URL has time left. Thus the SDK must get new
 		// credentials when the current ones have less time left than the
-		// life of an upload URL.
+		// life of a signed URL.
 		config.WithCredentialsCacheOptions(func(o *aws.CredentialsCacheOptions) {
-			o.ExpiryWindow = cfg.UploadURLLife
+			o.ExpiryWindow = signedLife
 		}),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("load the AWS configuration: %w", err)
 	}
-	// New credentials must live longer than an upload URL. If not, each
+	// New credentials must live longer than a signed URL. If not, each
 	// URL stops before its time and each request gets new credentials. The
 	// SDK gives an expiry time that has the window subtracted already, so
 	// a time in the past means that the credentials are too short.
@@ -182,12 +205,20 @@ func New(ctx context.Context, logger *slog.Logger, cfg Config) (*Store, error) {
 		return nil, fmt.Errorf("%w: %w", ErrNoCredentials, err)
 	}
 	if left := time.Until(creds.Expires); creds.CanExpire && left <= 0 {
-		return nil, fmt.Errorf("the AWS credentials live for %s, but an upload URL lives for %s: use a longer session",
-			(left + cfg.UploadURLLife).Round(time.Second), cfg.UploadURLLife)
+		return nil, fmt.Errorf("the AWS credentials live for %s, but a signed URL lives for %s: use a longer session",
+			(left + signedLife).Round(time.Second), signedLife)
 	}
 	client := s3.NewFromConfig(awsCfg, at(cfg.Endpoint))
 	if err := check(ctx, client, cfg); err != nil {
 		return nil, err
+	}
+	if viewer != nil {
+		checkCtx, cancel := context.WithTimeout(ctx, cfg.CheckTimeout)
+		defer cancel()
+		if err := viewer.check(checkCtx); err != nil {
+			return nil, err
+		}
+		logger.InfoContext(ctx, "the view URLs go through CloudFront", "domain", cfg.CloudFront.Domain)
 	}
 	// The address is a part of the signature of an upload URL, so the URL
 	// is signed for the address that its client uses.
@@ -198,6 +229,8 @@ func New(ctx context.Context, logger *slog.Logger, cfg Config) (*Store, error) {
 	return &Store{
 		bucket:        cfg.Bucket,
 		uploadURLLife: cfg.UploadURLLife,
+		viewURLLife:   cfg.ViewURLLife,
+		viewer:        viewer,
 		rangeBytes:    cfg.RangeBytes,
 		client:        client,
 		presign:       s3.NewPresignClient(signer),
