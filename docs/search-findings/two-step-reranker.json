@@ -1,0 +1,98 @@
+[
+ {
+  "question": "What share of total manufacturing output comes from the county with the lowest overall poverty rate in 2019?",
+  "rerank": false,
+  "fact1_rank": 2,
+  "fact2_rank": 3,
+  "named_question": "What share of total manufacturing output comes from Nairobi City County?",
+  "fact2_rank_named": 1
+ },
+ {
+  "question": "What was the GCP per capita in 2019 of the county with the lowest overall poverty rate?",
+  "rerank": false,
+  "fact1_rank": 4,
+  "fact2_rank": 1,
+  "named_question": "What was the GCP per capita in 2019 of Nairobi City County?",
+  "fact2_rank_named": 1
+ },
+ {
+  "question": "What share of the total economy's GVA comes from the county with the lowest overall poverty rate in 2019?",
+  "rerank": false,
+  "fact1_rank": 5,
+  "fact2_rank": 3,
+  "named_question": "What share of the total economy's GVA comes from Nairobi?",
+  "fact2_rank_named": 1
+ },
+ {
+  "question": "What was the overall poverty rate in 2019 of the county that leads in manufacturing activities?",
+  "rerank": false,
+  "fact1_rank": 2,
+  "fact2_rank": 1,
+  "named_question": "What was the overall poverty rate in 2019 of Nairobi City County?",
+  "fact2_rank_named": 1
+ },
+ {
+  "question": "What was the overall poverty rate in 2019 of the county with the highest GCP per capita?",
+  "rerank": false,
+  "fact1_rank": 1,
+  "fact2_rank": 3,
+  "named_question": "What was the overall poverty rate in 2019 of Nairobi City County?",
+  "fact2_rank_named": 1
+ },
+ {
+  "question": "What was the overall poverty rate in 2019 of the counties with the lowest GCP per capita?",
+  "rerank": false,
+  "fact1_rank": 1,
+  "fact2_rank": 3,
+  "named_question": "What was the overall poverty rate in 2019 of Garissa, Wajir and Mandera counties?",
+  "fact2_rank_named": 2
+ },
+ {
+  "question": "What share of total manufacturing output comes from the county with the lowest overall poverty rate in 2019?",
+  "rerank": true,
+  "fact1_rank": 3,
+  "fact2_rank": 1,
+  "named_question": "What share of total manufacturing output comes from Nairobi City County?",
+  "fact2_rank_named": 1
+ },
+ {
+  "question": "What was the GCP per capita in 2019 of the county with the lowest overall poverty rate?",
+  "rerank": true,
+  "fact1_rank": 4,
+  "fact2_rank": 1,
+  "named_question": "What was the GCP per capita in 2019 of Nairobi City County?",
+  "fact2_rank_named": 1
+ },
+ {
+  "question": "What share of the total economy's GVA comes from the county with the lowest overall poverty rate in 2019?",
+  "rerank": true,
+  "fact1_rank": 2,
+  "fact2_rank": 4,
+  "named_question": "What share of the total economy's GVA comes from Nairobi?",
+  "fact2_rank_named": 1
+ },
+ {
+  "question": "What was the overall poverty rate in 2019 of the county that leads in manufacturing activities?",
+  "rerank": true,
+  "fact1_rank": null,
+  "fact2_rank": 3,
+  "named_question": "What was the overall poverty rate in 2019 of Nairobi City County?",
+  "fact2_rank_named": 1
+ },
+ {
+  "question": "What was the overall poverty rate in 2019 of the county with the highest GCP per capita?",
+  "rerank": true,
+  "fact1_rank": 3,
+  "fact2_rank": 1,
+  "named_question": "What was the overall poverty rate in 2019 of Nairobi City County?",
+  "fact2_rank_named": 1
+ },
+ {
+  "question": "What was the overall poverty rate in 2019 of the counties with the lowest GCP per capita?",
+  "rerank": true,
+  "fact1_rank": 6,
+  "fact2_rank": 1,
+  "named_question": "What was the overall poverty rate in 2019 of Garissa, Wajir and Mandera counties?",
+  "fact2_rank_named": null
+ }
+]

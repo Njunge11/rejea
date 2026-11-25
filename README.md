@@ -183,6 +183,8 @@ There are two providers. The numbers are for the 42 questions of the test set th
 
 Thus Cohere Rerank 5 makes the search better, and the model of Cloudflare makes it worse: that model is from 2023 and reads only the start of a long chunk.
 
+These questions have one fact each. For a question that needs facts from two places, the reranker can remove a necessary chunk from the first results: see [Search findings](docs/search-findings.md). That page also gives the test of whole-collection questions, where `"limit": 50` finds more than 10 chunks do.
+
 To use Cohere:
 
 1. Make an API key at [dashboard.cohere.com/api-keys](https://dashboard.cohere.com/api-keys). A trial key is free, with 1,000 calls each month and 10 calls each minute.

@@ -1,0 +1,895 @@
+[
+ {
+  "question": "How do economic output and poverty levels differ across Kenya's counties?",
+  "searches_of_the_model": [
+   "economic output by county in Kenya",
+   "poverty levels by county in Kenya",
+   "differences between Kenya's counties in economic output and poverty"
+  ],
+  "chunks": {
+   "10_chunks": 10,
+   "one_search_more_chunks": 23,
+   "model_split": 23,
+   "50_chunks": 50
+  },
+  "facts": [
+   {
+    "fact": "The response should discuss the concentration of economic output in Nairobi relative to other counties",
+    "10_chunks": 0.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should address the wide variation in overall poverty rates across counties",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should discuss the relationship between county economic output and poverty levels",
+    "10_chunks": 0.0,
+    "one_search_more_chunks": 0.5,
+    "model_split": 0.5,
+    "50_chunks": 0.5
+   },
+   {
+    "fact": "The response should identify the counties with the highest poverty rates",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should identify the counties with the lowest poverty rates",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should discuss the size gap between the largest and smallest county economies",
+    "10_chunks": 0.0,
+    "one_search_more_chunks": 0.5,
+    "model_split": 1.0,
+    "50_chunks": 0.75
+   },
+   {
+    "fact": "The response should discuss variation in per capita county output",
+    "10_chunks": 0.0,
+    "one_search_more_chunks": 0.5,
+    "model_split": 0.0,
+    "50_chunks": 0.75
+   },
+   {
+    "fact": "The response should discuss the geographic and ecological characteristics of low-output counties",
+    "10_chunks": 0.0,
+    "one_search_more_chunks": 0.25,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should discuss differences in food poverty across counties",
+    "10_chunks": 0.5,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should provide the national poverty rate as a benchmark for comparing counties",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should address rural-urban differences in poverty",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 0.75,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should discuss differences in sectoral composition of output across counties",
+    "10_chunks": 0.0,
+    "one_search_more_chunks": 0.5,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should discuss trends in county output growth and shares over time",
+    "10_chunks": 0.0,
+    "one_search_more_chunks": 0.5,
+    "model_split": 0.5,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should discuss the role of population size and household expenditure in county economic differences",
+    "10_chunks": 0.25,
+    "one_search_more_chunks": 0.25,
+    "model_split": 0.5,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should discuss differences in child poverty across counties",
+    "10_chunks": 0.0,
+    "one_search_more_chunks": 0.0,
+    "model_split": 0.0,
+    "50_chunks": 0.25
+   }
+  ]
+ },
+ {
+  "question": "Which statistical reports and survey programs are used to measure economic and social conditions across Kenyan counties?",
+  "searches_of_the_model": [
+   "statistical reports measuring economic conditions across Kenyan counties",
+   "survey programs measuring social conditions across Kenyan counties"
+  ],
+  "chunks": {
+   "10_chunks": 10,
+   "one_search_more_chunks": 15,
+   "model_split": 15,
+   "50_chunks": 50
+  },
+  "facts": [
+   {
+    "fact": "The response should identify the Gross County Product report as a statistical report measuring county economic performance.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should identify the Kenya Continuous Household Survey Programme as a survey program producing socio-economic data.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should discuss the Kenya Poverty Report as a source of county-level poverty statistics.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should address the Quarterly Labour Force Survey and its associated report as labour market measurement tools.",
+    "10_chunks": 0.5,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should discuss household budget surveys as source data underlying county economic estimates.",
+    "10_chunks": 0.5,
+    "one_search_more_chunks": 1.0,
+    "model_split": 0.5,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should discuss establishment and industrial production surveys as data sources for county economic estimates.",
+    "10_chunks": 0.0,
+    "one_search_more_chunks": 0.5,
+    "model_split": 0.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should discuss the data collection frequency and reporting periodicity of the KCHSP.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 0.5,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should discuss the methodology used to compile Gross County Product.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 0.5,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should address the geographic coverage and study domains of the KCHSP.",
+    "10_chunks": 0.75,
+    "one_search_more_chunks": 1.0,
+    "model_split": 0.25,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should discuss the outputs and uses of the Gross County Product, such as sector breakdowns and development proxies.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should address administrative and government data sources used in compiling county economic estimates.",
+    "10_chunks": 0.5,
+    "one_search_more_chunks": 1.0,
+    "model_split": 0.75,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should address the poverty measures and county disparities presented in the Kenya Poverty Report.",
+    "10_chunks": 0.5,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   }
+  ]
+ },
+ {
+  "question": "How have poverty levels changed over time across different areas and population groups?",
+  "searches_of_the_model": [
+   "poverty levels change over time",
+   "poverty rates across different areas or regions",
+   "poverty rates across population groups"
+  ],
+  "chunks": {
+   "10_chunks": 10,
+   "one_search_more_chunks": 25,
+   "model_split": 25,
+   "50_chunks": 50
+  },
+  "facts": [
+   {
+    "fact": "The response should address the uneven direction of poverty change across counties, with some declining and others rising.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should discuss differences in poverty between rural and urban areas.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should address wide geographic variation in poverty levels between counties.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should discuss the time periods and surveys being compared.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should address the national poverty level.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should discuss child poverty as a population group.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should discuss regional patterns of poverty decline.",
+    "10_chunks": 0.5,
+    "one_search_more_chunks": 0.5,
+    "model_split": 0.5,
+    "50_chunks": 0.5
+   },
+   {
+    "fact": "The response should address the comparability of poverty estimates across survey periods.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 0.75
+   },
+   {
+    "fact": "The response should discuss food poverty levels and their variation.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   }
+  ]
+ },
+ {
+  "question": "Which counties or regions are identified as having particularly high poverty levels?",
+  "searches_of_the_model": [
+   "counties or regions with high poverty levels"
+  ],
+  "chunks": {
+   "10_chunks": 10,
+   "one_search_more_chunks": 10,
+   "model_split": 10,
+   "50_chunks": 50
+  },
+  "facts": [
+   {
+    "fact": "The response should identify Turkana County as having the highest poverty levels.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should identify Samburu County as having very high poverty levels.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should identify Mandera County as having very high poverty levels.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should note that the highest-poverty counties are concentrated in the northern and north-eastern arid regions.",
+    "10_chunks": 0.0,
+    "one_search_more_chunks": 0.0,
+    "model_split": 0.0,
+    "50_chunks": 0.5
+   },
+   {
+    "fact": "The response should identify Tana River County as having high poverty levels.",
+    "10_chunks": 0.0,
+    "one_search_more_chunks": 0.0,
+    "model_split": 0.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should identify Garissa County as having very high poverty levels.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should identify West Pokot County as having high poverty levels.",
+    "10_chunks": 0.0,
+    "one_search_more_chunks": 0.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should identify Wajir County as having high poverty levels.",
+    "10_chunks": 0.0,
+    "one_search_more_chunks": 0.0,
+    "model_split": 0.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should identify Marsabit County as having high poverty levels.",
+    "10_chunks": 0.0,
+    "one_search_more_chunks": 0.0,
+    "model_split": 0.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should identify Isiolo County as having high poverty levels.",
+    "10_chunks": 0.0,
+    "one_search_more_chunks": 0.0,
+    "model_split": 0.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should identify high poverty rates in counties outside the arid north, such as coastal or western areas.",
+    "10_chunks": 0.5,
+    "one_search_more_chunks": 0.5,
+    "model_split": 0.5,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should state that many counties have poverty rates above the national average.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should contrast high-poverty counties with low-poverty counties.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   }
+  ]
+ },
+ {
+  "question": "How have inflation and price trends in Kenya changed across the years covered in the dataset?",
+  "searches_of_the_model": [
+   "inflation rate in Kenya over the years",
+   "price trends in Kenya across years"
+  ],
+  "chunks": {
+   "10_chunks": 10,
+   "one_search_more_chunks": 18,
+   "model_split": 18,
+   "50_chunks": 50
+  },
+  "facts": [
+   {
+    "fact": "The response should discuss the decline of producer price inflation from 2016 to 2019.",
+    "10_chunks": 0.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 0.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should discuss the sharp rise in overall inflation during 2007 and early 2008.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should discuss the rise in year-on-year inflation during 2015.",
+    "10_chunks": 0.5,
+    "one_search_more_chunks": 0.5,
+    "model_split": 0.0,
+    "50_chunks": 0.5
+   },
+   {
+    "fact": "The response should discuss higher fuel and energy prices in 2023 compared with earlier periods.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 0.75,
+    "model_split": 0.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should discuss the sharp rise in consumer prices in 2011.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 0.75,
+    "model_split": 0.75,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should address the dataset's limited, non-continuous coverage of years.",
+    "10_chunks": 0.5,
+    "one_search_more_chunks": 0.75,
+    "model_split": 0.75,
+    "50_chunks": 0.75
+   },
+   {
+    "fact": "The response should discuss how underlying inflation behaved relative to overall inflation in 2007 and 2008.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should discuss higher food prices in 2023 compared with a year earlier.",
+    "10_chunks": 0.25,
+    "one_search_more_chunks": 0.0,
+    "model_split": 0.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should discuss commodity price movements in 2015 and 2016.",
+    "10_chunks": 0.5,
+    "one_search_more_chunks": 0.5,
+    "model_split": 0.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should address the factors driving producer price changes in 2018 and 2019.",
+    "10_chunks": 0.0,
+    "one_search_more_chunks": 0.75,
+    "model_split": 0.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should address limitations on comparing indices across years and data sources.",
+    "10_chunks": 0.5,
+    "one_search_more_chunks": 0.5,
+    "model_split": 0.75,
+    "50_chunks": 0.75
+   },
+   {
+    "fact": "The response should address differences in price changes across sectors or products.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should address month-level inflation dynamics in 2007, such as year-on-year versus month-on-month differences.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   }
+  ]
+ },
+ {
+  "question": "What population groups are described as especially vulnerable to poverty?",
+  "searches_of_the_model": [
+   "population groups especially vulnerable to poverty"
+  ],
+  "chunks": {
+   "10_chunks": 10,
+   "one_search_more_chunks": 10,
+   "model_split": 10,
+   "50_chunks": 50
+  },
+  "facts": [
+   {
+    "fact": "The response should address rural residents as more vulnerable to poverty than urban residents.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should discuss geographic concentration of poverty in particular counties or regions.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should address children as a population group with elevated poverty.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should discuss variation in child poverty across locations and age groups.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should clarify that vulnerable groups are inferred from poverty rate comparisons rather than explicitly labeled.",
+    "10_chunks": 0.5,
+    "one_search_more_chunks": 0.5,
+    "model_split": 0.5,
+    "50_chunks": 0.75
+   },
+   {
+    "fact": "The response should address food poverty as higher in rural areas and particular counties.",
+    "10_chunks": 0.5,
+    "one_search_more_chunks": 0.5,
+    "model_split": 0.5,
+    "50_chunks": 1.0
+   }
+  ]
+ },
+ {
+  "question": "How does the dataset describe differences in employment outcomes across age groups and regions in Kenya?",
+  "searches_of_the_model": [
+   "employment outcomes differences across age groups in Kenya",
+   "employment outcomes differences across regions in Kenya",
+   "dataset description of employment outcomes in Kenya"
+  ],
+  "chunks": {
+   "10_chunks": 10,
+   "one_search_more_chunks": 28,
+   "model_split": 28,
+   "50_chunks": 50
+  },
+  "facts": [
+   {
+    "fact": "The response should discuss how employment levels differ across age groups.",
+    "10_chunks": 0.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should discuss how unemployment is distributed across age groups.",
+    "10_chunks": 0.0,
+    "one_search_more_chunks": 0.0,
+    "model_split": 1.0,
+    "50_chunks": 0.5
+   },
+   {
+    "fact": "The response should discuss how labour force participation varies by age.",
+    "10_chunks": 0.0,
+    "one_search_more_chunks": 0.0,
+    "model_split": 0.25,
+    "50_chunks": 0.0
+   },
+   {
+    "fact": "The response should discuss how long-term unemployment differs across age groups.",
+    "10_chunks": 0.0,
+    "one_search_more_chunks": 0.0,
+    "model_split": 0.0,
+    "50_chunks": 0.0
+   },
+   {
+    "fact": "The response should discuss how labour underutilization varies by age.",
+    "10_chunks": 0.0,
+    "one_search_more_chunks": 0.0,
+    "model_split": 0.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should address that results are reported by age cohort at the national level.",
+    "10_chunks": 0.5,
+    "one_search_more_chunks": 0.5,
+    "model_split": 0.75,
+    "50_chunks": 0.75
+   },
+   {
+    "fact": "The response should address youth not in education, employment or training by age group.",
+    "10_chunks": 0.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 0.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should note that regional employment breakdowns are limited or not provided in the dataset.",
+    "10_chunks": 0.0,
+    "one_search_more_chunks": 0.25,
+    "model_split": 0.0,
+    "50_chunks": 0.0
+   }
+  ]
+ },
+ {
+  "question": "How did fuel and crude oil prices change across the periods covered in the economic indicators?",
+  "searches_of_the_model": [
+   "fuel prices change economic indicators",
+   "crude oil prices change economic indicators"
+  ],
+  "chunks": {
+   "10_chunks": 10,
+   "one_search_more_chunks": 15,
+   "model_split": 15,
+   "50_chunks": 50
+  },
+  "facts": [
+   {
+    "fact": "The response should address the overall upward trend in retail fuel prices over the period",
+    "10_chunks": 0.5,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should address the overall upward trend in crude oil prices over the period",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should address price increases in diesel",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should discuss the magnitude of the crude oil price increase over the full period",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should address price increases in gasoline",
+    "10_chunks": 0.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should discuss how the pace of fuel price increases changed over time",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should address price increases in kerosene",
+    "10_chunks": 0.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should discuss recent crude oil price movements in the latest months",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should discuss relative proportional price increases across different fuels and crude oil",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should address price changes in LPG",
+    "10_chunks": 0.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   }
+  ]
+ },
+ {
+  "question": "Which agricultural commodities and sectors are tracked in Kenya's economic reports?",
+  "searches_of_the_model": [
+   "agricultural commodities tracked in Kenya's economic reports",
+   "agricultural sectors covered in Kenya economic reports"
+  ],
+  "chunks": {
+   "10_chunks": 10,
+   "one_search_more_chunks": 15,
+   "model_split": 15,
+   "50_chunks": 50
+  },
+  "facts": [
+   {
+    "fact": "The response should discuss tracking of cash crop commodities.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should discuss tracking of staple food crop prices.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should address tracking of the dairy sector.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should address tracking of sugar production.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should address tracking of horticultural products.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should discuss tracking of agricultural exports and trade.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should state that agriculture is tracked as a broad economic sector.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should mention that the reports also track non-agricultural sectors.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should mention tracking of agriculture-linked manufacturing indicators.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 0.5,
+    "model_split": 0.5,
+    "50_chunks": 0.5
+   }
+  ]
+ },
+ {
+  "question": "What demographic indicators are used to describe Kenya's population across the dataset?",
+  "searches_of_the_model": [
+   "demographic indicators Kenya population",
+   "Kenya population age, sex, fertility, mortality, urban rural"
+  ],
+  "chunks": {
+   "10_chunks": 10,
+   "one_search_more_chunks": 20,
+   "model_split": 20,
+   "50_chunks": 50
+  },
+  "facts": [
+   {
+    "fact": "The response should address age cohorts and the working-age population definition as demographic indicators.",
+    "10_chunks": 0.5,
+    "one_search_more_chunks": 0.5,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should discuss population size counts, including breakdowns by sex and age group, as a demographic indicator.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 0.75,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should discuss labour market participation and employment indicators.",
+    "10_chunks": 0.0,
+    "one_search_more_chunks": 0.0,
+    "model_split": 0.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should discuss the split of the population into labour force and economically inactive persons.",
+    "10_chunks": 0.0,
+    "one_search_more_chunks": 0.0,
+    "model_split": 0.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should address household-based indicators of the population.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should address population density and land area as a demographic indicator.",
+    "10_chunks": 0.75,
+    "one_search_more_chunks": 0.5,
+    "model_split": 1.0,
+    "50_chunks": 0.5
+   },
+   {
+    "fact": "The response should discuss trends in population indicators across multiple census years.",
+    "10_chunks": 0.75,
+    "one_search_more_chunks": 0.5,
+    "model_split": 1.0,
+    "50_chunks": 0.75
+   },
+   {
+    "fact": "The response should discuss youth-focused indicators of education, employment or training status.",
+    "10_chunks": 0.0,
+    "one_search_more_chunks": 0.0,
+    "model_split": 0.25,
+    "50_chunks": 0.0
+   },
+   {
+    "fact": "The response should address geographic breakdowns used to describe the population.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 1.0,
+    "model_split": 1.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should address the dependency ratio as a demographic indicator.",
+    "10_chunks": 0.0,
+    "one_search_more_chunks": 0.0,
+    "model_split": 0.0,
+    "50_chunks": 1.0
+   },
+   {
+    "fact": "The response should address vital statistics as demographic indicators.",
+    "10_chunks": 1.0,
+    "one_search_more_chunks": 0.75,
+    "model_split": 0.5,
+    "50_chunks": 1.0
+   }
+  ]
+ }
+]

@@ -1,0 +1,954 @@
+[
+ {
+  "kind": "simple",
+  "question": "In the Kenya Poverty Report 2019, what is the poverty headcount rate for Nairobi City in the table where Nyamira County's headcount rate is 35.9%?",
+  "facts": [
+   {
+    "fact": "The response should state that Nairobi City's poverty headcount rate is 12.7%.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should indicate that the 12.7% figure for Nairobi City is consistent across tables where Nyamira is 35.9%.",
+    "tool_judge_10_chunks": 1
+   }
+  ]
+ },
+ {
+  "kind": "simple",
+  "question": "According to Kenya's May 2008 Leading Economic Indicators, what percentage of total domestic exports came from food and beverages in May 2008?",
+  "facts": [
+   {
+    "fact": "The response should state that food and beverages accounted for approximately 41.94 per cent of total domestic exports in May 2008.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should indicate that food and beverages was the largest export category by Broad Economic Category in May 2008.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should indicate that food and beverages exports had a value of about 10,249 out of total domestic exports of about 24,436.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should mention that consumer goods not elsewhere specified were the next largest export category after food and beverages.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should mention that non-food industrial supplies were among the leading export categories behind food and beverages.",
+    "tool_judge_10_chunks": 1
+   }
+  ]
+ },
+ {
+  "kind": "simple",
+  "question": "What was Mombasa County's gross county product in the last year of the series presented in the Kenya Gross County Product 2021 report?",
+  "facts": [
+   {
+    "fact": "The response should state that Mombasa County's gross county product in the final year of the series is approximately 467,395.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should indicate that the final value is slightly lower than the preceding year's value.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should mention that the final year of the series is likely 2020.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should acknowledge that the year and unit cannot be confirmed from the available tables.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should indicate that Mombasa's series rose each year before the final value.",
+    "tool_judge_10_chunks": 1
+   }
+  ]
+ },
+ {
+  "kind": "simple",
+  "question": "Among Kenya's 47 counties, which had the highest overall poverty headcount rate in 2019 according to the Kenya Continuous Household Survey, and what was that rate?",
+  "facts": [
+   {
+    "fact": "The response should identify Turkana County as the county with the highest overall poverty headcount rate in 2019.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should state that Turkana County's overall poverty headcount rate was approximately 81.3 per cent.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should indicate that the rate refers to the proportion of individuals who are poor.",
+    "tool_judge_10_chunks": 1
+   }
+  ]
+ },
+ {
+  "kind": "simple",
+  "question": "According to Kenya's Leading Economic Indicators publication, by what percentage did the international price of Murban crude oil rise between May 2008 and June 2008?",
+  "facts": [
+   {
+    "fact": "The response should state that the international price of Murban crude oil rose by 6.6 per cent between May 2008 and June 2008.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should mention that the Murban crude oil price was about US$125.75 per barrel in May 2008.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should mention that the Murban crude oil price was about US$134.00 per barrel in June 2008.",
+    "tool_judge_10_chunks": 1
+   }
+  ]
+ },
+ {
+  "kind": "simple",
+  "question": "According to Kenya's first quarter 2019 Producer Price Index report, by what percentage did the producer price of a tonne of sugar change between December 2018 and March 2019?",
+  "facts": [
+   {
+    "fact": "The response should state that the producer price of a tonne of sugar fell by approximately 12.4 per cent between December 2018 and March 2019.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should indicate that the change was a decrease rather than an increase.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should mention that the sugar price per tonne was about KSh 95,041 in December 2018.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should mention that the sugar price per tonne was about KSh 83,284 in March 2019.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should note that lower sugar prices contributed to the overall decline in Kenya's Producer Price Index over the quarter.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should distinguish the three-month change from the year-on-year change, which was an increase of about 2.0 per cent from March 2018 to March 2019.",
+    "tool_judge_10_chunks": 1
+   }
+  ]
+ },
+ {
+  "kind": "simple",
+  "question": "In the tables-gdp.pdf level table where the first quarter of 2004 row begins with 15,693 followed by 11,744, what is the first value in the row?",
+  "facts": [
+   {
+    "fact": "The response should identify 15,693 as the first data value in the first-quarter 2004 row of the level table.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should indicate that the year and quarter entries at the start of the row are labels rather than data values.",
+    "tool_judge_10_chunks": 0
+   }
+  ]
+ },
+ {
+  "kind": "simple",
+  "question": "How many people lived in West Pokot County, Kenya, according to the 2009 population and housing census?",
+  "facts": [
+   {
+    "fact": "The response should state that West Pokot County had a population of approximately 512,690 people in the 2009 census.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should mention that females made up slightly more than half (about 50.3%) of the county's 2009 population.",
+    "tool_judge_10_chunks": 1
+   }
+  ]
+ },
+ {
+  "kind": "simple",
+  "question": "What was the provisional total expenditure, in KSh million, of the County Government of West Pokot in the 2014/15 financial year?",
+  "facts": [
+   {
+    "fact": "The response should state that the provisional total expenditure of West Pokot County Government in 2014/15 was approximately KSh 4,225 million (KSh 4,225.38 million).",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should indicate that the 2014/15 expenditure figure is provisional rather than final.",
+    "tool_judge_10_chunks": 1
+   }
+  ]
+ },
+ {
+  "kind": "simple",
+  "question": "In the Kenya National Bureau of Statistics' Quarterly Labour Force Report for January to March 2019, what was the unemployment rate for people aged 20-24 under the strict definition?",
+  "facts": [
+   {
+    "fact": "The response should state that the unemployment rate for the 20-24 age group under the strict definition was 16.8 per cent.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should indicate that the 20-24 age group had the highest unemployment rate of any age cohort.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should explain that the strict definition of unemployment covers people without a job who actively sought work in the past four weeks and are available for work.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should mention that the 16.8 per cent rate corresponds to roughly 393,000 unemployed persons in the 20-24 cohort.",
+    "tool_judge_10_chunks": 1
+   }
+  ]
+ },
+ {
+  "kind": "two-step",
+  "question": "How did the international price of Murban crude oil change between May 2008 and June 2008?",
+  "facts": [
+   {
+    "fact": "The response should state that the international price of Murban crude oil increased from May 2008 to June 2008.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should state that the Murban crude oil price in May 2008 was about US$125.75 per barrel.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should state that the Murban crude oil price in June 2008 was about US$134.00 per barrel.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should state that the price increase was about 6.6 per cent.",
+    "tool_judge_10_chunks": 1
+   }
+  ]
+ },
+ {
+  "kind": "two-step",
+  "question": "What was the population of the county with Kenya's highest 2019 poverty rate?",
+  "facts": [
+   {
+    "fact": "The response should state that Turkana County's population was approximately 920 thousand.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should identify Turkana County as the county with Kenya's highest poverty rate in 2019.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should indicate that Turkana had the highest poverty headcount rate among Kenya's counties.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should provide Turkana County's 2019 poverty headcount rate as supporting context.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should mention the number of poor individuals in Turkana County.",
+    "tool_judge_10_chunks": 1
+   }
+  ]
+ },
+ {
+  "kind": "two-step",
+  "question": "How did Makueni's poverty rate differ from Marsabit's in the Kenya Poverty Report 2019?",
+  "facts": [
+   {
+    "fact": "The response should conclude that Marsabit's poverty rate was higher than Makueni's.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should state that Marsabit County's poverty rate was about 55.9%.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should state that Makueni County's poverty rate was about 34.3%.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should convey that the gap between the two counties' poverty rates was roughly 20 percentage points.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should note that Marsabit's poverty rate had declined from an earlier survey period figure.",
+    "tool_judge_10_chunks": 0
+   }
+  ]
+ },
+ {
+  "kind": "two-step",
+  "question": "How did West Pokot County Government's revenue compare with its expenditure in both 2013/14 and 2014/15?",
+  "facts": [
+   {
+    "fact": "The response should state that West Pokot's revenue was higher than its expenditure in 2013/14.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should state that West Pokot's revenue was slightly higher than its expenditure in 2014/15.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should report 2013/14 revenue of about KSh 3.63 billion (KSh 3,631.25 million).",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should report 2013/14 expenditure of about KSh 2.77 billion (KSh 2,767.31 million).",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should report 2014/15 revenue of about KSh 4.27 billion (KSh 4,273.14 million).",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should report 2014/15 expenditure of about KSh 4.23 billion (KSh 4,225.38 million).",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should indicate that the gap between revenue and expenditure narrowed in 2014/15 relative to 2013/14.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should note that expenditure increased substantially from 2013/14 to 2014/15.",
+    "tool_judge_10_chunks": 0
+   }
+  ]
+ },
+ {
+  "kind": "two-step",
+  "question": "How did Kenya's year-on-year producer price inflation in March 2019 compare with March 2018?",
+  "facts": [
+   {
+    "fact": "The response should indicate that producer price inflation was lower in March 2019 than in March 2018.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should state that year-on-year producer price inflation in March 2019 was negative, indicating a decline in producer prices.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should state that year-on-year producer price inflation in March 2018 was positive.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should give the March 2019 rate as approximately -0.36 per cent.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should give the March 2018 rate as approximately 1.53 per cent.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should note that the decline from March 2018 to March 2019 fits a broader downward trend in producer inflation over recent years.",
+    "tool_judge_10_chunks": 0
+   }
+  ]
+ },
+ {
+  "kind": "two-step",
+  "question": "How did Turkana County's 2019 poverty headcount rate compare with Kenya's national rate?",
+  "facts": [
+   {
+    "fact": "The response should state that Turkana County's 2019 poverty headcount rate was roughly 81 per cent.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should state that Kenya's national poverty headcount rate in 2019 was roughly 34 per cent.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should indicate that Turkana's poverty rate was substantially higher than the national rate.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should convey that Turkana's rate was more than double the national rate.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should mention that Turkana had the highest poverty headcount rate among Kenya's counties in 2019.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should mention that the national poverty rate corresponded to millions of people living below the absolute poverty line.",
+    "tool_judge_10_chunks": 1
+   }
+  ]
+ },
+ {
+  "kind": "two-step",
+  "question": "By how much did Kenya's diesel price per litre rise between March 2008 and June 2008?",
+  "facts": [
+   {
+    "fact": "The response should state that Kenya's diesel price rose by KSh 13 per litre between March 2008 and June 2008.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should identify the June 2008 diesel price as approximately KSh 96 per litre.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should identify the March 2008 diesel price as approximately KSh 83 per litre.",
+    "tool_judge_10_chunks": 1
+   }
+  ]
+ },
+ {
+  "kind": "two-step",
+  "question": "How did Nairobi and Mombasa's final-year gross county product figures compare in the Kenya Gross County Product 2021 report?",
+  "facts": [
+   {
+    "fact": "The response should conclude that Nairobi's final-year figure is substantially higher than Mombasa's.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should state that Nairobi's final-year gross county product figure is approximately 2.67 million (2,669,829).",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should state that Mombasa's final-year gross county product figure is approximately 467 thousand (467,395).",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should quantify the relative size difference, such as Nairobi being roughly five to six times Mombasa's figure.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should note that Nairobi's final-year figure is the highest among all counties in the table.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should note that Mombasa's final-year value dipped slightly from the previous year.",
+    "tool_judge_10_chunks": 0
+   }
+  ]
+ },
+ {
+  "kind": "two-step",
+  "question": "What did lower sugar and tea prices both help drive in Kenya's March 2019 producer price index?",
+  "facts": [
+   {
+    "fact": "The response should state that lower sugar and tea prices helped drive a decline in the producer price index.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should indicate that the producer price index in March 2019 was lower than in the earlier reference period (December 2018).",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should mention that lower prices of vegetable and animal oils and fats also contributed to the decline.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should mention that the decline was a small percentage decrease, below one percent.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should mention that lower prices of grain mill products also contributed to the decline.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should mention that lower electricity prices also contributed to the decline.",
+    "tool_judge_10_chunks": 1
+   }
+  ]
+ },
+ {
+  "kind": "two-step",
+  "question": "How many counties exceeded the national poverty rate in the 2019 survey that found 15.8 million Kenyans in poverty?",
+  "facts": [
+   {
+    "fact": "The response should state that 30 counties had poverty rates higher than the national average.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should indicate that the national poverty rate was about 33.6 per cent, which is the benchmark counties were compared against.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should mention that the 30 counties are out of Kenya's 47 counties.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should note that poverty rates varied widely across counties.",
+    "tool_judge_10_chunks": 1
+   }
+  ]
+ },
+ {
+  "kind": "whole-collection",
+  "question": "How do economic output and poverty levels differ across Kenya's counties?",
+  "facts": [
+   {
+    "fact": "The response should discuss the concentration of economic output in Nairobi relative to other counties",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should address the wide variation in overall poverty rates across counties",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should discuss the relationship between county economic output and poverty levels",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should identify the counties with the highest poverty rates",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should identify the counties with the lowest poverty rates",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should discuss the size gap between the largest and smallest county economies",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should discuss variation in per capita county output",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should discuss the geographic and ecological characteristics of low-output counties",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should discuss differences in food poverty across counties",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should provide the national poverty rate as a benchmark for comparing counties",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should address rural-urban differences in poverty",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should discuss differences in sectoral composition of output across counties",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should discuss trends in county output growth and shares over time",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should discuss the role of population size and household expenditure in county economic differences",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should discuss differences in child poverty across counties",
+    "tool_judge_10_chunks": 0
+   }
+  ]
+ },
+ {
+  "kind": "whole-collection",
+  "question": "Which statistical reports and survey programs are used to measure economic and social conditions across Kenyan counties?",
+  "facts": [
+   {
+    "fact": "The response should identify the Gross County Product report as a statistical report measuring county economic performance.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should identify the Kenya Continuous Household Survey Programme as a survey program producing socio-economic data.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should discuss the Kenya Poverty Report as a source of county-level poverty statistics.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should address the Quarterly Labour Force Survey and its associated report as labour market measurement tools.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should discuss household budget surveys as source data underlying county economic estimates.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should discuss establishment and industrial production surveys as data sources for county economic estimates.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should discuss the data collection frequency and reporting periodicity of the KCHSP.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should discuss the methodology used to compile Gross County Product.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should address the geographic coverage and study domains of the KCHSP.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should discuss the outputs and uses of the Gross County Product, such as sector breakdowns and development proxies.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should address administrative and government data sources used in compiling county economic estimates.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should address the poverty measures and county disparities presented in the Kenya Poverty Report.",
+    "tool_judge_10_chunks": 1
+   }
+  ]
+ },
+ {
+  "kind": "whole-collection",
+  "question": "How have poverty levels changed over time across different areas and population groups?",
+  "facts": [
+   {
+    "fact": "The response should address the uneven direction of poverty change across counties, with some declining and others rising.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should discuss differences in poverty between rural and urban areas.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should address wide geographic variation in poverty levels between counties.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should discuss the time periods and surveys being compared.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should address the national poverty level.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should discuss child poverty as a population group.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should discuss regional patterns of poverty decline.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should address the comparability of poverty estimates across survey periods.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should discuss food poverty levels and their variation.",
+    "tool_judge_10_chunks": 1
+   }
+  ]
+ },
+ {
+  "kind": "whole-collection",
+  "question": "Which counties or regions are identified as having particularly high poverty levels?",
+  "facts": [
+   {
+    "fact": "The response should identify Turkana County as having the highest poverty levels.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should identify Samburu County as having very high poverty levels.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should identify Mandera County as having very high poverty levels.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should note that the highest-poverty counties are concentrated in the northern and north-eastern arid regions.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should identify Tana River County as having high poverty levels.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should identify Garissa County as having very high poverty levels.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should identify West Pokot County as having high poverty levels.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should identify Wajir County as having high poverty levels.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should identify Marsabit County as having high poverty levels.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should identify Isiolo County as having high poverty levels.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should identify high poverty rates in counties outside the arid north, such as coastal or western areas.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should state that many counties have poverty rates above the national average.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should contrast high-poverty counties with low-poverty counties.",
+    "tool_judge_10_chunks": 1
+   }
+  ]
+ },
+ {
+  "kind": "whole-collection",
+  "question": "How have inflation and price trends in Kenya changed across the years covered in the dataset?",
+  "facts": [
+   {
+    "fact": "The response should discuss the decline of producer price inflation from 2016 to 2019.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should discuss the sharp rise in overall inflation during 2007 and early 2008.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should discuss the rise in year-on-year inflation during 2015.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should discuss higher fuel and energy prices in 2023 compared with earlier periods.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should discuss the sharp rise in consumer prices in 2011.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should address the dataset's limited, non-continuous coverage of years.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should discuss how underlying inflation behaved relative to overall inflation in 2007 and 2008.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should discuss higher food prices in 2023 compared with a year earlier.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should discuss commodity price movements in 2015 and 2016.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should address the factors driving producer price changes in 2018 and 2019.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should address limitations on comparing indices across years and data sources.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should address differences in price changes across sectors or products.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should address month-level inflation dynamics in 2007, such as year-on-year versus month-on-month differences.",
+    "tool_judge_10_chunks": 1
+   }
+  ]
+ },
+ {
+  "kind": "whole-collection",
+  "question": "What population groups are described as especially vulnerable to poverty?",
+  "facts": [
+   {
+    "fact": "The response should address rural residents as more vulnerable to poverty than urban residents.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should discuss geographic concentration of poverty in particular counties or regions.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should address children as a population group with elevated poverty.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should discuss variation in child poverty across locations and age groups.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should clarify that vulnerable groups are inferred from poverty rate comparisons rather than explicitly labeled.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should address food poverty as higher in rural areas and particular counties.",
+    "tool_judge_10_chunks": 0
+   }
+  ]
+ },
+ {
+  "kind": "whole-collection",
+  "question": "How does the dataset describe differences in employment outcomes across age groups and regions in Kenya?",
+  "facts": [
+   {
+    "fact": "The response should discuss how employment levels differ across age groups.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should discuss how unemployment is distributed across age groups.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should discuss how labour force participation varies by age.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should discuss how long-term unemployment differs across age groups.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should discuss how labour underutilization varies by age.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should address that results are reported by age cohort at the national level.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should address youth not in education, employment or training by age group.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should note that regional employment breakdowns are limited or not provided in the dataset.",
+    "tool_judge_10_chunks": 0
+   }
+  ]
+ },
+ {
+  "kind": "whole-collection",
+  "question": "How did fuel and crude oil prices change across the periods covered in the economic indicators?",
+  "facts": [
+   {
+    "fact": "The response should address the overall upward trend in retail fuel prices over the period",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should address the overall upward trend in crude oil prices over the period",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should address price increases in diesel",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should discuss the magnitude of the crude oil price increase over the full period",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should address price increases in gasoline",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should discuss how the pace of fuel price increases changed over time",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should address price increases in kerosene",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should discuss recent crude oil price movements in the latest months",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should discuss relative proportional price increases across different fuels and crude oil",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should address price changes in LPG",
+    "tool_judge_10_chunks": 0
+   }
+  ]
+ },
+ {
+  "kind": "whole-collection",
+  "question": "Which agricultural commodities and sectors are tracked in Kenya's economic reports?",
+  "facts": [
+   {
+    "fact": "The response should discuss tracking of cash crop commodities.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should discuss tracking of staple food crop prices.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should address tracking of the dairy sector.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should address tracking of sugar production.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should address tracking of horticultural products.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should discuss tracking of agricultural exports and trade.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should state that agriculture is tracked as a broad economic sector.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should mention that the reports also track non-agricultural sectors.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should mention tracking of agriculture-linked manufacturing indicators.",
+    "tool_judge_10_chunks": 1
+   }
+  ]
+ },
+ {
+  "kind": "whole-collection",
+  "question": "What demographic indicators are used to describe Kenya's population across the dataset?",
+  "facts": [
+   {
+    "fact": "The response should address age cohorts and the working-age population definition as demographic indicators.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should discuss population size counts, including breakdowns by sex and age group, as a demographic indicator.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should discuss labour market participation and employment indicators.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should discuss the split of the population into labour force and economically inactive persons.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should address household-based indicators of the population.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should address population density and land area as a demographic indicator.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should discuss trends in population indicators across multiple census years.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should discuss youth-focused indicators of education, employment or training status.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should address geographic breakdowns used to describe the population.",
+    "tool_judge_10_chunks": 1
+   },
+   {
+    "fact": "The response should address the dependency ratio as a demographic indicator.",
+    "tool_judge_10_chunks": 0
+   },
+   {
+    "fact": "The response should address vital statistics as demographic indicators.",
+    "tool_judge_10_chunks": 1
+   }
+  ]
+ }
+]
