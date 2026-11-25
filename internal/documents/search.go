@@ -191,7 +191,7 @@ func (s *Service) rerank(ctx context.Context, query string, results []SearchResu
 	if s.reranker == nil {
 		return &Unavailable{
 			Detail: `The service has no reranker model. Send "rerank": false for a search without it.`,
-			Cause:  fmt.Errorf(`%w: set CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN in .env and start the service again (see "Reranker" in the README)`, rerank.ErrNotSet),
+			Cause:  fmt.Errorf(`%w: set the credentials of the reranker provider in .env and start the service again (see "Reranker" in the README)`, rerank.ErrNotSet),
 		}
 	}
 	texts := make([]string, len(results))

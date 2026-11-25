@@ -63,11 +63,11 @@ func advice(err error) string {
 	case errors.Is(err, embed.ErrAnswer):
 		return `Give REJEA_EMBED_DIMENSIONS in .env the number of dimensions of the model in REJEA_EMBED_MODEL. The column chunks.embedding has 1,024 dimensions: a model with a different number also needs a migration.`
 	case errors.Is(err, rerank.ErrRefused):
-		return `Give CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN in .env the values of your Cloudflare account: see "Reranker" in the README. The token needs the permissions "Workers AI Read" and "Workers AI Edit".`
+		return `Give the credentials of the reranker provider in .env the values of your account: COHERE_API_KEY for the provider cohere, CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN for the provider cloudflare. See "Reranker" in the README.`
 	case errors.Is(err, rerank.ErrNoModel):
-		return `Give REJEA_RERANK_MODEL in .env the name of a reranker model of the provider. The default is @cf/baai/bge-reranker-base.`
+		return `Give REJEA_RERANK_MODEL in .env the name of a reranker model of the provider in REJEA_RERANK_PROVIDER, or remove the setting: each provider has a default model. See "Reranker" in the README.`
 	case errors.Is(err, rerank.ErrInput), errors.Is(err, rerank.ErrAnswer):
-		return `Give REJEA_RERANK_MODEL in .env the name of a reranker model: a model of a different type does not give scores. The default is @cf/baai/bge-reranker-base.`
+		return `Give REJEA_RERANK_MODEL in .env the name of a reranker model of the provider in REJEA_RERANK_PROVIDER, or remove the setting: a model of a different type does not give scores. See "Reranker" in the README.`
 
 	case errors.Is(err, syscall.EADDRINUSE):
 		return `Stop the other program that uses this port, or change the port in REJEA_HTTP_ADDR in .env.`

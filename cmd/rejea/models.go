@@ -62,7 +62,8 @@ func startReranker(ctx context.Context, logger *slog.Logger, cfg config.Config) 
 	reranker, err := models.Reranker(cfg.Models, logger)
 	if errors.Is(err, rerank.ErrNotSet) {
 		logger.WarnContext(ctx, "no reranker provider is set: a search that asks for the reranker fails until one is set",
-			"to_correct", `set CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN in .env: see "Reranker" in the README`)
+			"provider", cfg.Models.Rerank.Provider,
+			"to_correct", `set the credentials of the provider in .env (COHERE_API_KEY for cohere; CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN for cloudflare): see "Reranker" in the README`)
 		return nil, nil //nolint:nilnil // No client and no error: the service starts with no reranker.
 	}
 	if err != nil {

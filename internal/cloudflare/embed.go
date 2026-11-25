@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/Njunge11/rejea/internal/embed"
+	"github.com/Njunge11/rejea/internal/provider"
 )
 
 // Embedder is the embed.Provider for the embedding models of Workers AI
@@ -29,14 +30,14 @@ func NewEmbedder(cfg Config, httpClient *http.Client) (*Embedder, error) {
 
 // embedReasons is the reason of the embed port for each reason of a
 // request that failed.
-var embedReasons = reasons{
-	busy:      embed.ErrBusy,
-	refused:   embed.ErrRefused,
-	noModel:   embed.ErrNoModel,
-	quota:     embed.ErrQuota,
-	tooLarge:  embed.ErrTooLarge,
-	input:     embed.ErrInput,
-	badAnswer: embed.ErrAnswer,
+var embedReasons = provider.Reasons{
+	provider.Busy:      embed.ErrBusy,
+	provider.Refused:   embed.ErrRefused,
+	provider.NoModel:   embed.ErrNoModel,
+	provider.Quota:     embed.ErrQuota,
+	provider.TooLarge:  embed.ErrTooLarge,
+	provider.Input:     embed.ErrInput,
+	provider.BadAnswer: embed.ErrAnswer,
 }
 
 // embedRequest is the body of a request. The model gets the texts of
@@ -64,7 +65,7 @@ func (e *Embedder) Embed(ctx context.Context, request embed.Request) (embed.Answ
 	}
 	var result embedResult
 	if err := e.client.send(ctx, request.Model, body, &result); err != nil {
-		return embed.Answer{}, embedReasons.of(err, "make the request for the embedding model")
+		return embed.Answer{}, embedReasons.Of(err, "make the request for the embedding model")
 	}
 	return embed.Answer{Vectors: result.Data, Tokens: result.Usage.PromptTokens}, nil
 }

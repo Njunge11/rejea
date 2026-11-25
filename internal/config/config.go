@@ -13,6 +13,7 @@ import (
 
 	"github.com/Njunge11/rejea/internal/chunk"
 	"github.com/Njunge11/rejea/internal/cloudflare"
+	"github.com/Njunge11/rejea/internal/cohere"
 	"github.com/Njunge11/rejea/internal/documents"
 	"github.com/Njunge11/rejea/internal/embed"
 	"github.com/Njunge11/rejea/internal/ingest"
@@ -73,6 +74,10 @@ func Load(getenv func(string) string) (Config, error) {
 	// Each job of the parse queue has one PDF open.
 	parseWorkers := env.count("REJEA_PARSE_WORKERS", 1)
 
+	// Each provider of the reranker has a default model of its own.
+	rerankProvider := env.oneOf("REJEA_RERANK_PROVIDER", models.RerankProviders()...)
+	// One limit for the answer of each model provider.
+	maxAnswerBytes := env.size("REJEA_MODEL_MAX_ANSWER_BYTES", 16<<20) // 16 MiB
 	cfg := Config{
 		DatabaseURL:       env.required("DATABASE_URL"),
 		StartCheckTimeout: startCheck,
@@ -168,8 +173,8 @@ func Load(getenv func(string) string) (Config, error) {
 					"Given a web search query, retrieve relevant passages that answer the query"),
 			},
 			Rerank: rerank.Config{
-				Provider: env.oneOf("REJEA_RERANK_PROVIDER", models.RerankProviders()...),
-				Model:    env.text("REJEA_RERANK_MODEL", "@cf/baai/bge-reranker-base"),
+				Provider: rerankProvider,
+				Model:    env.text("REJEA_RERANK_MODEL", models.RerankModel(rerankProvider)),
 				Timeout:  env.duration("REJEA_RERANK_TIMEOUT", 10*time.Second),
 			},
 			MaxAttempts:  env.count("REJEA_MODEL_MAX_ATTEMPTS", 3),
@@ -181,7 +186,17 @@ func Load(getenv func(string) string) (Config, error) {
 				AccountID:      env.text("CLOUDFLARE_ACCOUNT_ID", ""),
 				APIToken:       env.text("CLOUDFLARE_API_TOKEN", ""),
 				BaseURL:        env.text("REJEA_CLOUDFLARE_API_URL", "https://api.cloudflare.com/client/v4"),
-				MaxAnswerBytes: env.size("REJEA_MODEL_MAX_ANSWER_BYTES", 16<<20), // 16 MiB
+				MaxAnswerBytes: maxAnswerBytes,
+			},
+			Cohere: cohere.Config{
+				// No default: each developer has an account of their own.
+				APIKey:         env.text("COHERE_API_KEY", ""),
+				BaseURL:        env.text("REJEA_COHERE_API_URL", "https://api.cohere.com"),
+				MaxAnswerBytes: maxAnswerBytes,
+				// Cohere cuts a text at 4,096 tokens when the request gives
+				// no number. Its tokens are not the tokens of the embedding
+				// model, so the default is 2 times the default chunk size.
+				MaxTextTokens: env.count("REJEA_COHERE_MAX_TEXT_TOKENS", 8192),
 			},
 		},
 		Server: server.Config{

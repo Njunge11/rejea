@@ -168,14 +168,31 @@ The reranker is an optional second stage of the search (retrieve, then rerank). 
 
 The reranker is off by default. `REJEA_RERANK=true` turns it on for each search, and the field `rerank` of a request turns it on or off for that search.
 
-The model is bge-reranker-base on Cloudflare Workers AI, with the account of the embedding model. Two facts about this model:
+There are two providers. The numbers are for the 42 questions of the test set that have an answer (17 documents, 330 chunks, chunks of 4,096 tokens at most):
 
-- It reads the first 512 tokens of the question and a chunk together (the model table of Cloudflare AI Search; measured one time). A chunk can have 4,096 tokens (`REJEA_CHUNK_MAX_TOKENS`), so the model does not read the end of a long chunk.
-- Measured on the 42 questions of the test set that have an answer (17 documents, 330 chunks): without the reranker, a source page is the first result for 36 questions and in the first 5 for 41. With the reranker, it is the first result for 33 and in the first 5 for 39. The median time of a search is 0.5 seconds without it and 2.1 seconds with it.
+| Reranker | It reads | First result correct | Correct in the first 5 | Median time of a search |
+| --- | --- | --- | --- | --- |
+| None | | 36 | 41 | 0.5 s |
+| Cohere `rerank-v5.0-fast` | 32,768 tokens | 40 | 42 | 2.0 s |
+| Cohere `rerank-v5.0-pro` | 32,768 tokens | 40 | 42 | not measured in the service |
+| Cloudflare `bge-reranker-base` | 512 tokens | 33 | 39 | 2.1 s |
 
-Thus the reranker does not make the search better for these documents with this model and this chunk size, and the default is off.
+Thus Cohere Rerank 5 makes the search better, and the model of Cloudflare makes it worse: that model is from 2023 and reads only the start of a long chunk.
 
-When the service starts, it sends one small request to the model. With a wrong name of the model, it stops and names the setting to correct. When the model gives no answer to a search, the answer is 503 and tells the client to try again or to send `"rerank": false`.
+To use Cohere:
+
+1. Make an API key at [dashboard.cohere.com/api-keys](https://dashboard.cohere.com/api-keys). A trial key is free, with 1,000 calls each month and 10 calls each minute.
+2. Put these lines in `.env`, then run `make up`:
+
+```sh
+COHERE_API_KEY=...
+REJEA_RERANK_PROVIDER=cohere
+REJEA_RERANK=true
+```
+
+The model is `rerank-v5.0-fast`. `REJEA_RERANK_MODEL=rerank-v5.0-pro` selects the larger model. Cohere bills for the tokens: 0.02 US dollars for one million tokens of the fast model and 0.05 for the pro model. One search with 50 chunks was 80,000 tokens on average in the measurement.
+
+When the service starts, it sends one small request to the model. With a wrong key or a wrong name of the model, it stops and names the setting to correct. When the model gives no answer to a search, or the account is at its rate limit, the answer is 503 and tells the client to try again or to send `"rerank": false`.
 
 The code for a provider is an adapter behind one interface ([internal/rerank](internal/rerank/rerank.go)), as for the embedding model. `REJEA_RERANK_PROVIDER` selects the provider.
 

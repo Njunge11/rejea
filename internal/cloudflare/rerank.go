@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/Njunge11/rejea/internal/provider"
 	"github.com/Njunge11/rejea/internal/rerank"
 )
 
@@ -30,14 +31,14 @@ func NewReranker(cfg Config, httpClient *http.Client) (*Reranker, error) {
 
 // rerankReasons is the reason of the rerank port for each reason of a
 // request that failed.
-var rerankReasons = reasons{
-	busy:      rerank.ErrBusy,
-	refused:   rerank.ErrRefused,
-	noModel:   rerank.ErrNoModel,
-	quota:     rerank.ErrQuota,
-	tooLarge:  rerank.ErrTooLarge,
-	input:     rerank.ErrInput,
-	badAnswer: rerank.ErrAnswer,
+var rerankReasons = provider.Reasons{
+	provider.Busy:      rerank.ErrBusy,
+	provider.Refused:   rerank.ErrRefused,
+	provider.NoModel:   rerank.ErrNoModel,
+	provider.Quota:     rerank.ErrQuota,
+	provider.TooLarge:  rerank.ErrTooLarge,
+	provider.Input:     rerank.ErrInput,
+	provider.BadAnswer: rerank.ErrAnswer,
 }
 
 // rerankRequest is the body of a request, in the form of the input schema
@@ -76,7 +77,7 @@ func (r *Reranker) Rerank(ctx context.Context, request rerank.Request) (rerank.A
 	}
 	var result rerankResult
 	if err := r.client.send(ctx, request.Model, body, &result); err != nil {
-		return rerank.Answer{}, rerankReasons.of(err, "make the request for the reranker model")
+		return rerank.Answer{}, rerankReasons.Of(err, "make the request for the reranker model")
 	}
 	scores := make([]float64, len(request.Texts))
 	scored := make([]bool, len(request.Texts))

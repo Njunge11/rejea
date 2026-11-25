@@ -16,6 +16,7 @@ import (
 	"github.com/hashicorp/go-retryablehttp"
 
 	"github.com/Njunge11/rejea/internal/cloudflare"
+	"github.com/Njunge11/rejea/internal/cohere"
 	"github.com/Njunge11/rejea/internal/embed"
 	"github.com/Njunge11/rejea/internal/rerank"
 )
@@ -36,6 +37,8 @@ type Config struct {
 	RetryWaitMax time.Duration
 	// Cloudflare is the Cloudflare account.
 	Cloudflare cloudflare.Config
+	// Cohere is the Cohere account.
+	Cohere cohere.Config
 }
 
 // embedders is the registry of the embed port: the name of each provider
@@ -71,11 +74,29 @@ func Embedder(cfg Config, counter embed.Counter, logger *slog.Logger) (*embed.Cl
 	return embed.New(provider, counter, logger, cfg.Embed)
 }
 
-// rerankers is the registry of the rerank port: the name of each provider
-// and the function that makes its adapter. A new provider is one new line.
-var rerankers = map[string]func(cfg Config, client *http.Client) (rerank.Provider, error){
-	"cloudflare": func(cfg Config, client *http.Client) (rerank.Provider, error) {
-		return cloudflare.NewReranker(cfg.Cloudflare, client)
+// reranker is one provider of the rerank port.
+type reranker struct {
+	// model is the name of the model when the settings give none.
+	model string
+	// open makes the adapter.
+	open func(cfg Config, client *http.Client) (rerank.Provider, error)
+}
+
+// rerankers is the registry of the rerank port: the name of each provider,
+// its default model and the function that makes its adapter. A new
+// provider is one new entry.
+var rerankers = map[string]reranker{
+	"cloudflare": {
+		model: "@cf/baai/bge-reranker-base",
+		open: func(cfg Config, client *http.Client) (rerank.Provider, error) {
+			return cloudflare.NewReranker(cfg.Cloudflare, client)
+		},
+	},
+	"cohere": {
+		model: "rerank-v5.0-fast",
+		open: func(cfg Config, client *http.Client) (rerank.Provider, error) {
+			return cohere.NewReranker(cfg.Cohere, client)
+		},
 	},
 }
 
@@ -84,11 +105,16 @@ func RerankProviders() []string {
 	return slices.Sorted(maps.Keys(rerankers))
 }
 
+// RerankModel gives the default model of a provider of the rerank port.
+func RerankModel(provider string) string {
+	return rerankers[provider].model
+}
+
 // Reranker makes the reranker client that the settings name. It sends no
 // request. With no credentials for the provider, its error is
 // rerank.ErrNotSet.
 func Reranker(cfg Config, logger *slog.Logger) (*rerank.Client, error) {
-	open, known := rerankers[cfg.Rerank.Provider]
+	entry, known := rerankers[cfg.Rerank.Provider]
 	if !known {
 		return nil, fmt.Errorf("the reranker provider is %q: the providers are %s",
 			cfg.Rerank.Provider, strings.Join(RerankProviders(), ", "))
@@ -97,7 +123,7 @@ func Reranker(cfg Config, logger *slog.Logger) (*rerank.Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	provider, err := open(cfg, client)
+	provider, err := entry.open(cfg, client)
 	if err != nil {
 		return nil, err
 	}
