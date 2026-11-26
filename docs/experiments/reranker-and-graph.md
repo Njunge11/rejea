@@ -187,8 +187,8 @@ These scores prove only that each step works. With 4 documents, almost each sear
 | Step | Status | Result |
 | --- | --- | --- |
 | Inputs: 219 PDFs, 400 questions | Done | Each PDF opens. Each page count agrees with the question file. |
-| Parser machine on AWS | In work | |
-| Parse and index of 3,121 pages | Not started | |
+| Parser machine on AWS | Done | `ml.g5.2xlarge` (NVIDIA A10G), 1.515 US dollars for an hour. Wait for a free machine: 18 minutes (not billed). Setup: 11 minutes. |
+| Parse and index of 3,121 pages | In work (started 20:51) | |
 | Run 1 and run 2 (Rejea's search, without and with the reranker) | Not started | |
 | Graph build | Not started | |
 | Run 3, run 4, run 5 (graph off, graph on, graph on + reranker) | Not started | |
