@@ -220,6 +220,14 @@ func (d *Document) Close() {
 		<-d.killed
 		return
 	}
+	if d.form != "" {
+		// go-pdfium keeps each form in a list of the package, with the
+		// copy of PDFium that made it. Only this call removes the form
+		// from that list: without it, the memory of each opened PDF
+		// stays for the life of the service. A copy that the end of ctx
+		// killed cannot get this call.
+		d.instance.FPDFDOC_ExitFormFillEnvironment(&requests.FPDFDOC_ExitFormFillEnvironment{FormHandle: d.form}) //nolint:errcheck,gosec // The close of the copy frees the form too.
+	}
 	d.instance.Close() //nolint:errcheck,gosec // The copy of PDFium is of no more use.
 }
 
