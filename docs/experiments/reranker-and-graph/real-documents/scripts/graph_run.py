@@ -28,6 +28,9 @@ def timed(kind, start, tokens=0):
 from src.hipporag.HippoRAG import HippoRAG
 from src.hipporag.utils.config_utils import BaseConfig
 from src.hipporag.llm.openai_gpt import CacheOpenAI
+from src.hipporag.information_extraction import openie_openai as openie_code
+from src.hipporag.utils.llm_utils import filter_invalid_triples
+import re
 import openai
 
 os.makedirs(SAVE, exist_ok=True)
@@ -88,20 +91,38 @@ def counted(llm, used):
         return out
     return infer
 
+mended = []      # answers that the script read from a code fence
 def tolerant(ie, lost):
     """The code stops the full build when one answer of the chat model is not in the demanded form. A text with almost no words gets such an answer.
-    Here a chunk with an answer that cannot be read gets no names or no facts, and the build continues. A call with no answer (a failed request) stays a failure."""
+    Here a chunk with an answer that cannot be read, or with an empty answer, gets no names or no facts, and the build continues.
+    A call with no answer (a request that the provider refused, or that failed) stays a failure: a new start of the build sends it again."""
     ner0, facts0 = ie.ner, ie.triple_extraction
+    def unreadable(out):
+        error = str(out.metadata.get("error") or "")
+        return bool(error) and (bool(out.response) or "did not contain non-empty text" in error)
     def note(kind, passage, out):
-        lost.append({"step": kind, "words": len(passage.split()), "error": str(out.metadata.pop("error"))[:120], "answer": out.response[:80]})
+        lost.append({"step": kind, "words": len(passage.split()), "error": str(out.metadata.pop("error"))[:120], "answer": (out.response or "")[:80]})
         out.metadata["not read"] = True
+    def fenced(read, text):
+        """Some answers have the demanded JSON in a code fence and a sentence after it. The code cannot read such an answer.
+        Here the text of the fence goes through the same read function of the code."""
+        block = re.search(r"```(?:json)?\s*(.*?)```", text or "", re.S)
+        if not block: return None
+        try: return read(block.group(1).strip())
+        except ValueError: return None
     def ner(chunk_key, passage, *a, **k):
         out = ner0(chunk_key, passage, *a, **k)
-        if out.metadata.get("error") and out.response: note("names", passage, out)
+        if unreadable(out):
+            names = fenced(openie_code._extract_ner_from_response, out.response)
+            if names is None: note("names", passage, out)
+            else: out.unique_entities = list(dict.fromkeys(names)); out.metadata.pop("error"); out.metadata["read from the fence"] = True; mended.append("names")
         return out
     def facts(chunk_key, passage, *a, **k):
         out = facts0(chunk_key, passage, *a, **k)
-        if out.metadata.get("error") and out.response: note("facts", passage, out)
+        if unreadable(out):
+            triples = fenced(lambda text: openie_code._extract_json_list_field(text, "triples"), out.response)
+            if triples is None: note("facts", passage, out)
+            else: out.triples = filter_invalid_triples(triples=triples); out.metadata.pop("error"); out.metadata["read from the fence"] = True; mended.append("facts")
         return out
     ie.ner, ie.triple_extraction = ner, facts
 
@@ -120,11 +141,13 @@ if phase == "build":
         def checked(*a, **k):      # directly after the chat calls: stop here when too much text is lost, before the vectors of the names and the graph
             t0 = time.time(); out = batch0(*a, **k); chat_seconds[0] += time.time() - t0
             share = sum(x["words"] for x in lost) / max(1, sum(len(d.split()) for d in docs))
+            json.dump(lost, open(os.path.join(SAVE, "lost.json"), "w"))      # each chunk with an answer that the code cannot read
             if share > LOST_LIMIT: sys.exit(f"STOP: the chat model gave no readable answer for chunks with {100 * share:.1f}% of all words (limit {100 * LOST_LIMIT:.0f}%): {json.dumps(lost[:5])}")
             return out
         rag.openie.batch_openie = checked
         rag.index(docs)
         print("graph:", rag.get_graph_info(), flush=True)
+        print("answers read from a code fence:", len(mended), flush=True)
         print("answers not read:", len(lost), "| words in those chunks:", [x["words"] for x in lost], "| steps:", [x["step"] for x in lost], flush=True)
     print(json.dumps({"phase": "build", "model": BUILD, "chunks": len(chunks), "different texts": len(docs), "seconds": round(time.time() - start), "chat calls": used["calls"], "from the local cache": used["cached"], "input tokens": used["in"], "output tokens": used["out"], "chat cost usd": round(cost(BUILD, used), 4), "vector requests": sent["requests"], "vector texts": sent["texts"], "chat seconds": round(chat_seconds[0]), "vector seconds": round(sent["seconds"]), "chat workers": CHAT_WORKERS, "vector workers": VECTOR_WORKERS, "vector batch": VECTOR_BATCH}))
 elif phase == "dense":

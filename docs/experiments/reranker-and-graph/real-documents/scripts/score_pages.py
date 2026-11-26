@@ -5,7 +5,10 @@ args = sys.argv[1:]; qs = {q["n"]: q for q in json.load(open(args[0]))}; k = int
 runs, compares, i = {}, [], 2
 while i < len(args):
     if args[i] == "--compare": compares.append((args[i + 1], args[i + 2])); i += 3
-    else: name, path = args[i].split("=", 1); runs[name] = {r["n"]: r["results"] for r in json.load(open(path))}; i += 1
+    else:
+        # A result is {"doc", "page_start", "page_end"}, or the short form of the saved runs: [doc, page_start, page_end].
+        name, path = args[i].split("=", 1); i += 1
+        runs[name] = {r["n"]: [c if isinstance(c, dict) else {"doc": c[0], "page_start": c[1], "page_end": c[2]} for c in r["results"]] for r in json.load(open(path))}
 def found(gold, top):
     doc, page = gold[0], gold[1]
     return any(c["doc"] == doc and c["page_start"] is not None and c["page_start"] <= page <= (c["page_end"] or c["page_start"]) for c in top)

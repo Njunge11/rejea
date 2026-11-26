@@ -1,0 +1,322 @@
+[
+{
+"step": "names",
+"words": 444,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 14,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 45,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 52,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 2,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 2,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 84,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 146,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 414,
+"error": "OpenIE response field 'named_entities' must be a list. Expected {\"named_entities\": [...]} or a bare JSON list of entity "
+},
+{
+"step": "names",
+"words": 106,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 36,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 3,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 434,
+"error": "OpenIE response field 'named_entities' must be a list. Expected {\"named_entities\": [...]} or a bare JSON list of entity "
+},
+{
+"step": "names",
+"words": 495,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 452,
+"error": "OpenIE response field 'named_entities' must be a list. Expected {\"named_entities\": [...]} or a bare JSON list of entity "
+},
+{
+"step": "names",
+"words": 1,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 66,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 5,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 24,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 2,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 212,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 49,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 3,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 2,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 4,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 4,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 664,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 388,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 5,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 2,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 307,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 2,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 120,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 94,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 263,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 155,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 3,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 59,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 67,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 101,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 72,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 178,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 22,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 785,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 63,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 2,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 10,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 4,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 345,
+"error": "OpenIE response field 'named_entities' must be a list. Expected {\"named_entities\": [...]} or a bare JSON list of entity "
+},
+{
+"step": "names",
+"words": 287,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 65,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 11,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 101,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 1,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 9,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 565,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "names",
+"words": 201,
+"error": "OpenIE response does not contain a valid JSON object with 'named_entities'. Expected {\"named_entities\": [...]} or a bare"
+},
+{
+"step": "facts",
+"words": 78,
+"error": "OpenIE response does not contain a valid JSON object with 'triples'."
+},
+{
+"step": "facts",
+"words": 74,
+"error": "OpenIE response does not contain a valid JSON object with 'triples'."
+},
+{
+"step": "facts",
+"words": 583,
+"error": "OpenIE response does not contain a valid JSON object with 'triples'."
+},
+{
+"step": "facts",
+"words": 316,
+"error": "OpenIE response does not contain a valid JSON object with 'triples'."
+},
+{
+"step": "facts",
+"words": 322,
+"error": "OpenIE response does not contain a valid JSON object with 'triples'."
+},
+{
+"step": "facts",
+"words": 456,
+"error": "OpenIE response does not contain a valid JSON object with 'triples'."
+},
+{
+"step": "facts",
+"words": 428,
+"error": "OpenIE response does not contain a valid JSON object with 'triples'."
+}
+]

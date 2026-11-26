@@ -183,7 +183,7 @@ There are three providers: Cohere, Cloudflare, and Amazon Bedrock (it has the Co
 
 Thus Cohere Rerank 5 makes the search better, and the model of Cloudflare makes it worse: that model is from 2023 and reads only the start of a long chunk.
 
-These questions have one fact each. On 200 questions of 2 to 4 steps over 11,656 passages, the Cohere reranker raises the share of correct passages in the first 5 results from 52.4% to 64.0%: see [the experiment](docs/experiments/reranker-and-graph.md).
+These questions have one fact each. On 200 questions of 2 to 4 steps over 11,656 passages, the Cohere reranker raises the share of correct passages in the first 5 results from 52.4% to 64.0%: see [the experiment](docs/experiments/reranker-and-graph.md). On 400 questions over 219 real finance and legal PDFs (3,121 pages), Cohere Rerank 3.5 on Amazon Bedrock raises the share of correct pages in the first 5 results from 80.3% to 83.2%.
 
 To use Cohere:
 

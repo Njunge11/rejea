@@ -7,18 +7,20 @@ Rejea answers a question in two steps. First its **search** finds the pieces of 
 | Part | Documents | Questions | Status |
 | --- | --- | --- | --- |
 | [Experiment 1](#experiment-1-wikipedia-paragraphs) | 11,656 short paragraphs of Wikipedia | 200 | Complete (2026-11-25) |
-| [Experiment 2](#experiment-2-real-pdf-documents) | 219 real finance and legal PDFs, 3,121 pages | 400 | **In work** (started 2026-11-26). See [progress](#progress-of-the-full-run). |
+| [Experiment 2](#experiment-2-real-pdf-documents) | 219 real finance and legal PDFs, 3,121 pages | 400 | Complete (2026-11-26) |
 
-Experiment 1 is not enough for a decision. Its documents are short paragraphs of plain text. The documents that Rejea is made for are long PDF reports with tables and pictures. Experiment 2 repeats the test on such documents.
+Experiment 1 is not enough for a decision. Its documents are short paragraphs of plain text. The documents that Rejea is made for are long PDF reports with tables and pictures. Experiment 2 repeats the test on such documents. The two experiments give the same answer.
 
-## Answers so far
+## Answers
 
-| Question | Answer so far | Proof |
+| Question | Answer | Proof |
 | --- | --- | --- |
-| Does the reranker make the search better? | Yes, in each test up to now. | Experiment 1: 11.6 points more. Rejea's own test set: the first result is correct for 38 or 39 of 42 questions in place of 36. |
-| Does the knowledge graph make the search better? | Not known for real documents. | Experiment 1: 2.9 points more without the reranker, and no gain that the test can see with the reranker. Experiment 2 gives the answer. |
+| Does the reranker make the search better? | Yes, in each test. | Real PDFs: 2.9 points more (range +0.6 to +5.3). Wikipedia paragraphs: 11.6 points more. Rejea's own test set: the first result is correct for 38 or 39 of 42 questions in place of 36. |
+| Does the knowledge graph make the search better? | Not above what Rejea has. | The graph makes a plain vector search better: 3.9 points on real PDFs and 2.9 on Wikipedia. But Rejea's hybrid search without a graph finds more than the graph search (80.3% against 77.1% on real PDFs). With the reranker on, the test sees no difference: 83.2% without the graph and 82.7% with it. |
 | Which reranker provider? | Amazon Bedrock for a run of many searches. | 32 times faster than a free Cohere key for 42 searches, with almost the same quality. See [reranker providers](#finding-reranker-providers). |
-| How fast can the graph be built? | 0.47 seconds for a chunk. The limit is the rate limit of the chat model account. | See [graph build speed](#finding-graph-build-speed). |
+| How fast can the graph be built? | 0.33 seconds for a chunk. The limit is the rate limit of the chat model account. | See [graph build speed](#finding-graph-build-speed). |
+
+**Conclusion.** Use the reranker. Do not build the knowledge graph now. See [the conclusion](#conclusion) for the reasons and the limits.
 
 ## Terms
 
@@ -182,32 +184,86 @@ Before the full run, the full procedure ran on a small part, to find faults when
 
 These scores prove only that each step works. With 4 documents, almost each search finds the correct page. They are not a result.
 
-### Progress of the full run
+### The full run
 
-| Step | Status | Result |
+Run on 2026-11-26, from 20:18 to 22:39 (2 hours 21 minutes).
+
+| Step | Time | Result |
 | --- | --- | --- |
-| Inputs: 219 PDFs, 400 questions | Done | Each PDF opens. Each page count agrees with the question file. |
-| Parser machine on AWS | Done | `ml.g5.2xlarge` (NVIDIA A10G), 1.515 US dollars for an hour. Wait for a free machine: 18 minutes (not billed). Setup: 11 minutes. |
-| Parse and index of 3,121 pages | Done | 53 minutes. All 219 documents and 3,121 pages, none failed. 37,229 blocks, of which 946 tables. 5,872 chunks. |
-| Run 1 and run 2 (Rejea's search, without and with the reranker) | Done | 400 searches in 68 seconds without the reranker and in 125 seconds with it, 8 at the same time. |
-| Graph build | In work (started 21:46) | |
-| Run 3, run 4, run 5 (graph off, graph on, graph on + reranker) | Not started | |
-| Scores and ranges | Not started | |
+| Wait for a free GPU machine at AWS | 18 minutes (not billed) | `ml.g5.2xlarge` (NVIDIA A10G), 1.515 US dollars for an hour |
+| Setup of the parser machine | 11 minutes | |
+| Parse and index | 53 minutes | All 219 documents and 3,121 pages, none failed. 37,229 blocks, of which 946 tables. 5,872 chunks. 7 of the 53 minutes were a stop of the Rejea service: see [the fault](#fault-that-the-full-run-found). |
+| Run 1 and run 2 | 68 seconds and 125 seconds | 400 searches each, 8 at the same time |
+| Graph build | 32 minutes of work, in 4 starts | 57,705 names, 90,337 facts, 668,432 lines between equal names |
+| Run 3, run 4, run 5 | 13 seconds, 10.5 minutes, 83 seconds | In run 4, the chat model found a start point in the graph for 386 of the 400 questions. For the other 14, the code used its vector search. |
+
+| Cost | US dollars |
+| --- | --- |
+| Parser machine: 4,178 seconds | 1.76 |
+| Reranker: 801 searches on Amazon Bedrock | 1.60 |
+| Graph build: 11,594 requests to Claude Haiku 5.5 (12.1 million input tokens, 9.9 million output tokens) | 6.18 |
+| Graph search: 400 requests to Claude Sonnet 5.5 | 4.09 |
+| Total | 13.63 |
 
 ### Results
 
-The full run is in work. The scores of the graph runs come when the graph is built.
+The score is the share of the marked answer pages that the first 5 results cover.
 
-| Run | Search | Score (400 questions) | Text only | Table | Picture only | Picture and text |
-| --- | --- | --- | --- | --- | --- | --- |
-| 1 | Rejea | 80.3% | 82% | 73% | 85% | 81% |
-| 2 | Rejea + reranker | 83.2% | 82% | 79% | 91% | 81% |
+| Run | Search | Score | Finance | Legal | Text only | Table | Picture only | Picture and text |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | Rejea | 80.3% | 76.8% | 83.8% | 82% | 73% | 85% | 81% |
+| 2 | Rejea + reranker | **83.2%** | 80.6% | 85.8% | 82% | 79% | 91% | 81% |
+| 3 | HippoRAG 2 code, graph off | 73.3% | 70.1% | 76.4% | 77% | 69% | 73% | 75% |
+| 4 | HippoRAG 2 code, graph on | 77.1% | 76.2% | 78.1% | 78% | 73% | 80% | 77% |
+| 5 | HippoRAG 2 code, graph on + reranker | 82.7% | 80.1% | 85.2% | 81% | 79% | 88% | 82% |
 
-| Comparison | Difference | Range | Meaning |
+| Comparison | Difference | Range | Questions up, down | Meaning |
+| --- | --- | --- | --- | --- |
+| Reranker on Rejea's search (run 2 against run 1) | +2.9 points | +0.6 to +5.3 | 44, 28 | The reranker helps, and the gain is not chance. |
+| Graph (run 4 against run 3) | +3.9 points | +1.0 to +6.8 | 57, 41 | The graph makes a plain vector search better, and the gain is not chance. |
+| Graph search against Rejea's search (run 4 against run 1) | −3.2 points | −6.0 to −0.4 | 37, 59 | Rejea's hybrid search without a graph finds more than the graph search. |
+| Reranker on the graph search (run 5 against run 4) | +5.5 points | +2.7 to +8.4 | 73, 31 | The reranker helps the graph search also. |
+| Graph + reranker against Rejea + reranker (run 5 against run 2) | −0.5 points | −1.9 to +0.7 | 6, 7 | No difference that the test can see. The score differs for only 13 of the 400 questions. |
+
+The same scores with more results:
+
+| Run | First 5 results | First 10 | First 50 |
 | --- | --- | --- | --- |
-| Reranker on Rejea's search (run 2 against run 1) | +2.9 points | +0.6 to +5.3 | The reranker helps on real PDFs also, and the gain is not chance. The gain is smaller than on the Wikipedia paragraphs (+11.6). The score went up for 44 questions and down for 28. |
+| 1. Rejea | 80.3% | 89.3% | 97.4% |
+| 2. Rejea + reranker | 83.2% | 91.3% | 97.4% |
+| 3. Graph off | 73.3% | 83.0% | 94.9% |
+| 4. Graph on | 77.1% | 87.9% | 96.1% |
+| 5. Graph on + reranker | 82.7% | 89.6% | 96.1% |
 
-37 of the 3,121 pages have no chunk, and 2 of the 894 marked pages are among them. No search can find those 2 pages.
+The reranker only puts the best 50 chunks in a new order. Those 50 already hold 97.4% of the marked pages in Rejea's search, so almost all that is left to gain is the order.
+
+### What the results mean
+
+- **The reranker helps on real PDFs.** The gain is smaller than on the Wikipedia paragraphs (2.9 points against 11.6), because Rejea's search alone is already good on these documents. The gain is in the questions with the answer in a table (73% to 79%) and in a picture (85% to 91%).
+- **The graph helps a plain vector search**, by 3.9 points. That agrees with the claim of its authors.
+- **Rejea's search does not need the graph to get that gain.** Its hybrid search (keywords and vectors) scores 80.3%, above the graph search (77.1%).
+- **With the reranker on, the graph adds nothing that the test can see.** The two searches then have the same score for 387 of the 400 questions.
+
+### Conclusion
+
+Use the reranker. Do not build the knowledge graph now.
+
+| | Reranker | Knowledge graph |
+| --- | --- | --- |
+| Gain on real PDFs | +2.9 points on Rejea's search | None above Rejea's search with the reranker |
+| Gain on Wikipedia paragraphs | +11.6 points | None above Rejea's search with the reranker |
+| Cost for each search | 0.002 US dollars | 0.010 US dollars (one request to a chat model) |
+| Cost for each document | None | 0.028 US dollars and 9 seconds (measured: 6.18 US dollars and 32 minutes for 219 documents) |
+| Work to add it to Rejea | Done: it is a setting | A new part of the service: a chat model step in the ingest, a graph store, a graph search |
+
+### Limits
+
+- **No question needs two documents.** For each of the 400 questions, all marked pages are in one document. A graph is made to connect facts of different documents. Experiment 1 tests that case (each question needs 2 to 4 paragraphs), but on plain text only. A test with real PDFs and questions over two or more documents does not exist in this record.
+- **The graph is not a graph that is built into Rejea.** It is the HippoRAG 2 code with Rejea's small embedding model and Claude Haiku 5.5 at effort `low`. For 64 of the 5,789 chunks (0.86% of all words), the code could not read the answer of the chat model, so the graph has no names or no facts for them. 19 of those chunks have 10 words or fewer.
+- **The reranker is Cohere Rerank 3.5.** The newer `rerank-v5.0-fast` was not used here, because its free key permits only 10 requests each minute.
+- **400 questions.** The test cannot see a gain below about 2.4 to 3.4 points.
+- **The score counts pages, not answers.** It tells if the search found the correct page. It does not tell if a chat model then writes the correct answer.
+- 37 of the 3,121 pages have no chunk, and 2 of the 894 marked pages are among them. No search can find those 2 pages.
 
 ### Fault that the full run found
 
@@ -284,6 +340,24 @@ A test on 70 chunks is too short to show the steady speed: with 32 requests at t
 | A refused request must be sent again. | In the first run, 33 refused requests stopped the build. The script now waits and sends a refused request again. |
 | A small test can mislead. | The 70 chunks gave 0.97 s for a chunk. The 636 chunks gave 0.47 s. |
 
+### The graph build of the full run
+
+The build of the full run (5,872 chunks, of which 5,789 with a different text) confirms the limit:
+
+| Step | Setting | Result |
+| --- | --- | --- |
+| Chat: names | 36 requests at the same time | 5,789 requests in 387 s: 897 requests each minute |
+| Chat: facts | 36 requests at the same time | 5,786 requests in 1,217 s. Steady at 400,000 output tokens each minute, which is the limit of the account. |
+| Chat step as a whole | | 26.7 minutes: 217 chunks each minute |
+| Vectors | 32 requests at the same time | 148,042 texts in 303 s: 916 requests each minute |
+| Full build | | 32 minutes: 0.33 s for a chunk |
+
+| Event | What the script does now |
+| --- | --- |
+| The provider refused 2 requests with "Number of concurrent requests ... has exceeded your organization's limit". This is a second limit of the account, on the requests at the same time. | A new start of the build sends only the requests that have no saved answer. |
+| For 50 chunks, the answer had the demanded JSON in a code fence, with a sentence after it. The HippoRAG 2 code cannot read such an answer. | The script gives the text of the fence to the same read function of the code. |
+| For 64 chunks, the answer cannot be read (plain text, or cut at the output limit, or a chunk with almost no words). | The chunk gets no names or no facts. The build stops if such chunks hold more than 1% of all words: here 0.86%. |
+
 ## Details for a repeat of the tests
 
 ### Experiment 1
@@ -326,6 +400,7 @@ The scripts are in [`real-documents/scripts/`](reranker-and-graph/real-documents
 
 | Script | Use |
 | --- | --- |
+| `make_inputs.py` | Makes the question file, the document list and the PDF folder from the rows of UniDoc-Bench. |
 | `parse_run.sh` | Starts a Rejea test service on a separate database with 16 file workers, 8 parse workers and 8 index workers, sends the PDFs, and waits until each one has its chunks. |
 | `search_run.py` | Sends each question to `POST /search` with `"limit": 50`, without or with the reranker, some questions at the same time. |
 | `graph_run.py` | Builds the graph from Rejea's chunks with the HippoRAG 2 code, and runs its vector search and its graph search. Its settings give the models, the effort, and the number of requests at the same time. |
@@ -336,6 +411,9 @@ The scripts are in [`real-documents/scripts/`](reranker-and-graph/real-documents
 
 | Result file | Content |
 | --- | --- |
+| `results/runs/` | The best 50 results of each question for each of the 5 runs of experiment 2, each as document, first page, last page. `score_pages.py` gives the scores of this record from these files and the question file. |
+| `results/full-run-chunks-not-read.json` | The 64 chunks of the full run with an answer that the code cannot read: the step, the number of words, the error |
+| `results/time-logs/full-run-chat.jsonl`, `full-run-vectors.jsonl` | Start and end of each chat request and each vector request of the graph build of the full run |
 | `results/search-report-cohere.json`, `results/search-report-bedrock.json` | The two search reports of the reranker comparison (`rejea search-report`) |
 | `results/time-logs/chat-40-calls.jsonl` | Start, end and output tokens of each chat request of the build on 636 chunks |
 | `results/time-logs/vectors-16-requests.jsonl`, `vectors-32-requests.jsonl`, `vectors-64-requests.jsonl` | Start and end of each vector request, for 16, 32 and 64 requests at the same time |
