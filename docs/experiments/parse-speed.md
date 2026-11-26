@@ -73,6 +73,8 @@ Rejea has two more jobs for each document, and each has its own worker setting. 
 | 2 | 5.0 s | 0.004 s |
 | 4 | 2.4 s | 0.006 s |
 | 8 | 1.6 s (second run: 1.9 s) | 0.006 s |
+| 10 | 1.2 s | 0.006 s |
+| 16 | 0.8 s | 0.009 s |
 
 **The index job** cuts the saved blocks of a document into chunks, gets a vector for each chunk from Cloudflare, and saves them. Setting: `REJEA_INDEX_WORKERS`. Input: a copy of a database with 17 parsed documents (292 pages, 676 chunks). The command `rejea reindex --all` put all 17 in the queue before the service started. Script: [`scripts/index_run.sh`](parse-speed/scripts/index_run.sh).
 
@@ -91,7 +93,7 @@ Rejea has two more jobs for each document, and each has its own worker setting. 
 - **The GPU machine is faster also with no parallel work.** With 1 worker it needs 3.9 seconds for a page, against 13.3 on the Mac.
 - **The setting works as it is.** `REJEA_PARSE_WORKERS` and `REJEA_PARSER_URL` gave these numbers with no code change in Rejea.
 
-- **The file job is not a bottleneck.** Its work needs 0.004 seconds for a document. The 10 seconds with 1 worker are wait time in the queue: the queue library (River 0.51.2) gives jobs to the workers one time each 100 ms, one job for each free worker. More workers remove that wait, but the full gain is 8 seconds for 100 documents.
+- **The file job is not a bottleneck.** Its work needs 0.004 seconds for a document. The 10 seconds with 1 worker are wait time in the queue: the queue library (River 0.51.2) gives jobs to the workers one time each 100 ms, one job for each free worker. More workers remove that wait: the time still drops at 10 and at 16 workers. But the full gain from 1 to 16 is 9 seconds for 100 documents.
 - **The index job gains from workers up to the size of the largest document.** The time drops by 39% from 1 to 2 workers, by 41% from 2 to 4, and by 20% from 4 to 8. One document is one job. At 8 workers the run needs 43 seconds, and its largest document alone needs 40. More workers cannot go below that.
 - **Cloudflare refused no request at 8 index workers.** Each of the 17 jobs passed at its first attempt.
 

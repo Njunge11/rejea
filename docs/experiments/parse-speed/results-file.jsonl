@@ -3,3 +3,5 @@
 {"label" : "file, 4 workers", "file_workers" : 4, "documents" : 100, "file_seconds" : 2.44, "job_seconds_median" : 0.006, "job_seconds_max" : 0.028, "jobs_by_state" : { "completed" : 100 }, "duplicates" : 0}
 {"label" : "file, 8 workers", "file_workers" : 8, "documents" : 100, "file_seconds" : 1.58, "job_seconds_median" : 0.006, "job_seconds_max" : 0.039, "jobs_by_state" : { "completed" : 100 }, "duplicates" : 0}
 {"label" : "file, 8 workers, second run", "file_workers" : 8, "documents" : 100, "file_seconds" : 1.93, "job_seconds_median" : 0.007, "job_seconds_max" : 0.035, "jobs_by_state" : { "completed" : 100 }, "duplicates" : 0}
+{"label" : "file, 10 workers", "file_workers" : 10, "documents" : 100, "file_seconds" : 1.19, "job_seconds_median" : 0.006, "job_seconds_max" : 0.032, "jobs_by_state" : { "completed" : 100 }, "duplicates" : 0}
+{"label" : "file, 16 workers", "file_workers" : 16, "documents" : 100, "file_seconds" : 0.78, "job_seconds_median" : 0.009, "job_seconds_max" : 0.040, "jobs_by_state" : { "completed" : 100 }, "duplicates" : 0}
