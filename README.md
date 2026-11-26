@@ -183,7 +183,7 @@ There are two providers. The numbers are for the 42 questions of the test set th
 
 Thus Cohere Rerank 5 makes the search better, and the model of Cloudflare makes it worse: that model is from 2023 and reads only the start of a long chunk.
 
-These questions have one fact each. For a question that needs facts from two places, the reranker can remove a necessary chunk from the first results: see [Search findings](docs/search-findings.md). That page also gives the test of whole-collection questions, where `"limit": 50` finds more than 10 chunks do.
+These questions have one fact each. On 200 questions of 2 to 4 steps over 11,656 passages, the Cohere reranker raises the share of correct passages in the first 5 results from 52.4% to 64.0%: see [the experiment](docs/experiments/reranker-and-graph.md).
 
 To use Cohere:
 

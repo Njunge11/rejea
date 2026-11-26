@@ -1,5 +1,7 @@
 # Search findings
 
+> **These tests are too small for their conclusions.** Test 1 has 6 questions, and test 2 has 10 questions of each kind. A score of 10 questions has a margin of ±31 points. [The experiment with 200 questions](experiments/reranker-and-graph.md) replaces the conclusions of this page on the reranker, on two-step questions and on the knowledge graph. In that experiment the reranker makes two-step questions better, which is the opposite of test 1. What stays of use here: the 30 questions with their fact lists, and the result that 50 chunks find more than 10 for a whole-collection question.
+
 Two tests of the search, run on 2026-11-25. Each one gives what was tested, the result, the cause, what works, and the limits of the test.
 
 The collection for both tests: 14 public KNBS reports and 3 Word test files with filler text (17 documents, 676 chunks of 1,024 tokens at most). The data of the tests is in [`search-findings/`](search-findings/).
