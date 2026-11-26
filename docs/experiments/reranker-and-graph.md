@@ -188,15 +188,30 @@ These scores prove only that each step works. With 4 documents, almost each sear
 | --- | --- | --- |
 | Inputs: 219 PDFs, 400 questions | Done | Each PDF opens. Each page count agrees with the question file. |
 | Parser machine on AWS | Done | `ml.g5.2xlarge` (NVIDIA A10G), 1.515 US dollars for an hour. Wait for a free machine: 18 minutes (not billed). Setup: 11 minutes. |
-| Parse and index of 3,121 pages | In work (started 20:51) | |
-| Run 1 and run 2 (Rejea's search, without and with the reranker) | Not started | |
-| Graph build | Not started | |
+| Parse and index of 3,121 pages | Done | 53 minutes. All 219 documents and 3,121 pages, none failed. 37,229 blocks, of which 946 tables. 5,872 chunks. |
+| Run 1 and run 2 (Rejea's search, without and with the reranker) | Done | 400 searches in 68 seconds without the reranker and in 125 seconds with it, 8 at the same time. |
+| Graph build | In work (started 21:46) | |
 | Run 3, run 4, run 5 (graph off, graph on, graph on + reranker) | Not started | |
 | Scores and ranges | Not started | |
 
 ### Results
 
-The full run is in work. This section gets the scores when the run is complete.
+The full run is in work. The scores of the graph runs come when the graph is built.
+
+| Run | Search | Score (400 questions) | Text only | Table | Picture only | Picture and text |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | Rejea | 80.3% | 82% | 73% | 85% | 81% |
+| 2 | Rejea + reranker | 83.2% | 82% | 79% | 91% | 81% |
+
+| Comparison | Difference | Range | Meaning |
+| --- | --- | --- | --- |
+| Reranker on Rejea's search (run 2 against run 1) | +2.9 points | +0.6 to +5.3 | The reranker helps on real PDFs also, and the gain is not chance. The gain is smaller than on the Wikipedia paragraphs (+11.6). The score went up for 44 questions and down for 28. |
+
+37 of the 3,121 pages have no chunk, and 2 of the 894 marked pages are among them. No search can find those 2 pages.
+
+### Fault that the full run found
+
+The Rejea service used 4 MB more memory for each parsed page, and Docker stopped it after 1,632 pages. The cause: the PDF reader started the form of each PDF and never ended it, and the PDF library keeps each started form, with all the memory of its PDF, in a list. The correction is one call in the close function of the PDF reader (commit `1572059`). With it, the memory of the service stays near 450 MB during the parse. The stop cost 7 minutes, and no parsed page was lost.
 
 ## Finding: reranker providers
 
