@@ -1,0 +1,775 @@
+{
+  "created_at": "2026-11-26T15:36:39Z",
+  "questions_sha256": "abc9677e83dea6f8d83a8d10b373081ed0acfadf2309a3b86f8870a767058bbf",
+  "settings": {
+    "chunk_max_tokens": 1024,
+    "embed_provider": "cloudflare",
+    "embed_model": "@cf/qwen/qwen3-embedding-0.6b",
+    "search_candidates": 50,
+    "rank_constant": 60,
+    "rerank_provider": "cohere",
+    "rerank_model": "rerank-v5.0-fast",
+    "rerank_candidates": 50
+  },
+  "collection": {
+    "documents": 13,
+    "chunks": 662
+  },
+  "runs": [
+    {
+      "reranker": true,
+      "questions": 42,
+      "at": [
+        {
+          "k": 1,
+          "success": 0.9285714285714286,
+          "recall": 0.6944444444444444
+        },
+        {
+          "k": 3,
+          "success": 1,
+          "recall": 0.9253968253968256
+        },
+        {
+          "k": 5,
+          "success": 1,
+          "recall": 0.9313492063492065
+        },
+        {
+          "k": 10,
+          "success": 1,
+          "recall": 0.9857142857142857
+        }
+      ],
+      "mrr": 0.9642857142857143,
+      "time_ms": {
+        "median": 1364,
+        "longest": 3270
+      },
+      "results": [
+        {
+          "id": "fact-cpi-2011-inflation",
+          "type": "fact",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "cpi-2011-04",
+              "page": 1,
+              "rank": 1
+            }
+          ],
+          "time_ms": 1311
+        },
+        {
+          "id": "fact-cpi-2011-fuel-charge",
+          "type": "fact",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "cpi-2011-04",
+              "page": 2,
+              "rank": 1
+            }
+          ],
+          "time_ms": 1099
+        },
+        {
+          "id": "fact-cpi-2007-tomatoes",
+          "type": "fact",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "cpi-2007-08",
+              "page": 1,
+              "rank": 1
+            },
+            {
+              "document": "cpi-2007-08",
+              "page": 3,
+              "rank": 2
+            }
+          ],
+          "time_ms": 1671
+        },
+        {
+          "id": "fact-cpi-2007-base",
+          "type": "fact",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "cpi-2007-08",
+              "page": 2,
+              "rank": 1
+            },
+            {
+              "document": "cpi-2007-08",
+              "page": 4,
+              "rank": 2
+            }
+          ],
+          "time_ms": 1169
+        },
+        {
+          "id": "fact-cpi-2023-zones",
+          "type": "fact",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "cpi-2023-10",
+              "page": 1,
+              "rank": 1
+            }
+          ],
+          "time_ms": 1591
+        },
+        {
+          "id": "fact-cpi-2023-petrol",
+          "type": "fact",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "cpi-2023-10",
+              "page": 3,
+              "rank": 1
+            }
+          ],
+          "time_ms": 1572
+        },
+        {
+          "id": "fact-ppi-2018-sugar",
+          "type": "fact",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "ppi-2018-q1",
+              "page": 3,
+              "rank": 1
+            }
+          ],
+          "time_ms": 1275
+        },
+        {
+          "id": "fact-ppi-2019-wood",
+          "type": "fact",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "ppi-2019-q1",
+              "page": 1,
+              "rank": 1
+            }
+          ],
+          "time_ms": 1332
+        },
+        {
+          "id": "fact-cipi-2021-overall",
+          "type": "fact",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "cipi-2021-q2",
+              "page": 1,
+              "rank": 2
+            },
+            {
+              "document": "cipi-2021-q2",
+              "page": 4,
+              "rank": 1
+            }
+          ],
+          "time_ms": 1115
+        },
+        {
+          "id": "fact-cipi-2021-dbm-weight",
+          "type": "fact",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "cipi-2021-q2",
+              "page": 3,
+              "rank": 1
+            }
+          ],
+          "time_ms": 1390
+        },
+        {
+          "id": "fact-bop-2024-exports",
+          "type": "fact",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "bop-2024-q1",
+              "page": 3,
+              "rank": 1
+            }
+          ],
+          "time_ms": 1977
+        },
+        {
+          "id": "fact-bop-2024-vessels",
+          "type": "fact",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "bop-2024-q1",
+              "page": 4,
+              "rank": 1
+            }
+          ],
+          "time_ms": 1911
+        },
+        {
+          "id": "fact-labour-2019-unemployment",
+          "type": "fact",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "labour-2019-q1",
+              "page": 4,
+              "rank": 1
+            },
+            {
+              "document": "labour-2019-q1",
+              "page": 7,
+              "rank": 6
+            }
+          ],
+          "time_ms": 3270
+        },
+        {
+          "id": "fact-labour-2019-sample",
+          "type": "fact",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "labour-2019-q1",
+              "page": 10,
+              "rank": 1
+            }
+          ],
+          "time_ms": 1087
+        },
+        {
+          "id": "fact-gdp-2008-growth",
+          "type": "fact",
+          "first_rank": 2,
+          "pages": [
+            {
+              "document": "gdp-2008-q2",
+              "page": 2,
+              "rank": 2
+            },
+            {
+              "document": "gdp-2008-q2",
+              "page": 3,
+              "rank": 2
+            }
+          ],
+          "time_ms": 1579
+        },
+        {
+          "id": "fact-gdp-2008-electricity",
+          "type": "fact",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "gdp-2008-q2",
+              "page": 4,
+              "rank": 1
+            }
+          ],
+          "time_ms": 1628
+        },
+        {
+          "id": "fact-gcp-2021-nairobi",
+          "type": "fact",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "gcp-2021",
+              "page": 13,
+              "rank": 1
+            },
+            {
+              "document": "gcp-2021",
+              "page": 22,
+              "rank": 6
+            },
+            {
+              "document": "gcp-2021",
+              "page": 23,
+              "rank": 3
+            }
+          ],
+          "time_ms": 1653
+        },
+        {
+          "id": "fact-lei-2008-tbill",
+          "type": "fact",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "lei-2008-05",
+              "page": 5,
+              "rank": 1
+            }
+          ],
+          "time_ms": 1329
+        },
+        {
+          "id": "fact-lei-2008-visitors",
+          "type": "fact",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "lei-2008-05",
+              "page": 8,
+              "rank": 1
+            },
+            {
+              "document": "lei-2008-05",
+              "page": 42,
+              "rank": 2
+            }
+          ],
+          "time_ms": 1419
+        },
+        {
+          "id": "fact-county-wards",
+          "type": "fact",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "county-west-pokot-2015",
+              "page": 18,
+              "rank": 1
+            }
+          ],
+          "time_ms": 1501
+        },
+        {
+          "id": "fact-county-beds",
+          "type": "fact",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "county-west-pokot-2015",
+              "page": 51,
+              "rank": 1
+            }
+          ],
+          "time_ms": 1403
+        },
+        {
+          "id": "fact-poverty-2019-rate",
+          "type": "fact",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "poverty-2019",
+              "page": 15,
+              "rank": 1
+            },
+            {
+              "document": "poverty-2019",
+              "page": 38,
+              "rank": 2
+            }
+          ],
+          "time_ms": 1242
+        },
+        {
+          "id": "fact-poverty-2019-lines",
+          "type": "fact",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "poverty-2019",
+              "page": 32,
+              "rank": 1
+            }
+          ],
+          "time_ms": 1111
+        },
+        {
+          "id": "reason-labour-youth",
+          "type": "reasoning",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "labour-2019-q1",
+              "page": 7,
+              "rank": 1
+            },
+            {
+              "document": "labour-2019-q1",
+              "page": 8,
+              "rank": 1
+            }
+          ],
+          "time_ms": 1033
+        },
+        {
+          "id": "reason-labour-longterm-share",
+          "type": "reasoning",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "labour-2019-q1",
+              "page": 4,
+              "rank": 1
+            },
+            {
+              "document": "labour-2019-q1",
+              "page": 7,
+              "rank": 2
+            },
+            {
+              "document": "labour-2019-q1",
+              "page": 8,
+              "rank": 2
+            }
+          ],
+          "time_ms": 1852
+        },
+        {
+          "id": "reason-cpi-2011-transport",
+          "type": "reasoning",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "cpi-2011-04",
+              "page": 1,
+              "rank": 2
+            },
+            {
+              "document": "cpi-2011-04",
+              "page": 2,
+              "rank": 1
+            }
+          ],
+          "time_ms": 1395
+        },
+        {
+          "id": "reason-cpi-2023-weight",
+          "type": "reasoning",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "cpi-2023-10",
+              "page": 1,
+              "rank": 1
+            },
+            {
+              "document": "cpi-2023-10",
+              "page": 2,
+              "rank": 1
+            }
+          ],
+          "time_ms": 1222
+        },
+        {
+          "id": "reason-gdp-2008-negative",
+          "type": "reasoning",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "gdp-2008-q2",
+              "page": 2,
+              "rank": 1
+            },
+            {
+              "document": "gdp-2008-q2",
+              "page": 4,
+              "rank": 2
+            }
+          ],
+          "time_ms": 1148
+        },
+        {
+          "id": "reason-gcp-2021-top5-growth",
+          "type": "reasoning",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "gcp-2021",
+              "page": 17,
+              "rank": 1
+            }
+          ],
+          "time_ms": 1308
+        },
+        {
+          "id": "reason-bop-2024-tea",
+          "type": "reasoning",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "bop-2024-q1",
+              "page": 3,
+              "rank": 1
+            }
+          ],
+          "time_ms": 1427
+        },
+        {
+          "id": "reason-ppi-2018-sugar-food",
+          "type": "reasoning",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "ppi-2018-q1",
+              "page": 2,
+              "rank": 2
+            },
+            {
+              "document": "ppi-2018-q1",
+              "page": 3,
+              "rank": 1
+            }
+          ],
+          "time_ms": 975
+        },
+        {
+          "id": "reason-lei-2008-coffee-tea",
+          "type": "reasoning",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "lei-2008-05",
+              "page": 6,
+              "rank": 1
+            }
+          ],
+          "time_ms": 1320
+        },
+        {
+          "id": "reason-poverty-west-pokot",
+          "type": "reasoning",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "poverty-2019",
+              "page": 15,
+              "rank": 2
+            },
+            {
+              "document": "poverty-2019",
+              "page": 55,
+              "rank": 1
+            }
+          ],
+          "time_ms": 1209
+        },
+        {
+          "id": "reason-county-beds-sublocations",
+          "type": "reasoning",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "county-west-pokot-2015",
+              "page": 18,
+              "rank": 2
+            },
+            {
+              "document": "county-west-pokot-2015",
+              "page": 51,
+              "rank": 1
+            }
+          ],
+          "time_ms": 1032
+        },
+        {
+          "id": "reason-cipi-2021-building-civil",
+          "type": "reasoning",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "cipi-2021-q2",
+              "page": 1,
+              "rank": 1
+            },
+            {
+              "document": "cipi-2021-q2",
+              "page": 2,
+              "rank": 1
+            },
+            {
+              "document": "cipi-2021-q2",
+              "page": 3,
+              "rank": 2
+            }
+          ],
+          "time_ms": 1322
+        },
+        {
+          "id": "sum-cpi-base",
+          "type": "summary",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "cpi-2007-08",
+              "page": 2,
+              "rank": 3
+            },
+            {
+              "document": "cpi-2007-08",
+              "page": 4,
+              "rank": 1
+            },
+            {
+              "document": "cpi-2023-10",
+              "page": 1,
+              "rank": 2
+            }
+          ],
+          "time_ms": 1554
+        },
+        {
+          "id": "sum-inflation-three",
+          "type": "summary",
+          "first_rank": 2,
+          "pages": [
+            {
+              "document": "cpi-2007-08",
+              "page": 1,
+              "rank": 3
+            },
+            {
+              "document": "cpi-2007-08",
+              "page": 3,
+              "rank": 4
+            },
+            {
+              "document": "cpi-2011-04",
+              "page": 1,
+              "rank": 2
+            },
+            {
+              "document": "cpi-2023-10",
+              "page": 1,
+              "rank": 7
+            }
+          ],
+          "time_ms": 1896
+        },
+        {
+          "id": "sum-ppi-2018-2019",
+          "type": "summary",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "ppi-2018-q1",
+              "page": 1,
+              "rank": 6
+            },
+            {
+              "document": "ppi-2019-q1",
+              "page": 1,
+              "rank": 1
+            },
+            {
+              "document": "ppi-2019-q1",
+              "page": 2,
+              "rank": 1
+            }
+          ],
+          "time_ms": 2303
+        },
+        {
+          "id": "sum-post-election-2008",
+          "type": "summary",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "gdp-2008-q2",
+              "page": 2,
+              "rank": 1
+            },
+            {
+              "document": "lei-2008-05",
+              "page": 8,
+              "rank": 2
+            }
+          ],
+          "time_ms": 1373
+        },
+        {
+          "id": "sum-west-pokot",
+          "type": "summary",
+          "first_rank": 2,
+          "pages": [
+            {
+              "document": "gcp-2021",
+              "page": 17,
+              "rank": 8
+            },
+            {
+              "document": "gcp-2021",
+              "page": 22,
+              "rank": 0
+            },
+            {
+              "document": "poverty-2019",
+              "page": 15,
+              "rank": 0
+            },
+            {
+              "document": "poverty-2019",
+              "page": 44,
+              "rank": 2
+            },
+            {
+              "document": "poverty-2019",
+              "page": 55,
+              "rank": 0
+            }
+          ],
+          "time_ms": 1364
+        },
+        {
+          "id": "sum-tea",
+          "type": "summary",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "gdp-2008-q2",
+              "page": 3,
+              "rank": 6
+            },
+            {
+              "document": "lei-2008-05",
+              "page": 6,
+              "rank": 1
+            },
+            {
+              "document": "bop-2024-q1",
+              "page": 3,
+              "rank": 10
+            }
+          ],
+          "time_ms": 1015
+        },
+        {
+          "id": "sum-cpi-transport",
+          "type": "summary",
+          "first_rank": 1,
+          "pages": [
+            {
+              "document": "cpi-2011-04",
+              "page": 2,
+              "rank": 1
+            },
+            {
+              "document": "cpi-2023-10",
+              "page": 2,
+              "rank": 2
+            }
+          ],
+          "time_ms": 1140
+        }
+      ]
+    }
+  ],
+  "not_measured": 6
+}
