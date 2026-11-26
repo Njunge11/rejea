@@ -16,6 +16,7 @@ import (
 	"github.com/hashicorp/go-retryablehttp"
 
 	"github.com/Njunge11/rejea/internal/anthropic"
+	"github.com/Njunge11/rejea/internal/bedrock"
 	"github.com/Njunge11/rejea/internal/chat"
 	"github.com/Njunge11/rejea/internal/cloudflare"
 	"github.com/Njunge11/rejea/internal/cohere"
@@ -51,6 +52,9 @@ type Config struct {
 	// Anthropic is the Anthropic API. Its API key is the key of the model
 	// that uses it.
 	Anthropic anthropic.Config
+	// Bedrock is the Bedrock Runtime API of AWS. Its API key is the key of
+	// the model that uses it.
+	Bedrock bedrock.Config
 }
 
 // cloudflareWith gives the settings of the Cloudflare account with the key
@@ -123,6 +127,14 @@ func Embedder(cfg Config, counter embed.Counter, logger *slog.Logger) (*embed.Cl
 // its default model and the function that makes its adapter. A new
 // provider is one new entry.
 var rerankers = map[string]entry[rerank.Provider]{
+	"bedrock": {
+		model: "cohere.rerank-v3-5:0",
+		open: func(cfg Config, client *http.Client) (rerank.Provider, error) {
+			account := cfg.Bedrock
+			account.APIKey = cfg.Rerank.APIKey
+			return bedrock.NewReranker(account, client)
+		},
+	},
 	"cloudflare": {
 		model: "@cf/baai/bge-reranker-base",
 		open: func(cfg Config, client *http.Client) (rerank.Provider, error) {

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/Njunge11/rejea/internal/anthropic"
+	"github.com/Njunge11/rejea/internal/bedrock"
 	"github.com/Njunge11/rejea/internal/chat"
 	"github.com/Njunge11/rejea/internal/chunk"
 	"github.com/Njunge11/rejea/internal/cloudflare"
@@ -237,6 +238,11 @@ func Load(getenv func(string) string) (Config, error) {
 			},
 			Anthropic: anthropic.Config{
 				BaseURL: env.text("REJEA_ANTHROPIC_API_URL", "https://api.anthropic.com"),
+			},
+			Bedrock: bedrock.Config{
+				// The address has the AWS Region of the model.
+				BaseURL:        env.text("REJEA_BEDROCK_API_URL", "https://bedrock-runtime.us-east-1.amazonaws.com"),
+				MaxAnswerBytes: maxAnswerBytes,
 			},
 		},
 		Server: server.Config{

@@ -61,7 +61,7 @@ linters:
         # An adapter of a model provider knows the port that it serves.
         adapters:
           list-mode: lax
-          files: ["**/internal/cloudflare/*.go", "**/internal/cohere/*.go", "**/internal/anthropic/*.go", "!$test"]
+          files: ["**/internal/cloudflare/*.go", "**/internal/cohere/*.go", "**/internal/anthropic/*.go", "**/internal/bedrock/*.go", "!$test"]
           allow:
             - "github.com/Njunge11/rejea/internal/embed"
             - "github.com/Njunge11/rejea/internal/rerank"
@@ -80,6 +80,7 @@ linters:
             - "github.com/Njunge11/rejea/internal/cloudflare"
             - "github.com/Njunge11/rejea/internal/cohere"
             - "github.com/Njunge11/rejea/internal/anthropic"
+            - "github.com/Njunge11/rejea/internal/bedrock"
           deny:
             - {pkg: "github.com/Njunge11/rejea/internal/", desc: "the package models connects a port and its adapter, and uses no other part of the service"}
     forbidigo:

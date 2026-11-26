@@ -172,7 +172,7 @@ The reranker is an optional second stage of the search (retrieve, then rerank). 
 
 The reranker is off by default. `REJEA_RERANK=true` turns it on for each search, and the field `rerank` of a request turns it on or off for that search.
 
-There are two providers. The numbers are for the 42 questions of the test set that have an answer, measured with chunks of 4,096 tokens at most (17 documents, 330 chunks):
+There are three providers: Cohere, Cloudflare, and Amazon Bedrock (it has the Cohere models of AWS). The numbers are for the 42 questions of the test set that have an answer, measured with chunks of 4,096 tokens at most (17 documents, 330 chunks):
 
 | Reranker | It reads | First result correct | Correct in the first 5 | Median time of a search |
 | --- | --- | --- | --- | --- |
@@ -199,6 +199,29 @@ REJEA_RERANK=true
 The model is `rerank-v5.0-fast`. `REJEA_RERANK_MODEL=rerank-v5.0-pro` selects the larger model. Cohere bills for the tokens: 0.02 US dollars for one million tokens of the fast model and 0.05 for the pro model. One search with 50 chunks was 80,000 tokens on average in the measurement.
 
 When the service starts, it sends one small request to the model. With a wrong key or a wrong name of the model, it stops and names the setting to correct. When the model gives no answer to a search, or the account is at its rate limit, the answer is 503 and tells the client to try again or to send `"rerank": false`.
+
+To use Cohere Rerank 3.5 on Amazon Bedrock (an AWS account, with no Cohere account):
+
+1. Make an Amazon Bedrock API key in the Bedrock console of your AWS account, in "API keys". A short-term key is valid for 12 hours at most, and only in its AWS Region. A long-term key is valid until the date that you give.
+2. Put these lines in `.env`, then run `make up`:
+
+```sh
+REJEA_RERANK_PROVIDER=bedrock
+REJEA_RERANK_API_KEY=...
+REJEA_RERANK=true
+```
+
+The model is `cohere.rerank-v3-5:0` in the AWS Region `us-east-1`. For a different Region, change the address: `REJEA_BEDROCK_API_URL=https://bedrock-runtime.us-west-2.amazonaws.com`. The model reads 4,096 tokens of the question and one chunk together, so keep `REJEA_CHUNK_MAX_TOKENS` below that. AWS bills for each search (0.002 US dollars for a search with 100 chunks or fewer), and the log has no number of tokens.
+
+Measured on 2026-11-26 with the 42 questions and chunks of 1,024 tokens (13 documents, 662 chunks):
+
+| Reranker | First result correct | Correct in the first 5 | Median time of a search |
+| --- | --- | --- | --- |
+| None | 36 | 39 | 0.5 s |
+| Cohere `rerank-v5.0-fast` | 39 | 42 | 1.3 s |
+| Bedrock `cohere.rerank-v3-5:0` | 38 | 42 | 2.3 s |
+
+One search with the Bedrock model is about 1 second slower. But a trial key of Cohere permits 10 searches each minute, and the AWS account of the measurement permits 250: 42 searches, 8 at the same time, were complete in 11 seconds.
 
 To use the model of Cloudflare, give `REJEA_RERANK_API_KEY` the token of `REJEA_EMBED_API_KEY`: the provider `cloudflare` uses `CLOUDFLARE_ACCOUNT_ID` also.
 
