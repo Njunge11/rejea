@@ -4,13 +4,14 @@ Run on 2026-11-26.
 
 ## What is tested
 
-Rejea's parser reads one PDF page at a time. The test measures three things:
+Rejea's parser reads one PDF page at a time. The test measures four things:
 
 1. The speed today, with one page in work at a time.
 2. The speed when Rejea has more pages in work at the same time, at several sizes, to find the size where more gives no gain.
 3. The same runs with the parser on an NVIDIA GPU machine at AWS, in place of the Mac.
+4. The two other jobs of Rejea (file and index) at several numbers of workers.
 
-**Result in short.** On the Mac, more pages at the same time give no gain: 13 seconds for a page at each size. On a GPU machine, 1 page at a time needs 3.9 seconds for a page, and 8 at the same time need 1.3 seconds. Most of the gain is there at 4.
+**Result in short.** On the Mac, more pages at the same time give no gain: 13 seconds for a page at each size. On a GPU machine, 1 page at a time needs 3.9 seconds for a page, and 8 at the same time need 1.3 seconds. Most of the gain is there at 4. The index job also gains from more workers (148 seconds with 1, 43 with 8). The file job needs almost no time at each size.
 
 "Pages in work at the same time" is a setting of Rejea: `REJEA_PARSE_WORKERS`. Each parse worker takes one document and sends its pages to the parser one after the other. So N workers have N pages in work at the same time. The default is 1.
 
@@ -60,6 +61,28 @@ On the machine, the vision model ran in the vLLM server, which reads many blocks
 
 The second run with 1 worker shows the spread between two equal runs: 180 and 171 seconds (5%).
 
+### The file job and the index job (on the Mac, no parser)
+
+Rejea has two more jobs for each document, and each has its own worker setting. Neither uses the parser, so both were measured on the Mac alone.
+
+**The file job** downloads the file from the file store, makes its hash and checks for a duplicate. Setting: `REJEA_FILE_WORKERS`. Input: 100 PDFs (80 MB), selected at random with the seed 20261126: [`files-100.json`](parse-speed/files-100.json). All 100 were confirmed at the same moment, so that all jobs waited together. Script: [`scripts/file_run.sh`](parse-speed/scripts/file_run.sh).
+
+| File workers | Time for the 100 documents | Work time of one job (median) |
+| --- | --- | --- |
+| 1 | 10.0 s | 0.004 s |
+| 2 | 5.0 s | 0.004 s |
+| 4 | 2.4 s | 0.006 s |
+| 8 | 1.6 s (second run: 1.9 s) | 0.006 s |
+
+**The index job** cuts the saved blocks of a document into chunks, gets a vector for each chunk from Cloudflare, and saves them. Setting: `REJEA_INDEX_WORKERS`. Input: a copy of a database with 17 parsed documents (292 pages, 676 chunks). The command `rejea reindex --all` put all 17 in the queue before the service started. Script: [`scripts/index_run.sh`](parse-speed/scripts/index_run.sh).
+
+| Index workers | Time for the 17 documents | Time of one job (median) | Longest job | Failed documents |
+| --- | --- | --- | --- | --- |
+| 1 | 148 s | 1.4 s | 54 s | 0 |
+| 2 | 91 s | 2.1 s | 44 s | 0 |
+| 4 | 54 s | 2.7 s | 43 s | 0 |
+| 8 | 43 s | 3.1 s | 40 s | 0 |
+
 ## What the results mean
 
 - **On the Mac, parallel work gives nothing.** 1, 2 and 4 workers all need 600 seconds. The model server on the Mac reads one block at a time, so more pages only wait longer.
@@ -67,6 +90,10 @@ The second run with 1 worker shows the spread between two equal runs: 180 and 17
 - **Each doubling gives less.** The parse time drops by 44% from 1 to 2 workers, by 28% from 2 to 4, and by 18% from 4 to 8. At the same time, the time for one page grows from 2.8 to 7.2 seconds. So 4 workers give most of the gain, and 8 give a little more.
 - **The GPU machine is faster also with no parallel work.** With 1 worker it needs 3.9 seconds for a page, against 13.3 on the Mac.
 - **The setting works as it is.** `REJEA_PARSE_WORKERS` and `REJEA_PARSER_URL` gave these numbers with no code change in Rejea.
+
+- **The file job is not a bottleneck.** Its work needs 0.004 seconds for a document. The 10 seconds with 1 worker are wait time in the queue: the queue library (River 0.51.2) gives jobs to the workers one time each 100 ms, one job for each free worker. More workers remove that wait, but the full gain is 8 seconds for 100 documents.
+- **The index job gains from workers up to the size of the largest document.** The time drops by 39% from 1 to 2 workers, by 41% from 2 to 4, and by 20% from 4 to 8. One document is one job. At 8 workers the run needs 43 seconds, and its largest document alone needs 40. More workers cannot go below that.
+- **Cloudflare refused no request at 8 index workers.** Each of the 17 jobs passed at its first attempt.
 
 Calculated from these numbers, not measured: 1,750 pages need 6.3 hours on the Mac, and 37 minutes on this GPU machine with 8 workers (about 1 US dollar with the setup time).
 
@@ -77,11 +104,15 @@ Calculated from these numbers, not measured: 1,750 pages need 6.3 hours on the M
 - A parse worker takes one document. With 8 documents, more than 8 workers cannot be tested. The machine also had 8 copies of the parse API, so 8 pages in work is its maximum.
 - The test does not show which part limits the GPU machine at 8 workers: the GPU, its processor, or the upload of the page pictures from the Mac.
 - The output is compared by counts only. Blocks and tables agree in all runs. The word count on the Mac is 20,959 in each run. On the GPU machine it changes from run to run, between 20,859 and 21,090 (0.6% around the Mac's count). The texts were not compared word by word.
+- The three jobs were measured one at a time. No run had the file, parse and index workers all at 8 together.
+- The index test has 17 documents. It does not show if Cloudflare refuses requests when 8 workers run for a long time.
 - One GPU type. The official setup of the PaddleOCR team for high load (Triton) was not used, because it needs Docker on the machine.
 
 ## Details for a repeat of the test
 
 - **Local runs.** `parser/start.sh` starts the parser. Then, for each size: `scripts/speed_run.sh "<label>" <parse workers> http://host.docker.internal:8112 <pdf dir> files.json scripts/upload.py results.jsonl`.
+- **File job runs.** `scripts/file_run.sh "<label>" <file workers> <pdf dir> files-100.json results-file.jsonl`. Results: [`results-file.jsonl`](parse-speed/results-file.jsonl).
+- **Index job runs.** `scripts/index_run.sh "<label>" <index workers> results-index.jsonl`. Results: [`results-index.jsonl`](parse-speed/results-index.jsonl).
 - **AWS runs.** A SageMaker training job with the image `pytorch-training:2.6.0-gpu-py312-cu126-ubuntu22.04-sagemaker` runs `scripts/gpu_parser.sh` and stops itself after 1 hour at most (`MaxRuntimeInSeconds` 3600). The script prints the address of the tunnel. The parser URL of a run is `<address>/<secret>/`.
 - **Software on the GPU machine.** vLLM 0.21.0 with `--max-num-batched-tokens 16384 --no-enable-prefix-caching --mm-processor-cache-gb 0 --gpu-memory-utilization 0.45` (the recipe of vLLM for this model), PaddleOCR 3.7.0, PaddleX 3.7.2, paddlepaddle-gpu 3.2.1. The pipeline settings are the default `PaddleOCR-VL-1.6.yaml` with the backend `vllm-server`.
 - **Setup time of the GPU machine:** 11 minutes from its start to the first page.

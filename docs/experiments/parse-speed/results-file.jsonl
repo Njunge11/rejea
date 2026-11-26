@@ -1,0 +1,5 @@
+{"label" : "file, 1 workers", "file_workers" : 1, "documents" : 100, "file_seconds" : 10.03, "job_seconds_median" : 0.004, "job_seconds_max" : 0.028, "jobs_by_state" : { "completed" : 100 }, "duplicates" : 0}
+{"label" : "file, 2 workers", "file_workers" : 2, "documents" : 100, "file_seconds" : 4.96, "job_seconds_median" : 0.004, "job_seconds_max" : 0.023, "jobs_by_state" : { "completed" : 100 }, "duplicates" : 0}
+{"label" : "file, 4 workers", "file_workers" : 4, "documents" : 100, "file_seconds" : 2.44, "job_seconds_median" : 0.006, "job_seconds_max" : 0.028, "jobs_by_state" : { "completed" : 100 }, "duplicates" : 0}
+{"label" : "file, 8 workers", "file_workers" : 8, "documents" : 100, "file_seconds" : 1.58, "job_seconds_median" : 0.006, "job_seconds_max" : 0.039, "jobs_by_state" : { "completed" : 100 }, "duplicates" : 0}
+{"label" : "file, 8 workers, second run", "file_workers" : 8, "documents" : 100, "file_seconds" : 1.93, "job_seconds_median" : 0.007, "job_seconds_max" : 0.035, "jobs_by_state" : { "completed" : 100 }, "duplicates" : 0}
