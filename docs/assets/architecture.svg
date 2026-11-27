@@ -1,110 +1,106 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 884" width="960" height="884" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" role="img" aria-label="Architecture of Rejea. Ingestion: the client gets an upload URL from the HTTP API and sends the file to the file store. Three workers, each with its own job queue, hash the file, turn it into blocks with the parser, and make chunks with vectors from the embedding model, saved in PostgreSQL. Search: the question becomes a vector, PostgreSQL runs a keyword search and a vector search, and an optional reranker orders the results.">
-<defs><pattern id="dots" width="16" height="16" patternUnits="userSpaceOnUse"><circle cx="8" cy="8" r="0.9" fill="#d4d4d8"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto"><path d="M1,1 L9,5 L1,9" fill="none" stroke="#a1a1aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
-<rect width="960" height="884" fill="#ffffff"/>
-<rect x="16" y="16" width="928" height="480" rx="14" fill="#fafafa" stroke="#e4e4e7"/><rect x="16" y="16" width="928" height="480" rx="14" fill="url(#dots)"/>
-<text x="40" y="48" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" font-weight="600" letter-spacing="1.5" fill="#71717a">INGESTION</text>
-<rect x="700" y="38" width="10" height="10" rx="2.5" fill="#4f46e5"/><rect x="800" y="38" width="10" height="10" rx="2.5" fill="#059669"/>
-<text x="716" y="47" text-anchor="start" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5" fill="#71717a">Rejea</text>
-<text x="816" y="47" text-anchor="start" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5" fill="#71717a">dependency</text>
-<rect x="64" y="72" width="180" height="60" rx="10" fill="#ffffff" stroke="#d4d4d8"/>
-<rect x="78" y="88.0" width="28" height="28" rx="7" fill="#f4f4f5"/><rect x="87" y="97.0" width="10" height="10" rx="2.5" fill="#52525b"/>
-<text x="118" y="99.0" font-size="14" font-weight="600" fill="#18181b">Client</text>
-<text x="118" y="116.0" font-size="11.5" fill="#71717a">application or AI agent</text>
-<rect x="330" y="72" width="180" height="60" rx="10" fill="#ffffff" stroke="#d4d4d8"/>
-<rect x="344" y="88.0" width="28" height="28" rx="7" fill="#eef2ff"/><rect x="353" y="97.0" width="10" height="10" rx="2.5" fill="#4f46e5"/>
-<text x="384" y="99.0" font-size="14" font-weight="600" fill="#18181b">HTTP API</text>
-<text x="384" y="116.0" font-size="11.5" fill="#71717a">upload URL, confirm</text>
-<path d="M244,102 L330,102" fill="none" stroke="#a1a1aa" stroke-width="1.25" marker-end="url(#arrow)"/><circle cx="244" cy="102" r="2.5" fill="#a1a1aa"/>
-<text x="287" y="92" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5" fill="#71717a">POST</text>
-<rect x="64" y="216" width="190" height="96" rx="10" fill="#ffffff" stroke="#d4d4d8"/>
-<rect x="78" y="261.0" width="28" height="28" rx="7" fill="#eef2ff"/><rect x="87" y="270.0" width="10" height="10" rx="2.5" fill="#4f46e5"/>
-<text x="118" y="272.0" font-size="14" font-weight="600" fill="#18181b">File worker</text>
-<text x="118" y="289.0" font-size="11.5" fill="#71717a">hash, duplicates, unpack</text>
-<rect x="78" y="228" width="88" height="20" rx="10" fill="#fef3c7" stroke="#fcd34d"/>
-<text x="122.0" y="242" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5" fill="#92400e">file queue</text>
-<rect x="300" y="216" width="190" height="96" rx="10" fill="#ffffff" stroke="#d4d4d8"/>
-<rect x="314" y="261.0" width="28" height="28" rx="7" fill="#eef2ff"/><rect x="323" y="270.0" width="10" height="10" rx="2.5" fill="#4f46e5"/>
-<text x="354" y="272.0" font-size="14" font-weight="600" fill="#18181b">Parse worker</text>
-<text x="354" y="289.0" font-size="11.5" fill="#71717a">file to blocks</text>
-<rect x="314" y="228" width="95" height="20" rx="10" fill="#fef3c7" stroke="#fcd34d"/>
-<text x="361.5" y="242" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5" fill="#92400e">parse queue</text>
-<rect x="536" y="216" width="190" height="96" rx="10" fill="#ffffff" stroke="#d4d4d8"/>
-<rect x="550" y="261.0" width="28" height="28" rx="7" fill="#eef2ff"/><rect x="559" y="270.0" width="10" height="10" rx="2.5" fill="#4f46e5"/>
-<text x="590" y="272.0" font-size="14" font-weight="600" fill="#18181b">Index worker</text>
-<text x="590" y="289.0" font-size="11.5" fill="#71717a">chunks and vectors</text>
-<rect x="550" y="228" width="95" height="20" rx="10" fill="#fef3c7" stroke="#fcd34d"/>
-<text x="597.5" y="242" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5" fill="#92400e">index queue</text>
-<path d="M420,132 L420,174 L159,174 L159,216" fill="none" stroke="#a1a1aa" stroke-width="1.25" marker-end="url(#arrow)"/><circle cx="420" cy="132" r="2.5" fill="#a1a1aa"/>
-<text x="290" y="166" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5" fill="#71717a">job</text>
-<path d="M254,264 L300,264" fill="none" stroke="#a1a1aa" stroke-width="1.25" marker-end="url(#arrow)"/><circle cx="254" cy="264" r="2.5" fill="#a1a1aa"/>
-<path d="M490,264 L536,264" fill="none" stroke="#a1a1aa" stroke-width="1.25" marker-end="url(#arrow)"/><circle cx="490" cy="264" r="2.5" fill="#a1a1aa"/>
-<rect x="772" y="232" width="148" height="64" rx="10" fill="#ffffff" stroke="#d4d4d8"/>
-<rect x="786" y="250.0" width="28" height="28" rx="7" fill="#ecfdf5"/><rect x="795" y="259.0" width="10" height="10" rx="2.5" fill="#059669"/>
-<text x="826" y="261.0" font-size="14" font-weight="600" fill="#18181b">PostgreSQL</text>
-<text x="826" y="278.0" font-size="11.5" fill="#71717a">chunks, vectors</text>
-<path d="M726,264 L772,264" fill="none" stroke="#a1a1aa" stroke-width="1.25" marker-end="url(#arrow)"/><circle cx="726" cy="264" r="2.5" fill="#a1a1aa"/>
-<rect x="64" y="396" width="190" height="64" rx="10" fill="#ffffff" stroke="#d4d4d8"/>
-<rect x="78" y="414.0" width="28" height="28" rx="7" fill="#ecfdf5"/><rect x="87" y="423.0" width="10" height="10" rx="2.5" fill="#059669"/>
-<text x="118" y="425.0" font-size="14" font-weight="600" fill="#18181b">File store</text>
-<text x="118" y="442.0" font-size="11.5" fill="#71717a">S3 API</text>
-<rect x="300" y="396" width="190" height="64" rx="10" fill="#ffffff" stroke="#d4d4d8"/>
-<rect x="314" y="414.0" width="28" height="28" rx="7" fill="#ecfdf5"/><rect x="323" y="423.0" width="10" height="10" rx="2.5" fill="#059669"/>
-<text x="354" y="425.0" font-size="14" font-weight="600" fill="#18181b">Parser</text>
-<text x="354" y="442.0" font-size="11.5" fill="#71717a">PaddleOCR-VL</text>
-<rect x="536" y="396" width="190" height="64" rx="10" fill="#ffffff" stroke="#d4d4d8"/>
-<rect x="550" y="414.0" width="28" height="28" rx="7" fill="#ecfdf5"/><rect x="559" y="423.0" width="10" height="10" rx="2.5" fill="#059669"/>
-<text x="590" y="425.0" font-size="14" font-weight="600" fill="#18181b">Embedding model</text>
-<text x="590" y="442.0" font-size="11.5" fill="#71717a">Qwen3-Embedding-0.6B</text>
-<path d="M159,312 L159,396" fill="none" stroke="#a1a1aa" stroke-width="1.25" marker-end="url(#arrow)"/><circle cx="159" cy="312" r="2.5" fill="#a1a1aa"/>
-<text x="169" y="358" text-anchor="start" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5" fill="#71717a">reads the file</text>
-<path d="M395,312 L395,396" fill="none" stroke="#a1a1aa" stroke-width="1.25" marker-end="url(#arrow)"/><circle cx="395" cy="312" r="2.5" fill="#a1a1aa"/>
-<text x="405" y="358" text-anchor="start" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5" fill="#71717a">PDF pages</text>
-<path d="M631,312 L631,396" fill="none" stroke="#a1a1aa" stroke-width="1.25" marker-end="url(#arrow)"/><circle cx="631" cy="312" r="2.5" fill="#a1a1aa"/>
-<text x="641" y="358" text-anchor="start" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5" fill="#71717a">chunk text</text>
-<path d="M64,102 L40,102 L40,428 L64,428" fill="none" stroke="#a1a1aa" stroke-width="1.25" marker-end="url(#arrow)"/><circle cx="64" cy="102" r="2.5" fill="#a1a1aa"/>
-<text x="48" y="190" text-anchor="start" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5" fill="#71717a">PUT file</text>
-<rect x="16" y="512" width="928" height="356" rx="14" fill="#fafafa" stroke="#e4e4e7"/><rect x="16" y="512" width="928" height="356" rx="14" fill="url(#dots)"/>
-<text x="40" y="544" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" font-weight="600" letter-spacing="1.5" fill="#71717a">SEARCH</text>
-<rect x="64" y="568" width="180" height="60" rx="10" fill="#ffffff" stroke="#d4d4d8"/>
-<rect x="78" y="584.0" width="28" height="28" rx="7" fill="#f4f4f5"/><rect x="87" y="593.0" width="10" height="10" rx="2.5" fill="#52525b"/>
-<text x="118" y="595.0" font-size="14" font-weight="600" fill="#18181b">Client</text>
-<text x="118" y="612.0" font-size="11.5" fill="#71717a">application or AI agent</text>
-<rect x="330" y="568" width="180" height="60" rx="10" fill="#ffffff" stroke="#d4d4d8"/>
-<rect x="344" y="584.0" width="28" height="28" rx="7" fill="#eef2ff"/><rect x="353" y="593.0" width="10" height="10" rx="2.5" fill="#4f46e5"/>
-<text x="384" y="595.0" font-size="14" font-weight="600" fill="#18181b">HTTP API</text>
-<text x="384" y="612.0" font-size="11.5" fill="#71717a">POST /search</text>
-<path d="M244,598 L330,598" fill="none" stroke="#a1a1aa" stroke-width="1.25" marker-end="url(#arrow)"/><circle cx="244" cy="598" r="2.5" fill="#a1a1aa"/>
-<text x="287" y="588" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5" fill="#71717a">question</text>
-<rect x="64" y="688" width="190" height="64" rx="10" fill="#ffffff" stroke="#d4d4d8"/>
-<rect x="78" y="706.0" width="28" height="28" rx="7" fill="#eef2ff"/><rect x="87" y="715.0" width="10" height="10" rx="2.5" fill="#4f46e5"/>
-<text x="118" y="717.0" font-size="14" font-weight="600" fill="#18181b">Embed the question</text>
-<text x="118" y="734.0" font-size="11.5" fill="#71717a">question to vector</text>
-<rect x="300" y="688" width="190" height="64" rx="10" fill="#ffffff" stroke="#d4d4d8"/>
-<rect x="314" y="706.0" width="28" height="28" rx="7" fill="#eef2ff"/><rect x="323" y="715.0" width="10" height="10" rx="2.5" fill="#4f46e5"/>
-<text x="354" y="717.0" font-size="14" font-weight="600" fill="#18181b">Search</text>
-<text x="354" y="734.0" font-size="11.5" fill="#71717a">keyword + vector</text>
-<rect x="536" y="688" width="190" height="64" rx="10" fill="#ffffff" stroke="#d4d4d8" stroke-dasharray="5 4"/>
-<rect x="550" y="706.0" width="28" height="28" rx="7" fill="#eef2ff"/><rect x="559" y="715.0" width="10" height="10" rx="2.5" fill="#4f46e5"/>
-<text x="590" y="717.0" font-size="14" font-weight="600" fill="#18181b">Rerank</text>
-<text x="590" y="734.0" font-size="11.5" fill="#71717a">optional</text>
-<path d="M420,628 L420,658 L159,658 L159,688" fill="none" stroke="#a1a1aa" stroke-width="1.25" marker-end="url(#arrow)"/><circle cx="420" cy="628" r="2.5" fill="#a1a1aa"/>
-<path d="M254,720 L300,720" fill="none" stroke="#a1a1aa" stroke-width="1.25" marker-end="url(#arrow)"/><circle cx="254" cy="720" r="2.5" fill="#a1a1aa"/>
-<path d="M490,720 L536,720" fill="none" stroke="#a1a1aa" stroke-width="1.25" marker-end="url(#arrow)"/><circle cx="490" cy="720" r="2.5" fill="#a1a1aa"/>
-<path d="M726,720 L820,720 L820,598 L510,598" fill="none" stroke="#a1a1aa" stroke-width="1.25" marker-end="url(#arrow)"/><circle cx="726" cy="720" r="2.5" fill="#a1a1aa"/>
-<text x="830" y="664" text-anchor="start" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5" fill="#71717a">results</text>
-<rect x="64" y="792" width="190" height="56" rx="10" fill="#ffffff" stroke="#d4d4d8"/>
-<rect x="78" y="806.0" width="28" height="28" rx="7" fill="#ecfdf5"/><rect x="87" y="815.0" width="10" height="10" rx="2.5" fill="#059669"/>
-<text x="118" y="817.0" font-size="14" font-weight="600" fill="#18181b">Embedding model</text>
-<text x="118" y="834.0" font-size="11.5" fill="#71717a">Qwen3-Embedding-0.6B</text>
-<rect x="300" y="792" width="190" height="56" rx="10" fill="#ffffff" stroke="#d4d4d8"/>
-<rect x="314" y="806.0" width="28" height="28" rx="7" fill="#ecfdf5"/><rect x="323" y="815.0" width="10" height="10" rx="2.5" fill="#059669"/>
-<text x="354" y="817.0" font-size="14" font-weight="600" fill="#18181b">PostgreSQL</text>
-<text x="354" y="834.0" font-size="11.5" fill="#71717a">BM25 + HNSW</text>
-<rect x="536" y="792" width="190" height="56" rx="10" fill="#ffffff" stroke="#d4d4d8" stroke-dasharray="5 4"/>
-<rect x="550" y="806.0" width="28" height="28" rx="7" fill="#ecfdf5"/><rect x="559" y="815.0" width="10" height="10" rx="2.5" fill="#059669"/>
-<text x="590" y="817.0" font-size="14" font-weight="600" fill="#18181b">Reranker</text>
-<text x="590" y="834.0" font-size="11.5" fill="#71717a">Cohere Rerank</text>
-<path d="M159,752 L159,792" fill="none" stroke="#a1a1aa" stroke-width="1.25" marker-end="url(#arrow)"/><circle cx="159" cy="752" r="2.5" fill="#a1a1aa"/>
-<path d="M395,752 L395,792" fill="none" stroke="#a1a1aa" stroke-width="1.25" marker-end="url(#arrow)"/><circle cx="395" cy="752" r="2.5" fill="#a1a1aa"/>
-<path d="M631,752 L631,792" fill="none" stroke="#a1a1aa" stroke-width="1.25" stroke-dasharray="4 4" marker-end="url(#arrow)"/><circle cx="631" cy="752" r="2.5" fill="#a1a1aa"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 856" width="960" height="856" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="Architecture of Rejea. Ingestion: the client gets an upload URL from the HTTP API and sends the file to the file store. Three workers, each with its own job queue, hash the file, turn it into blocks with the parser, and make chunks with vectors from the embedding model, saved in PostgreSQL. Search: the question becomes a vector, PostgreSQL runs a keyword search and a vector search, and an optional reranker orders the results."><defs><pattern id="dots" width="16" height="16" patternUnits="userSpaceOnUse"><circle cx="8" cy="8" r="0.75" fill="#dedee3"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M2,1.5 L8,5 L2,8.5" fill="none" stroke="#b4b4bb" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></marker><filter id="lift" x="-10%" y="-20%" width="120%" height="150%"><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#18181b" flood-opacity="0.05"/></filter></defs><rect y="0" width="960" height="856" fill="#ffffff"/>
+<rect x="16" y="16" width="928" height="404" rx="14" fill="#fafafa" stroke="#ededf0"/><rect x="16" y="16" width="928" height="404" rx="14" fill="url(#dots)"/>
+<text x="56" y="50" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5" font-weight="600" letter-spacing="1.4" fill="#71717a">INGESTION</text>
+<rect x="768" y="42" width="8" height="8" rx="2" fill="#4f46e5"/><rect x="824" y="42" width="8" height="8" rx="2" fill="#059669"/>
+<text x="781" y="50" text-anchor="start" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#71717a">Rejea</text>
+<text x="837" y="50" text-anchor="start" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#71717a">dependency</text>
+<rect x="56" y="76" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" filter="url(#lift)"/>
+<rect x="70" y="94" width="24" height="24" rx="6" fill="#f4f4f5"/><rect x="78" y="102" width="8" height="8" rx="2" fill="#71717a"/>
+<text x="106" y="104" font-size="13.5" font-weight="600" fill="#18181b">Client</text>
+<text x="106" y="120" font-size="11" fill="#71717a">app or AI agent</text>
+<rect x="276" y="76" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" filter="url(#lift)"/>
+<rect x="290" y="94" width="24" height="24" rx="6" fill="#eef2ff"/><rect x="298" y="102" width="8" height="8" rx="2" fill="#4f46e5"/>
+<text x="326" y="104" font-size="13.5" font-weight="600" fill="#18181b">HTTP API</text>
+<text x="326" y="120" font-size="11" fill="#71717a">upload URL, confirm</text>
+<path d="M244,106 L273,106" fill="none" stroke="#b4b4bb" stroke-width="1" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="56" y="200" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" filter="url(#lift)"/>
+<rect x="70" y="218" width="24" height="24" rx="6" fill="#eef2ff"/><rect x="78" y="226" width="8" height="8" rx="2" fill="#4f46e5"/>
+<text x="106" y="228" font-size="13.5" font-weight="600" fill="#18181b">File worker</text>
+<text x="106" y="244" font-size="11" fill="#71717a">hash, dedupe, unpack</text>
+<rect x="146" y="190" width="86" height="20" rx="10" fill="#fffbeb" stroke="#fde68a"/>
+<text x="189.0" y="204" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#92400e">file queue</text>
+<rect x="276" y="200" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" filter="url(#lift)"/>
+<rect x="290" y="218" width="24" height="24" rx="6" fill="#eef2ff"/><rect x="298" y="226" width="8" height="8" rx="2" fill="#4f46e5"/>
+<text x="326" y="228" font-size="13.5" font-weight="600" fill="#18181b">Parse worker</text>
+<text x="326" y="244" font-size="11" fill="#71717a">file to blocks</text>
+<rect x="366" y="190" width="86" height="20" rx="10" fill="#fffbeb" stroke="#fde68a"/>
+<text x="409.0" y="204" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#92400e">parse queue</text>
+<rect x="496" y="200" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" filter="url(#lift)"/>
+<rect x="510" y="218" width="24" height="24" rx="6" fill="#eef2ff"/><rect x="518" y="226" width="8" height="8" rx="2" fill="#4f46e5"/>
+<text x="546" y="228" font-size="13.5" font-weight="600" fill="#18181b">Index worker</text>
+<text x="546" y="244" font-size="11" fill="#71717a">chunks and vectors</text>
+<rect x="586" y="190" width="86" height="20" rx="10" fill="#fffbeb" stroke="#fde68a"/>
+<text x="629.0" y="204" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#92400e">index queue</text>
+<rect x="716" y="200" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" filter="url(#lift)"/>
+<rect x="730" y="218" width="24" height="24" rx="6" fill="#ecfdf5"/><rect x="738" y="226" width="8" height="8" rx="2" fill="#059669"/>
+<text x="766" y="228" font-size="13.5" font-weight="600" fill="#18181b">PostgreSQL</text>
+<text x="766" y="244" font-size="11" fill="#71717a">chunks, vectors</text>
+<path d="M370,136 L370,162 L189,162 L189,187" fill="none" stroke="#b4b4bb" stroke-width="1" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="279.5" y="156" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#71717a">job</text>
+<path d="M244,230 L273,230" fill="none" stroke="#b4b4bb" stroke-width="1" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M464,230 L493,230" fill="none" stroke="#b4b4bb" stroke-width="1" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M684,230 L713,230" fill="none" stroke="#b4b4bb" stroke-width="1" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="56" y="324" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" filter="url(#lift)"/>
+<rect x="70" y="342" width="24" height="24" rx="6" fill="#ecfdf5"/><rect x="78" y="350" width="8" height="8" rx="2" fill="#059669"/>
+<text x="106" y="352" font-size="13.5" font-weight="600" fill="#18181b">File store</text>
+<text x="106" y="368" font-size="11" fill="#71717a">S3 API</text>
+<rect x="276" y="324" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" filter="url(#lift)"/>
+<rect x="290" y="342" width="24" height="24" rx="6" fill="#ecfdf5"/><rect x="298" y="350" width="8" height="8" rx="2" fill="#059669"/>
+<text x="326" y="352" font-size="13.5" font-weight="600" fill="#18181b">Parser</text>
+<text x="326" y="368" font-size="11" fill="#71717a">PaddleOCR-VL</text>
+<rect x="496" y="324" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" filter="url(#lift)"/>
+<rect x="510" y="342" width="24" height="24" rx="6" fill="#ecfdf5"/><rect x="518" y="350" width="8" height="8" rx="2" fill="#059669"/>
+<text x="546" y="352" font-size="13.5" font-weight="600" fill="#18181b">Embedding model</text>
+<text x="546" y="368" font-size="11" fill="#71717a">Qwen3-Embedding</text>
+<path d="M150,260 L150,321" fill="none" stroke="#b4b4bb" stroke-width="1" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="160" y="296" text-anchor="start" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#71717a">reads the file</text>
+<path d="M370,260 L370,321" fill="none" stroke="#b4b4bb" stroke-width="1" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="380" y="296" text-anchor="start" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#71717a">PDF pages</text>
+<path d="M590,260 L590,321" fill="none" stroke="#b4b4bb" stroke-width="1" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="600" y="296" text-anchor="start" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#71717a">chunk text</text>
+<path d="M56,106 L36,106 L36,354 L53,354" fill="none" stroke="#b4b4bb" stroke-width="1" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="44" y="156" text-anchor="start" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#71717a">PUT file</text>
+<rect x="16" y="436" width="928" height="404" rx="14" fill="#fafafa" stroke="#ededf0"/><rect x="16" y="436" width="928" height="404" rx="14" fill="url(#dots)"/>
+<text x="56" y="470" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5" font-weight="600" letter-spacing="1.4" fill="#71717a">SEARCH</text>
+<rect x="56" y="496" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" filter="url(#lift)"/>
+<rect x="70" y="514" width="24" height="24" rx="6" fill="#f4f4f5"/><rect x="78" y="522" width="8" height="8" rx="2" fill="#71717a"/>
+<text x="106" y="524" font-size="13.5" font-weight="600" fill="#18181b">Client</text>
+<text x="106" y="540" font-size="11" fill="#71717a">app or AI agent</text>
+<rect x="276" y="496" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" filter="url(#lift)"/>
+<rect x="290" y="514" width="24" height="24" rx="6" fill="#eef2ff"/><rect x="298" y="522" width="8" height="8" rx="2" fill="#4f46e5"/>
+<text x="326" y="524" font-size="13.5" font-weight="600" fill="#18181b">HTTP API</text>
+<text x="326" y="540" font-size="11" fill="#71717a">POST /search</text>
+<path d="M244,526 L273,526" fill="none" stroke="#b4b4bb" stroke-width="1" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="56" y="620" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" filter="url(#lift)"/>
+<rect x="70" y="638" width="24" height="24" rx="6" fill="#eef2ff"/><rect x="78" y="646" width="8" height="8" rx="2" fill="#4f46e5"/>
+<text x="106" y="648" font-size="13.5" font-weight="600" fill="#18181b">Embed</text>
+<text x="106" y="664" font-size="11" fill="#71717a">question to vector</text>
+<rect x="276" y="620" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" filter="url(#lift)"/>
+<rect x="290" y="638" width="24" height="24" rx="6" fill="#eef2ff"/><rect x="298" y="646" width="8" height="8" rx="2" fill="#4f46e5"/>
+<text x="326" y="648" font-size="13.5" font-weight="600" fill="#18181b">Search</text>
+<text x="326" y="664" font-size="11" fill="#71717a">keyword + vector</text>
+<rect x="496" y="620" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" stroke-dasharray="4 3"/>
+<rect x="510" y="638" width="24" height="24" rx="6" fill="#eef2ff"/><rect x="518" y="646" width="8" height="8" rx="2" fill="#4f46e5"/>
+<text x="546" y="648" font-size="13.5" font-weight="600" fill="#18181b">Rerank</text>
+<text x="546" y="664" font-size="11" fill="#71717a">optional</text>
+<path d="M370,556 L370,582 L150,582 L150,617" fill="none" stroke="#b4b4bb" stroke-width="1" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M244,650 L273,650" fill="none" stroke="#b4b4bb" stroke-width="1" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M464,650 L493,650" fill="none" stroke="#b4b4bb" stroke-width="1" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M684,650 L810,650 L810,526 L467,526" fill="none" stroke="#b4b4bb" stroke-width="1" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="820" y="582" text-anchor="start" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#71717a">results</text>
+<rect x="56" y="744" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" filter="url(#lift)"/>
+<rect x="70" y="762" width="24" height="24" rx="6" fill="#ecfdf5"/><rect x="78" y="770" width="8" height="8" rx="2" fill="#059669"/>
+<text x="106" y="772" font-size="13.5" font-weight="600" fill="#18181b">Embedding model</text>
+<text x="106" y="788" font-size="11" fill="#71717a">Qwen3-Embedding</text>
+<rect x="276" y="744" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" filter="url(#lift)"/>
+<rect x="290" y="762" width="24" height="24" rx="6" fill="#ecfdf5"/><rect x="298" y="770" width="8" height="8" rx="2" fill="#059669"/>
+<text x="326" y="772" font-size="13.5" font-weight="600" fill="#18181b">PostgreSQL</text>
+<text x="326" y="788" font-size="11" fill="#71717a">BM25 + HNSW</text>
+<rect x="496" y="744" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" stroke-dasharray="4 3"/>
+<rect x="510" y="762" width="24" height="24" rx="6" fill="#ecfdf5"/><rect x="518" y="770" width="8" height="8" rx="2" fill="#059669"/>
+<text x="546" y="772" font-size="13.5" font-weight="600" fill="#18181b">Reranker</text>
+<text x="546" y="788" font-size="11" fill="#71717a">Cohere Rerank</text>
+<path d="M150,680 L150,741" fill="none" stroke="#b4b4bb" stroke-width="1" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M370,680 L370,741" fill="none" stroke="#b4b4bb" stroke-width="1" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M590,680 L590,741" fill="none" stroke="#b4b4bb" stroke-width="1" stroke-dasharray="4 3" stroke-linejoin="round" marker-end="url(#arrow)"/>
 </svg>
