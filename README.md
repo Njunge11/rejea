@@ -2,7 +2,7 @@
 
 # Rejea
 
-Rejea is a document retrieval engine. It ingests PDF, Word and Markdown files, indexes them in PostgreSQL, and serves hybrid search (BM25 and vector) through an HTTP API.
+Rejea is a document retrieval engine. It ingests PDF, Word and Markdown files, indexes them in PostgreSQL, and serves hybrid search (BM25 and vector) through a HTTP API.
 
 It is the retrieval stage of a RAG system: an application or an AI agent sends a question, and gets the chunks that hold the answer, each with its document, heading path and pages.
 
