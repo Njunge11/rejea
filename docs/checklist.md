@@ -237,8 +237,8 @@ These points are not in the plan. Each one is settled before its item starts.
   - Each model (embedding, reranker, chat) has four settings of the same form: `REJEA_<MODEL>_PROVIDER`, `REJEA_<MODEL>_MODEL`, `REJEA_<MODEL>_API_KEY` and `REJEA_<MODEL>_API_URL`. With no value, the model and the address are those of the provider.
   - Removed: `CLOUDFLARE_ACCOUNT_ID` (the account ID is in the address of Cloudflare) and the four addresses with a provider name. `REJEA_COHERE_MAX_TEXT_TOKENS` is now `REJEA_RERANK_MAX_TEXT_TOKENS`. A settings file with an old name stops the start with the correction for each line.
   - `REJEA_PARSER_URL` selects the parser with `make up` also: no value is the parser of the machine, an address is a parser on another machine.
-  - `.env.example`: 21 lines with a value to set or to select, in sections by purpose. Each other setting is a comment that shows its default (80 defaults).
-  - Proof by runs on 2026-11-27: each default in a comment is the default of the code (the two sets of values load the same settings). The three models answer at the start of the service with the new settings (Cloudflare, Cohere, Anthropic), and the reranker of Cloudflare also. Old names, no address, an address with no account and a wrong account ID each give their correction.
+  - `.env.example`: each of the 101 settings is a line with its default, in sections by purpose (models, parser, `make up`, `make serve`, speed, logs, limits). No setting is a comment.
+  - Proof by runs on 2026-11-27: each default in the file is the default of the code (the file and an empty environment load the same settings). The three models answer at the start of the service with the new settings (Cloudflare, Cohere, Anthropic), and the reranker of Cloudflare also. Old names, no address, an address with no account and a wrong account ID each give their correction.
 
 ## Chunk and index (plan step 4)
 
