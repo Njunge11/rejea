@@ -44,19 +44,19 @@ func advice(err error) string {
 	case errors.Is(err, storage.ErrEndpoint):
 		return `Correct REJEA_S3_ENDPOINT and REJEA_S3_PUBLIC_ENDPOINT in .env. For AWS S3, remove the two.`
 	case errors.Is(err, storage.ErrNoCredentials):
-		return `Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in .env to the two keys of the file store: the values for the store of compose.yaml are in .env.example. For AWS S3, set AWS_PROFILE or give the machine a role: see "File storage" in the README.`
+		return `Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in .env to the two keys of the file store: the values for the store of compose.yaml are in .env.example. For AWS S3, set AWS_PROFILE or give the machine a role: see docs/aws-storage.md.`
 	case errors.Is(err, storage.ErrNoAnswer):
 		return `Start the file store with "make db-up". If your store is at a different address, change REJEA_S3_ENDPOINT in .env. For AWS S3, examine the network connection.`
 	case errors.Is(err, storage.ErrRefused):
-		return `Give AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in .env the two keys of the file store: for the store of compose.yaml, the values of REJEA_STORAGE_ACCESS_KEY and REJEA_STORAGE_SECRET_KEY. For AWS S3, the role needs s3:ListBucket on the bucket: see "File storage" in the README.`
+		return `Give AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in .env the two keys of the file store: for the store of compose.yaml, the values of REJEA_STORAGE_ACCESS_KEY and REJEA_STORAGE_SECRET_KEY. For AWS S3, the role needs s3:ListBucket on the bucket: see docs/aws-storage.md.`
 	case errors.Is(err, storage.ErrNoBucket):
 		return `Give REJEA_S3_BUCKET in .env the name of a bucket that the store has. The bucket of the store of compose.yaml has the name "rejea".`
 	case errors.Is(err, storage.ErrViewSettings):
-		return `Set REJEA_CLOUDFRONT_DOMAIN, REJEA_CLOUDFRONT_KEY_PAIR_ID and REJEA_CLOUDFRONT_PRIVATE_KEY_FILE in .env, or remove the three: with no values, the URL of a page image goes to the bucket. See "Pages of a document" in the README.`
+		return `Set REJEA_CLOUDFRONT_DOMAIN, REJEA_CLOUDFRONT_KEY_PAIR_ID and REJEA_CLOUDFRONT_PRIVATE_KEY_FILE in .env, or remove the three: with no values, the URL of a page image goes to the bucket. See docs/aws-storage.md.`
 	case errors.Is(err, storage.ErrViewDomain):
 		return `Give REJEA_CLOUDFRONT_DOMAIN in .env the domain name of the distribution only, with no "https://" and no path.`
 	case errors.Is(err, storage.ErrViewKey):
-		return `Give REJEA_CLOUDFRONT_PRIVATE_KEY_FILE in .env the path of the private key of the public key in REJEA_CLOUDFRONT_KEY_PAIR_ID: an RSA key of 2,048 bits in a PEM file. To make a key: "openssl genrsa -out private_key.pem 2048". See "Pages of a document" in the README.`
+		return `Give REJEA_CLOUDFRONT_PRIVATE_KEY_FILE in .env the path of the private key of the public key in REJEA_CLOUDFRONT_KEY_PAIR_ID: an RSA key of 2,048 bits in a PEM file. To make a key: "openssl genrsa -out private_key.pem 2048". See docs/aws-storage.md.`
 	case errors.Is(err, storage.ErrViewNoAnswer):
 		return `Give REJEA_CLOUDFRONT_DOMAIN in .env the domain name of your distribution: the CloudFront console shows it as "Distribution domain name".`
 	case errors.Is(err, storage.ErrViewKeyPair):

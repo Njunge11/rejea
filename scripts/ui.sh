@@ -38,7 +38,7 @@ esac
 # cyan to blue.
 ui_banner() {
 	if [ "$ui_terminal" = false ] || [ "$ui_unicode" = false ]; then
-		echo "Rejea: RAG engine for PDF and Word documents"
+		echo "Rejea: retrieval engine for RAG"
 		return 0
 	fi
 	ui_row=0
@@ -62,7 +62,7 @@ ui_banner() {
 ██║  ██║███████╗╚█████╔╝███████╗██║  ██║
 ╚═╝  ╚═╝╚══════╝ ╚════╝ ╚══════╝╚═╝  ╚═╝
 EOF
-	echo "  ${ui_dim}RAG engine for PDF and Word documents${ui_reset}"
+	echo "  ${ui_dim}Retrieval engine for RAG: PDF, Word and Markdown documents${ui_reset}"
 }
 
 # ui_time <seconds> prints a time, such as "1m 12s".
