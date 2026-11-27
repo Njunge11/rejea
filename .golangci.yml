@@ -6,8 +6,10 @@ formatters:
 
 linters:
   enable:
+    - bodyclose
     - depguard
     - forbidigo
+    - sqlclosecheck
   settings:
     # The layers: entry point (server, ingest) -> service (documents) ->
     # repository (database). Each rule names what a layer cannot import.
