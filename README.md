@@ -37,12 +37,6 @@ It is the retrieval stage of a RAG system. An application or an AI agent sends a
 
 The method and all numbers: [search quality](docs/search-quality.md) and [the reranker and graph experiment](docs/experiments/reranker-and-graph.md).
 
-## Limits
-
-- The PDF parser runs on a Mac with Apple Silicon, or on a GPU machine that you give in `REJEA_PARSER_URL`. On Linux with no parser, Word and Markdown files go through, and a PDF waits. Windows is not supported.
-- The API has no authentication. Put it behind your own gateway.
-- The API has no endpoint to delete a document.
-
 ## Set up
 
 | Requirement | Needed for | Notes |
@@ -304,6 +298,9 @@ make check               # lint, vet, build, tests, Docker checks, the question 
 
 ## To do
 
+- **Parser on Linux and Windows:** the PDF parser runs only on a Mac with Apple Silicon, or on a GPU machine that you give in `REJEA_PARSER_URL`. On Linux with no parser, a PDF waits. Windows is not supported.
+- **Authentication:** the API has none. Until then, put it behind your own gateway.
+- **Delete a document:** the API has no endpoint for it.
 - **Deployment:** make Rejea easy to deploy on a server.
 - **Automated tests:** add regression tests as the code grows. Today, each change is proved by a run through the service. Formal verification is an option to examine.
 - **Larger measurements:** measure the search with more documents and more questions.
