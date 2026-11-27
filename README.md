@@ -126,7 +126,7 @@ curl -s http://localhost:8080/search \
 | Job queues | [River](https://riverqueue.com), in PostgreSQL |
 | Database | PostgreSQL 17, `pgvector`, `pg_textsearch` |
 | File store | [SeaweedFS](https://github.com/seaweedfs/seaweedfs), or AWS S3 |
-| Parser | PaddleOCR-VL-1.6 on MLX. It runs outside Docker: a container gets no GPU on a Mac. |
+| Parser | PaddleOCR-VL-1.6. On a Mac: on MLX, outside Docker, because a container gets no GPU there. On an NVIDIA GPU: on vLLM ([script](docs/experiments/parse-speed/scripts/gpu_parser.sh)). |
 | Word and Markdown readers | [office_oxide](https://github.com/yfedoseev/office_oxide), [goldmark](https://github.com/yuin/goldmark) |
 | Embedding model | Qwen3-Embedding-0.6B on Cloudflare Workers AI, 1,024 dimensions |
 | Reranker | Cohere Rerank, direct or on Amazon Bedrock |
