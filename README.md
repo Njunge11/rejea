@@ -9,9 +9,9 @@
 
 # Rejea
 
-**Rejea is an open source retrieval engine for retrieval-augmented generation (RAG).** It ingests PDF, Word and Markdown documents, indexes them in PostgreSQL, and serves hybrid search through an HTTP API.
+Rejea is a document retrieval engine. It ingests PDF, Word and Markdown files, indexes them in PostgreSQL, and serves hybrid search (BM25 and vector) through an HTTP API.
 
-An application or an AI agent sends a question to `POST /search`. Rejea returns the chunks of the documents that most probably hold the answer, each with its document, its heading path and its pages. The application writes the answer from those chunks and cites them. Rejea is the retrieval layer: it does not write answers.
+It is the retrieval stage of a RAG system. An application or an AI agent sends a question to `POST /search` and gets the chunks that most probably hold the answer, each with its document, its heading path and its pages. The application writes the answer and cites those sources.
 
 ## Features
 
@@ -26,7 +26,7 @@ An application or an AI agent sends a question to `POST /search`. Rejea returns 
 | Reranker | Optional second stage with a cross-encoder model: Cohere, Amazon Bedrock or Cloudflare. |
 | Filters | Search in a set of documents, or in the documents with given metadata. |
 | Sources | Each result has its document, pages, heading path and block IDs. An endpoint gives the page images for a viewer. |
-| Providers | Each model is behind one interface. A change of provider is a change of settings. |
+| Providers | A change of model provider is a change of settings, not of code. |
 
 ## Search quality
 
@@ -72,7 +72,7 @@ Start Rejea:
 make up
 ```
 
-`make up` examines the machine, names each thing that is missing with its correction, and then starts all parts. The first start takes 5 to 20 minutes for the downloads. A later start takes 30 seconds.
+`make up` names each thing that is missing on the machine, with its correction, and then starts all parts. The first start takes 5 to 20 minutes for the downloads. A later start takes 30 seconds.
 
 The service is at `http://localhost:8080`, and `GET /healthz` answers `ok`.
 
@@ -199,24 +199,24 @@ flowchart LR
 
 **Search.** The embedding model turns the question into a vector. The database runs the keyword search and the vector search, and the service merges the two lists. The reranker, if it is on, puts the best chunks in a better order.
 
-| Component | Technology | What it does |
-| --- | --- | --- |
-| HTTP API | Go | Takes the requests. It makes upload URLs, and it gives statuses, page images and search results. |
-| Job queue | [River](https://riverqueue.com), in PostgreSQL | Holds the jobs of the three workers, with their new attempts. |
-| File worker | Go | Reads the file from the store, makes its SHA-256 hash, finds a duplicate, and unpacks an archive. |
-| Parse worker | Go | Turns a file into blocks. A PDF: it renders each page and sends the image to the parser. Word and Markdown: it reads the file itself. |
-| Index worker | Go | Cuts the blocks into chunks, gets the vector of each chunk, and saves them in one transaction. |
-| Parser | PaddleOCR-VL-1.6, on MLX | Reads a page image and gives the blocks with their boxes. It runs outside Docker, because a container gets no GPU on a Mac. |
-| Database | PostgreSQL 17 with `pgvector` and `pg_textsearch` | Holds the documents, the blocks, the chunks with their vectors, and the job queue. It runs the two searches. |
-| File store | [SeaweedFS](https://github.com/seaweedfs/seaweedfs), or AWS S3 | Holds the uploaded files and the page images. |
-| Embedding model | Qwen3-Embedding-0.6B on Cloudflare Workers AI | Turns a chunk or a question into a vector of 1,024 numbers. |
-| Reranker | Cohere Rerank, also on Amazon Bedrock | Reads the question with each chunk and gives a score. |
+| Component | What it does |
+| --- | --- |
+| HTTP API | Makes upload URLs, and gives statuses, page images and search results. |
+| File worker | Reads the file from the store, makes its SHA-256 hash, finds a duplicate, and unpacks an archive. |
+| Parse worker | Turns a file into blocks. For a PDF, it renders each page and sends the image to the parser. It reads Word and Markdown files itself. |
+| Index worker | Cuts the blocks into chunks, gets the vector of each chunk, and saves them in one transaction. |
+| Job queue | [River](https://riverqueue.com), in PostgreSQL. It holds the jobs of the three workers, with their new attempts. |
+| Parser | PaddleOCR-VL-1.6 on MLX. It reads a page image and gives the blocks with their boxes. It runs outside Docker, because a container gets no GPU on a Mac. |
+| Database | PostgreSQL 17 with `pgvector` and `pg_textsearch`. It holds the documents, the blocks, the chunks with their vectors, and the job queue. It runs the two searches. |
+| File store | [SeaweedFS](https://github.com/seaweedfs/seaweedfs), or AWS S3. It holds the uploaded files and the page images. |
+| Embedding model | Qwen3-Embedding-0.6B on Cloudflare Workers AI. It turns a chunk or a question into a vector of 1,024 numbers. |
+| Reranker | Cohere Rerank, direct or on Amazon Bedrock. It reads the question with each chunk and gives a score. |
 
 More detail: [file formats, chunks and the index](docs/formats.md).
 
 ## Settings
 
-All settings are in [.env.example](.env.example), each with its default and one line that tells what it is. Copy the file to `.env` and change the values there. `make` and Compose read `.env`. A setting with no value uses its default.
+All settings are in [.env.example](.env.example), each with its default. Copy the file to `.env` and change the values there. A setting with no value uses its default.
 
 | Section of the file | Settings |
 | --- | --- |
@@ -226,9 +226,9 @@ All settings are in [.env.example](.env.example), each with its default and one 
 | 4. `make serve` only | The database, the file store and the paths, for a service that runs outside Docker. `make up` does not read this section. |
 | 5. Speed | The number of jobs at the same time. |
 | 6. Logs | The level and the format. |
-| 7. Limits | The limits of sizes, numbers and times. The defaults are correct for most uses. |
+| 7. Limits | The limits of sizes, numbers and times. |
 
-The settings that you set or change most:
+The settings that most installations change:
 
 | Setting | Default | What it is |
 | --- | --- | --- |
@@ -301,6 +301,13 @@ make check               # lint, vet, build, tests, Docker checks, the question 
 
 - Use `make build`, `make serve` and `make test`, not the bare `go` commands: they tell the Go compiler where the tokenizers library is.
 - Commit messages follow [Conventional Commits](https://www.conventionalcommits.org). A Git hook and CI check each message.
+
+## To do
+
+- **Deployment:** make Rejea easy to deploy on a server.
+- **Automated tests:** add regression tests as the code grows. Today, each change is proved by a run through the service. Formal verification is an option to examine.
+- **Larger measurements:** measure the search with more documents and more questions.
+- **Performance:** make the ingestion and the search faster.
 
 ## License
 
