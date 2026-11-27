@@ -1,8 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 856" width="960" height="856" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="Architecture of Rejea. Ingestion: the client gets an upload URL from the HTTP API and sends the file to the file store. Three workers, each with its own job queue, hash the file, turn it into blocks with the parser, and make chunks with vectors from the embedding model, saved in PostgreSQL. Search: the question becomes a vector, PostgreSQL runs a keyword search and a vector search, and an optional reranker orders the results."><defs><pattern id="dots" width="16" height="16" patternUnits="userSpaceOnUse"><circle cx="8" cy="8" r="0.75" fill="#dedee3"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M2,1.5 L8,5 L2,8.5" fill="none" stroke="#b4b4bb" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></marker><filter id="lift" x="-10%" y="-20%" width="120%" height="150%"><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#18181b" flood-opacity="0.05"/></filter></defs><rect y="0" width="960" height="856" fill="#ffffff"/>
 <rect x="16" y="16" width="928" height="404" rx="14" fill="#fafafa" stroke="#ededf0"/><rect x="16" y="16" width="928" height="404" rx="14" fill="url(#dots)"/>
 <text x="56" y="50" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5" font-weight="600" letter-spacing="1.4" fill="#71717a">INGESTION</text>
-<rect x="768" y="42" width="8" height="8" rx="2" fill="#4f46e5"/><rect x="824" y="42" width="8" height="8" rx="2" fill="#059669"/>
-<text x="781" y="50" text-anchor="start" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#71717a">Rejea</text>
+<rect x="712" y="42" width="8" height="8" rx="2" fill="#4f46e5"/><rect x="768" y="42" width="8" height="8" rx="2" fill="#06b6d4"/><rect x="824" y="42" width="8" height="8" rx="2" fill="#059669"/>
+<text x="725" y="50" text-anchor="start" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#71717a">Rejea</text>
+<text x="781" y="50" text-anchor="start" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#71717a">queue</text>
 <text x="837" y="50" text-anchor="start" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#71717a">dependency</text>
 <rect x="56" y="76" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" filter="url(#lift)"/>
 <rect x="70" y="94" width="24" height="24" rx="6" fill="#f4f4f5"/><rect x="78" y="102" width="8" height="8" rx="2" fill="#71717a"/>
@@ -17,20 +18,20 @@
 <rect x="70" y="218" width="24" height="24" rx="6" fill="#eef2ff"/><rect x="78" y="226" width="8" height="8" rx="2" fill="#4f46e5"/>
 <text x="106" y="228" font-size="13.5" font-weight="600" fill="#18181b">File worker</text>
 <text x="106" y="244" font-size="11" fill="#71717a">hash, dedupe, unpack</text>
-<rect x="146" y="190" width="86" height="20" rx="10" fill="#ffffff" stroke="#d4d4d8"/>
-<text x="189.0" y="204" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#52525b">file queue</text>
+<rect x="146" y="190" width="86" height="20" rx="10" fill="#ecfeff" stroke="#67e8f9"/>
+<text x="189.0" y="204" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" font-weight="600" fill="#0e7490">file queue</text>
 <rect x="276" y="200" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" filter="url(#lift)"/>
 <rect x="290" y="218" width="24" height="24" rx="6" fill="#eef2ff"/><rect x="298" y="226" width="8" height="8" rx="2" fill="#4f46e5"/>
 <text x="326" y="228" font-size="13.5" font-weight="600" fill="#18181b">Parse worker</text>
 <text x="326" y="244" font-size="11" fill="#71717a">file to blocks</text>
-<rect x="366" y="190" width="86" height="20" rx="10" fill="#ffffff" stroke="#d4d4d8"/>
-<text x="409.0" y="204" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#52525b">parse queue</text>
+<rect x="366" y="190" width="86" height="20" rx="10" fill="#ecfeff" stroke="#67e8f9"/>
+<text x="409.0" y="204" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" font-weight="600" fill="#0e7490">parse queue</text>
 <rect x="496" y="200" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" filter="url(#lift)"/>
 <rect x="510" y="218" width="24" height="24" rx="6" fill="#eef2ff"/><rect x="518" y="226" width="8" height="8" rx="2" fill="#4f46e5"/>
 <text x="546" y="228" font-size="13.5" font-weight="600" fill="#18181b">Index worker</text>
 <text x="546" y="244" font-size="11" fill="#71717a">chunks and vectors</text>
-<rect x="586" y="190" width="86" height="20" rx="10" fill="#ffffff" stroke="#d4d4d8"/>
-<text x="629.0" y="204" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#52525b">index queue</text>
+<rect x="586" y="190" width="86" height="20" rx="10" fill="#ecfeff" stroke="#67e8f9"/>
+<text x="629.0" y="204" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" font-weight="600" fill="#0e7490">index queue</text>
 <rect x="716" y="200" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" filter="url(#lift)"/>
 <rect x="730" y="218" width="24" height="24" rx="6" fill="#ecfdf5"/><rect x="738" y="226" width="8" height="8" rx="2" fill="#059669"/>
 <text x="766" y="228" font-size="13.5" font-weight="600" fill="#18181b">PostgreSQL</text>
