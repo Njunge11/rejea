@@ -154,44 +154,78 @@ curl -s http://localhost:8080/search \
 
 ## Architecture
 
+### Ingestion
+
+Each stage has its own job queue and its own worker. A stage that fails runs again, and a stage that is complete does not run again.
+
 ```mermaid
-flowchart LR
-    client(["Application or AI agent"])
-
-    subgraph service["Rejea service (Go)"]
-        direction TB
-        api["HTTP API"]
-        fileworker["File worker<br/>hash, duplicate check, unpack"]
-        parseworker["Parse worker<br/>file to blocks"]
-        indexworker["Index worker<br/>blocks to chunks and vectors"]
-        search["Search<br/>keyword + vector, merged"]
+sequenceDiagram
+    autonumber
+    actor Client
+    box Rejea service
+        participant API as HTTP API
+        participant FW as File worker
+        participant PW as Parse worker
+        participant IW as Index worker
     end
+    participant Q as Job queues (PostgreSQL)
+    participant S as File store
+    participant P as Parser
+    participant E as Embedding model
 
-    store[("File store<br/>S3 API")]
-    db[("PostgreSQL<br/>documents, chunks,<br/>vectors, job queue")]
-    parser["Parser<br/>PaddleOCR-VL"]
-    embed["Embedding model"]
-    rerank["Reranker<br/>(optional)"]
+    Client->>API: POST /documents
+    API-->>Client: upload URL
+    Client->>S: PUT the file
+    Client->>API: POST /documents/{id}/confirm
+    API->>Q: add a job to the file queue
 
-    client -- "1 ask for an upload URL" --> api
-    client -- "2 send the file" --> store
-    client -- "3 confirm" --> api
-    api -- "job" --> fileworker
-    fileworker --> parseworker --> indexworker
-    fileworker -- "read the file" --> store
-    parseworker -- "PDF page image" --> parser
-    indexworker -- "chunk text" --> embed
-    indexworker -- "chunks, vectors" --> db
-    client -- "4 POST /search" --> api
-    api --> search
-    search -- "question" --> embed
-    search -- "2 searches" --> db
-    search -- "best chunks" --> rerank
+    Q->>FW: file job
+    FW->>S: read the file
+    Note over FW: SHA-256 hash, duplicate check,<br/>unpack an archive
+    FW->>Q: add a job to the parse queue
+
+    Q->>PW: parse job
+    PW->>P: each page image of a PDF
+    P-->>PW: blocks with their boxes
+    Note over PW: Word and Markdown:<br/>the worker reads the file itself
+    PW->>Q: add a job to the index queue
+
+    Q->>IW: index job
+    Note over IW: cut the blocks into chunks
+    IW->>E: text of each chunk
+    E-->>IW: vectors
+    Note over IW: save the chunks and vectors in PostgreSQL.<br/>The document is "indexed".
 ```
 
-**Ingestion.** The client sends the file directly to the file store, then confirms. Three workers then do the work in order, each from its own job queue. A stage that fails runs again, and a stage that is complete does not run again.
+### Search
 
-**Search.** The embedding model turns the question into a vector. The database runs the keyword search and the vector search, and the service merges the two lists. The reranker, if it is on, puts the best chunks in a better order.
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Client
+    participant API as HTTP API
+    participant E as Embedding model
+    participant DB as PostgreSQL
+    participant R as Reranker (optional)
+
+    Client->>API: POST /search
+    API->>E: the question
+    E-->>API: vector
+    par
+        API->>DB: keyword search (BM25)
+    and
+        API->>DB: vector search (HNSW)
+    end
+    DB-->>API: two lists of chunks
+    Note over API: merge the lists<br/>(reciprocal rank fusion)
+    opt the reranker is on
+        API->>R: the question and the best chunks
+        R-->>API: a score for each chunk
+    end
+    API-->>Client: results with document, pages, heading path
+```
+
+### Components
 
 | Component | What it does |
 | --- | --- |
