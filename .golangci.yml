@@ -47,7 +47,7 @@ linters:
             - {pkg: "net/http$", desc: "the database package does no HTTP work"}
         parts:
           list-mode: lax
-          files: ["**/internal/storage/*.go", "**/internal/queue/*.go", "**/internal/pdf/*.go", "**/internal/parse/*.go", "**/internal/tokens/*.go", "**/internal/embed/*.go", "**/internal/rerank/*.go", "**/internal/chat/*.go", "**/internal/provider/*.go", "**/internal/testset/*.go", "!$test"]
+          files: ["**/internal/storage/*.go", "**/internal/queue/*.go", "**/internal/pdf/*.go", "**/internal/parse/*.go", "**/internal/tokens/*.go", "**/internal/embed/*.go", "**/internal/rerank/*.go", "**/internal/provider/*.go", "**/internal/testset/*.go", "!$test"]
           deny:
             - {pkg: "github.com/Njunge11/rejea/internal/", desc: "this package is a base part: it uses no other part of the service"}
         # The chunker is a base part that knows the types of a block.
@@ -61,11 +61,10 @@ linters:
         # An adapter of a model provider knows the port that it serves.
         adapters:
           list-mode: lax
-          files: ["**/internal/cloudflare/*.go", "**/internal/cohere/*.go", "**/internal/anthropic/*.go", "**/internal/bedrock/*.go", "!$test"]
+          files: ["**/internal/cloudflare/*.go", "**/internal/cohere/*.go", "**/internal/bedrock/*.go", "!$test"]
           allow:
             - "github.com/Njunge11/rejea/internal/embed"
             - "github.com/Njunge11/rejea/internal/rerank"
-            - "github.com/Njunge11/rejea/internal/chat"
             - "github.com/Njunge11/rejea/internal/provider"
           deny:
             - {pkg: "github.com/Njunge11/rejea/internal/", desc: "an adapter uses the port of its model, and no other part of the service"}
@@ -76,10 +75,8 @@ linters:
           allow:
             - "github.com/Njunge11/rejea/internal/embed"
             - "github.com/Njunge11/rejea/internal/rerank"
-            - "github.com/Njunge11/rejea/internal/chat"
             - "github.com/Njunge11/rejea/internal/cloudflare"
             - "github.com/Njunge11/rejea/internal/cohere"
-            - "github.com/Njunge11/rejea/internal/anthropic"
             - "github.com/Njunge11/rejea/internal/bedrock"
           deny:
             - {pkg: "github.com/Njunge11/rejea/internal/", desc: "the package models connects a port and its adapter, and uses no other part of the service"}

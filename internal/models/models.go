@@ -15,9 +15,7 @@ import (
 
 	"github.com/hashicorp/go-retryablehttp"
 
-	"github.com/Njunge11/rejea/internal/anthropic"
 	"github.com/Njunge11/rejea/internal/bedrock"
-	"github.com/Njunge11/rejea/internal/chat"
 	"github.com/Njunge11/rejea/internal/cloudflare"
 	"github.com/Njunge11/rejea/internal/cohere"
 	"github.com/Njunge11/rejea/internal/embed"
@@ -33,8 +31,6 @@ type Config struct {
 	Embed embed.Config
 	// Rerank is the reranker model.
 	Rerank rerank.Config
-	// Chat is the chat model.
-	Chat chat.Config
 	// MaxAttempts is the largest number of attempts for one request to a
 	// provider. The attempts after the first are for a request that got no
 	// answer, or an answer that tells to try again.
@@ -76,6 +72,12 @@ func adapter[P any](registry map[string]entry[P], kind, name string, cfg Config,
 	}
 	return found.open(cfg, client)
 }
+
+// The provider of each model when the settings name none.
+const (
+	DefaultEmbedProvider  = "cloudflare"
+	DefaultRerankProvider = "cloudflare"
+)
 
 // embedders is the registry of the embed port: the name of each provider,
 // its default model and the function that makes its adapter. A new
@@ -175,44 +177,6 @@ func Reranker(cfg Config, logger *slog.Logger) (*rerank.Client, error) {
 		return nil, err
 	}
 	return rerank.New(provider, logger, cfg.Rerank)
-}
-
-// chats is the registry of the chat port: the name of each provider, its
-// default model and the function that makes its adapter. A new provider is
-// one new entry.
-var chats = map[string]entry[chat.Provider]{
-	"anthropic": {
-		model: "claude-sonnet-5-5",
-		url:   "https://api.anthropic.com",
-		open: func(cfg Config, client *http.Client) (chat.Provider, error) {
-			return anthropic.NewChat(anthropic.Config{APIKey: cfg.Chat.APIKey, BaseURL: cfg.Chat.APIURL}, client)
-		},
-	},
-}
-
-// ChatProviders gives the names of the providers of the chat port.
-func ChatProviders() []string {
-	return slices.Sorted(maps.Keys(chats))
-}
-
-// ChatModel gives the default model of a provider of the chat port.
-func ChatModel(provider string) string {
-	return chats[provider].model
-}
-
-// ChatURL gives the default address of a provider of the chat port.
-func ChatURL(provider string) string {
-	return chats[provider].url
-}
-
-// Chat makes the chat client that the settings name. It sends no request.
-// With no credentials for the provider, its error is chat.ErrNotSet.
-func Chat(cfg Config, logger *slog.Logger) (*chat.Client, error) {
-	provider, err := adapter(chats, "chat", cfg.Chat.Provider, cfg, logger)
-	if err != nil {
-		return nil, err
-	}
-	return chat.New(provider, logger, cfg.Chat)
 }
 
 // httpClient makes the HTTP client that each adapter uses. It makes the new

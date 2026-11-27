@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"syscall"
 
-	"github.com/Njunge11/rejea/internal/chat"
 	"github.com/Njunge11/rejea/internal/config"
 	"github.com/Njunge11/rejea/internal/database"
 	"github.com/Njunge11/rejea/internal/embed"
@@ -81,10 +80,6 @@ func advice(err error) string {
 		return `Give REJEA_RERANK_MODEL in .env the name of a reranker model of the provider in REJEA_RERANK_PROVIDER, or remove the setting: each provider has a default model. For the provider bedrock, the model must also be available in the AWS Region of the address in REJEA_RERANK_API_URL. For the provider cloudflare, that address must end with /accounts/<account ID>/ai/run. See "Reranker" in the README.`
 	case errors.Is(err, rerank.ErrInput), errors.Is(err, rerank.ErrAnswer):
 		return `Give REJEA_RERANK_MODEL in .env the name of a reranker model of the provider in REJEA_RERANK_PROVIDER, or remove the setting: a model of a different type does not give scores. See "Reranker" in the README.`
-	case errors.Is(err, chat.ErrRefused):
-		return `Give REJEA_CHAT_API_KEY in .env an API key of the provider in REJEA_CHAT_PROVIDER. A key of a different provider does not work. See "Chat model" in the README.`
-	case errors.Is(err, chat.ErrNoModel):
-		return `Give REJEA_CHAT_MODEL in .env the name of a chat model of the provider in REJEA_CHAT_PROVIDER, or remove the setting: each provider has a default model. See "Chat model" in the README.`
 
 	case errors.Is(err, syscall.EADDRINUSE):
 		return `Stop the other program that uses this port, or change the port in REJEA_HTTP_ADDR in .env.`

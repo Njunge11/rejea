@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Njunge11/rejea/internal/chat"
 	"github.com/Njunge11/rejea/internal/chunk"
 	"github.com/Njunge11/rejea/internal/documents"
 	"github.com/Njunge11/rejea/internal/embed"
@@ -75,9 +74,8 @@ func Load(getenv func(string) string) (Config, error) {
 	parseWorkers := env.count("REJEA_PARSE_WORKERS", 1)
 
 	// Each provider of a model has a default model of its own.
-	embedProvider := env.oneOf("REJEA_EMBED_PROVIDER", models.EmbedProviders()...)
-	rerankProvider := env.oneOf("REJEA_RERANK_PROVIDER", models.RerankProviders()...)
-	chatProvider := env.oneOf("REJEA_CHAT_PROVIDER", models.ChatProviders()...)
+	embedProvider := env.oneOf("REJEA_EMBED_PROVIDER", defaultFirst(models.DefaultEmbedProvider, models.EmbedProviders())...)
+	rerankProvider := env.oneOf("REJEA_RERANK_PROVIDER", defaultFirst(models.DefaultRerankProvider, models.RerankProviders())...)
 	// The keys had the names of their providers before. A settings file
 	// with an old name gets the new name, not a model that is not set.
 	if env.getenv("CLOUDFLARE_API_TOKEN") != "" {
@@ -95,7 +93,6 @@ func Load(getenv func(string) string) (Config, error) {
 		{"REJEA_CLOUDFLARE_API_URL", "embedding model", "REJEA_EMBED_API_URL"},
 		{"REJEA_COHERE_API_URL", "reranker", "REJEA_RERANK_API_URL"},
 		{"REJEA_BEDROCK_API_URL", "reranker", "REJEA_RERANK_API_URL"},
-		{"REJEA_ANTHROPIC_API_URL", "chat model", "REJEA_CHAT_API_URL"},
 	} {
 		if env.getenv(old.name) != "" {
 			env.fault("%s is not read now: remove the line. The address of the %s is in %s, and with no value it is the address of its provider",
@@ -236,16 +233,6 @@ func Load(getenv func(string) string) (Config, error) {
 				// model, so the default is the limit of the embedding model.
 				MaxTextTokens: env.count("REJEA_RERANK_MAX_TEXT_TOKENS", 8192),
 			},
-			Chat: chat.Config{
-				Provider: chatProvider,
-				Model:    env.text("REJEA_CHAT_MODEL", models.ChatModel(chatProvider)),
-				APIKey:   env.text("REJEA_CHAT_API_KEY", ""),
-				APIURL:   env.text("REJEA_CHAT_API_URL", models.ChatURL(chatProvider)),
-				// The largest answer that a request with no stream gets
-				// before the time limits of HTTP.
-				MaxAnswerTokens: env.count("REJEA_CHAT_MAX_ANSWER_TOKENS", 16000),
-				Timeout:         env.duration("REJEA_CHAT_TIMEOUT", 5*time.Minute),
-			},
 			MaxAttempts:    env.count("REJEA_MODEL_MAX_ATTEMPTS", 3),
 			RetryWaitMin:   env.duration("REJEA_MODEL_RETRY_WAIT_MIN", time.Second),
 			RetryWaitMax:   env.duration("REJEA_MODEL_RETRY_WAIT_MAX", 30*time.Second),
@@ -330,6 +317,14 @@ func (e *environment) required(name string) string {
 		e.fault("%s is not set", name)
 	}
 	return value
+}
+
+// defaultFirst gives the values with the default as the first one: oneOf
+// uses the first value when the setting has none. The values of a registry
+// are in the order of the alphabet, so a new provider must not become the
+// default because of its name.
+func defaultFirst(def string, values []string) []string {
+	return append([]string{def}, slices.DeleteFunc(slices.Clone(values), func(value string) bool { return value == def })...)
 }
 
 // oneOf reads a setting that has a fixed list of values. The first value

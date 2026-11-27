@@ -13,7 +13,7 @@ A RAG (retrieval-augmented generation) engine for PDF and Word documents, with h
 
 ## Status
 
-Built: the schema, the migrations, the job queues, upload URLs, the confirm of an upload, the file hash, the duplicate check, the failure rule, the unpack of archives (zip, tar, tar.gz), the job that fails old uploads, the status of one document and of the list of documents, the retry of a failed document, the parser service, the page images of a PDF, the blocks of a PDF, of a Word file and of a Markdown file, the chunker, the embeddings, the index step that saves the chunks of a document with their vectors, the command that makes the chunks again, the question file of the test set, the search endpoint, the reranker, the search report, the chat model port, and the endpoint for the pages of a document. Not built: the rest of ingestion, generation.
+Built: the schema, the migrations, the job queues, upload URLs, the confirm of an upload, the file hash, the duplicate check, the failure rule, the unpack of archives (zip, tar, tar.gz), the job that fails old uploads, the status of one document and of the list of documents, the retry of a failed document, the parser service, the page images of a PDF, the blocks of a PDF, of a Word file and of a Markdown file, the chunker, the embeddings, the index step that saves the chunks of a document with their vectors, the command that makes the chunks again, the question file of the test set, the search endpoint, the reranker, the search report, and the endpoint for the pages of a document. Not built: the rest of ingestion, generation.
 
 ## Run
 
@@ -132,7 +132,7 @@ REJEA_EMBED_API_KEY=<the token>
 REJEA_EMBED_API_URL=https://api.cloudflare.com/client/v4/accounts/<the account ID>/ai/run
 ```
 
-Each model of the service (the embedding model, the reranker, the chat model) has four settings of the same form: `REJEA_EMBED_PROVIDER`, `REJEA_EMBED_MODEL`, `REJEA_EMBED_API_KEY` and `REJEA_EMBED_API_URL` for this one. To change the provider of a model, change these four values. With no value, the model and the address are those of the provider.
+Each model of the service (the embedding model, the reranker) has four settings of the same form: `REJEA_EMBED_PROVIDER`, `REJEA_EMBED_MODEL`, `REJEA_EMBED_API_KEY` and `REJEA_EMBED_API_URL` for this one. To change the provider of a model, change these four values. With no value, the model and the address are those of the provider.
 
 When the service starts, it sends one small request to the model. With no values, it starts and warns: a document is parsed, and its index work fails with the correction as its reason. With a wrong value (the token, the account ID, the name of the model, the number of dimensions), it stops and names the setting to correct.
 
@@ -290,28 +290,6 @@ REJEA_CLOUDFRONT_PRIVATE_KEY_FILE=/path/to/private_key.pem
 The URLs of one list have one signature: a [custom policy](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-signed-urls.html) for the folder of the page images of the document, which the CloudFront documentation gives for more than one file. The signature uses SHA-256. It permits a read of the page images of that document only: CloudFront refuses the same signature for a different file.
 
 When the service starts, it sends one signed request to the distribution. With a key pair ID that CloudFront does not know, a private key that is not the key of that ID, or a domain with no distribution, it stops and names the setting to correct.
-
-## Chat model
-
-The chat model reads instructions and a question, and writes an answer: text, or JSON in the form of a schema. No part of the service asks it a question yet: the classifier of document types and the knowledge graph are its first users.
-
-The provider is Anthropic, and the default model is Claude Sonnet 5.5 (`claude-sonnet-5-5`).
-
-1. Make an API key at [platform.claude.com/settings/keys](https://platform.claude.com/settings/keys).
-2. Put these lines in `.env`, then run `make up`:
-
-```sh
-REJEA_CHAT_PROVIDER=anthropic
-REJEA_CHAT_API_KEY=...
-```
-
-`REJEA_CHAT_MODEL` selects a different model, for example `claude-opus-5-5` or `claude-haiku-5-5`. Anthropic bills for the tokens of each answer: the log has one line for each answer, with the model and the tokens.
-
-When the service starts, it asks Anthropic for the model, which costs nothing. With no key, it starts with no chat model. With a wrong key or a wrong name of the model, it stops and names the setting to correct.
-
-A safety classifier of a Claude model can decline a request. The request asks for the [refusal fallback](https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback) of the API: Anthropic then gives the same request to a different Claude model, and bills at the price of that model. The log line of the answer names the model that wrote it.
-
-The code for a provider is an adapter behind one interface ([internal/chat](internal/chat/chat.go)), as for the other models. The adapter uses the [Go SDK of Anthropic](https://github.com/anthropics/anthropic-sdk-go). `REJEA_CHAT_PROVIDER` selects the provider.
 
 ## Test set
 

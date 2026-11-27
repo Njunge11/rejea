@@ -234,10 +234,10 @@ These points are not in the plan. Each one is settled before its item starts.
     - The 4 files with a fault are `failed` at attempt 1, each with its reason. A wrong value of the setting stops the service at its start with the name of the setting.
     - The same reader in 64 goroutines with the race detector of Go: no fault.
 - [x] **44. Settings with no provider name** (added 2026-11-27, not in the ten steps of the plan)
-  - Each model (embedding, reranker, chat) has four settings of the same form: `REJEA_<MODEL>_PROVIDER`, `REJEA_<MODEL>_MODEL`, `REJEA_<MODEL>_API_KEY` and `REJEA_<MODEL>_API_URL`. With no value, the model and the address are those of the provider.
+  - Each model (embedding, reranker) has four settings of the same form: `REJEA_<MODEL>_PROVIDER`, `REJEA_<MODEL>_MODEL`, `REJEA_<MODEL>_API_KEY` and `REJEA_<MODEL>_API_URL`. With no value, the model and the address are those of the provider.
   - Removed: `CLOUDFLARE_ACCOUNT_ID` (the account ID is in the address of Cloudflare) and the four addresses with a provider name. `REJEA_COHERE_MAX_TEXT_TOKENS` is now `REJEA_RERANK_MAX_TEXT_TOKENS`. A settings file with an old name stops the start with the correction for each line.
   - `REJEA_PARSER_URL` selects the parser with `make up` also: no value is the parser of the machine, an address is a parser on another machine.
-  - `.env.example`: each of the 101 settings is a line with its default, in sections by purpose (models, parser, `make up`, `make serve`, speed, logs, limits). No setting is a comment.
+  - `.env.example`: each of the 95 settings is a line with its default, in sections by purpose (models, parser, `make up`, `make serve`, speed, logs, limits). No setting is a comment.
   - Proof by runs on 2026-11-27: each default in the file is the default of the code (the file and an empty environment load the same settings). The three models answer at the start of the service with the new settings (Cloudflare, Cohere, Anthropic), and the reranker of Cloudflare also. Old names, no address, an address with no account and a wrong account ID each give their correction.
 
 ## Chunk and index (plan step 4)
@@ -420,6 +420,7 @@ These points are not in the plan. Each one is settled before its item starts.
 ## Types and properties (plan step 9)
 
 - [x] **35. Chat port and the Claude adapter**
+  - **Removed on 2026-11-27 (your decision):** no feature used the chat model. The answer to a question is the work of an agent outside Rejea, which calls `POST /search`. The packages `internal/chat` and `internal/anthropic`, the six `REJEA_CHAT_` settings and the SDK of Anthropic are gone. The code is in the git history before that date.
   - One small interface for a chat model, and the adapter for Claude.
   - Built: the port `internal/chat` (a question with instructions gets an answer: text, or JSON in the form of a JSON Schema), the adapter `internal/anthropic`, the entry in the registry of `internal/models`, and the start check in `rejea serve`. No part of the service asks the chat model a question yet: the classifier (item 37) and the extraction (item 40) are its first users.
   - Facts from the documents and the source code of the Go SDK of Anthropic (version 2.15.0 of 2026-11-24): the adapter uses the SDK, as the guide of Anthropic says, and not its own HTTP code. `output_config.format` with a JSON Schema gives an answer that is valid JSON of that form. A model can decline a request (`stop_reason` `refusal`). The request asks for the refusal fallback (`fallbacks: "default"`, beta `server-side-fallback-2026-07-01`): Anthropic then gives the request to a different Claude model in the same call. The instructions have a cache mark, so a second request with the same instructions pays less for them.

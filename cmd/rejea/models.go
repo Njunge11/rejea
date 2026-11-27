@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/Njunge11/rejea/internal/chat"
 	"github.com/Njunge11/rejea/internal/config"
 	"github.com/Njunge11/rejea/internal/database"
 	"github.com/Njunge11/rejea/internal/documents"
@@ -83,40 +82,6 @@ func startReranker(ctx context.Context, logger *slog.Logger, cfg config.Config) 
 		return nil, err
 	}
 	return reranker, nil
-}
-
-// startChat makes the client of the chat model and proves its settings: it
-// asks the provider for the model, which costs nothing. It has the rules of
-// startEmbedder:
-//
-//   - No API key: one log line, and no client. No part of the service asks
-//     the chat model a question yet.
-//   - Settings that are wrong (the API key, the name of the model): an
-//     error, which stops the service.
-//   - A provider that gives no answer now: a warning.
-func startChat(ctx context.Context, logger *slog.Logger, cfg config.Config) (*chat.Client, error) {
-	client, err := models.Chat(cfg.Models, logger)
-	if errors.Is(err, chat.ErrNotSet) {
-		logger.InfoContext(ctx, "no chat model is set",
-			"provider", cfg.Models.Chat.Provider,
-			"to_correct", `set REJEA_CHAT_API_KEY in .env to the API key of the provider: see "Chat model" in the README`)
-		return nil, nil //nolint:nilnil // No client and no error: the service starts with no chat model.
-	}
-	if err != nil {
-		return nil, err
-	}
-	ctx, cancel := context.WithTimeout(ctx, cfg.StartCheckTimeout)
-	defer cancel()
-	switch err := client.Check(ctx); {
-	case err == nil:
-		logger.InfoContext(ctx, "chat model ready", "provider", cfg.Models.Chat.Provider, "model", cfg.Models.Chat.Model)
-	case errors.Is(err, chat.ErrBusy), errors.Is(err, chat.ErrQuota), errors.Is(err, context.DeadlineExceeded):
-		logger.WarnContext(ctx, "the chat model does not answer now: a later request can succeed",
-			"provider", cfg.Models.Chat.Provider, "err", err)
-	default:
-		return nil, err
-	}
-	return client, nil
 }
 
 // errDimensions tells that the vectors of the embedding model do not fit
