@@ -82,6 +82,11 @@ type Config struct {
 	Model string
 	// APIKey is the API key of the account at the provider.
 	APIKey string
+	// APIURL is the address of the API of the provider.
+	APIURL string
+	// MaxTextTokens is the largest number of tokens of one text that the
+	// model reads. Only a provider with such a limit in its API uses it.
+	MaxTextTokens int
 	// Timeout is the longest time for one request, with its new attempts.
 	Timeout time.Duration
 }

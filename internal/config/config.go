@@ -11,12 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Njunge11/rejea/internal/anthropic"
-	"github.com/Njunge11/rejea/internal/bedrock"
 	"github.com/Njunge11/rejea/internal/chat"
 	"github.com/Njunge11/rejea/internal/chunk"
-	"github.com/Njunge11/rejea/internal/cloudflare"
-	"github.com/Njunge11/rejea/internal/cohere"
 	"github.com/Njunge11/rejea/internal/documents"
 	"github.com/Njunge11/rejea/internal/embed"
 	"github.com/Njunge11/rejea/internal/ingest"
@@ -89,6 +85,25 @@ func Load(getenv func(string) string) (Config, error) {
 	}
 	if env.getenv("COHERE_API_KEY") != "" {
 		env.fault("COHERE_API_KEY has a new name: change the name of the line to REJEA_RERANK_API_KEY")
+	}
+	// Some settings had the name of a provider before. Each model now has
+	// its own address, and the address of Cloudflare has the account ID.
+	if env.getenv("CLOUDFLARE_ACCOUNT_ID") != "" {
+		env.fault("CLOUDFLARE_ACCOUNT_ID is not read now: remove the line, and put the account ID in the address of the model, REJEA_EMBED_API_URL=https://api.cloudflare.com/client/v4/accounts/<account ID>/ai/run (for the reranker of Cloudflare, give REJEA_RERANK_API_URL the same address)")
+	}
+	for _, old := range []struct{ name, model, now string }{
+		{"REJEA_CLOUDFLARE_API_URL", "embedding model", "REJEA_EMBED_API_URL"},
+		{"REJEA_COHERE_API_URL", "reranker", "REJEA_RERANK_API_URL"},
+		{"REJEA_BEDROCK_API_URL", "reranker", "REJEA_RERANK_API_URL"},
+		{"REJEA_ANTHROPIC_API_URL", "chat model", "REJEA_CHAT_API_URL"},
+	} {
+		if env.getenv(old.name) != "" {
+			env.fault("%s is not read now: remove the line. The address of the %s is in %s, and with no value it is the address of its provider",
+				old.name, old.model, old.now)
+		}
+	}
+	if env.getenv("REJEA_COHERE_MAX_TEXT_TOKENS") != "" {
+		env.fault("REJEA_COHERE_MAX_TEXT_TOKENS has a new name: change the name of the line to REJEA_RERANK_MAX_TEXT_TOKENS")
 	}
 	// One limit for the answer of each model provider.
 	maxAnswerBytes := env.size("REJEA_MODEL_MAX_ANSWER_BYTES", 16<<20) // 16 MiB
@@ -188,13 +203,15 @@ func Load(getenv func(string) string) (Config, error) {
 			Path: env.text("REJEA_TOKENIZER_PATH", "models/qwen3-embedding-0.6b/tokenizer.json"),
 		},
 		Models: models.Config{
-			// Each model has three settings with the same form: the
-			// provider, the model and the API key. No key has a default:
-			// each developer has an account of their own.
+			// Each model has four settings with the same form: the
+			// provider, the model, the API key and the address of the
+			// API. No key has a default: each developer has an account of
+			// their own.
 			Embed: embed.Config{
 				Provider:   embedProvider,
 				Model:      env.text("REJEA_EMBED_MODEL", models.EmbedModel(embedProvider)),
 				APIKey:     env.text("REJEA_EMBED_API_KEY", ""),
+				APIURL:     env.text("REJEA_EMBED_API_URL", models.EmbedURL(embedProvider)),
 				Dimensions: env.count("REJEA_EMBED_DIMENSIONS", 1024),
 				// Cloudflare documents 32 texts for one request, and no
 				// limit for the tokens of a request. Measured in November
@@ -212,43 +229,27 @@ func Load(getenv func(string) string) (Config, error) {
 				Provider: rerankProvider,
 				Model:    env.text("REJEA_RERANK_MODEL", models.RerankModel(rerankProvider)),
 				APIKey:   env.text("REJEA_RERANK_API_KEY", ""),
+				APIURL:   env.text("REJEA_RERANK_API_URL", models.RerankURL(rerankProvider)),
 				Timeout:  env.duration("REJEA_RERANK_TIMEOUT", 10*time.Second),
+				// Cohere cuts a text at 4,096 tokens when the request gives
+				// no number. Its tokens are not the tokens of the embedding
+				// model, so the default is the limit of the embedding model.
+				MaxTextTokens: env.count("REJEA_RERANK_MAX_TEXT_TOKENS", 8192),
 			},
 			Chat: chat.Config{
 				Provider: chatProvider,
 				Model:    env.text("REJEA_CHAT_MODEL", models.ChatModel(chatProvider)),
 				APIKey:   env.text("REJEA_CHAT_API_KEY", ""),
+				APIURL:   env.text("REJEA_CHAT_API_URL", models.ChatURL(chatProvider)),
 				// The largest answer that a request with no stream gets
 				// before the time limits of HTTP.
 				MaxAnswerTokens: env.count("REJEA_CHAT_MAX_ANSWER_TOKENS", 16000),
 				Timeout:         env.duration("REJEA_CHAT_TIMEOUT", 5*time.Minute),
 			},
-			MaxAttempts:  env.count("REJEA_MODEL_MAX_ATTEMPTS", 3),
-			RetryWaitMin: env.duration("REJEA_MODEL_RETRY_WAIT_MIN", time.Second),
-			RetryWaitMax: env.duration("REJEA_MODEL_RETRY_WAIT_MAX", 30*time.Second),
-			Cloudflare: cloudflare.Config{
-				// The name that the tools of Cloudflare use. The API token
-				// is the key of the model that uses the account.
-				AccountID:      env.text("CLOUDFLARE_ACCOUNT_ID", ""),
-				BaseURL:        env.text("REJEA_CLOUDFLARE_API_URL", "https://api.cloudflare.com/client/v4"),
-				MaxAnswerBytes: maxAnswerBytes,
-			},
-			Cohere: cohere.Config{
-				BaseURL:        env.text("REJEA_COHERE_API_URL", "https://api.cohere.com"),
-				MaxAnswerBytes: maxAnswerBytes,
-				// Cohere cuts a text at 4,096 tokens when the request gives
-				// no number. Its tokens are not the tokens of the embedding
-				// model, so the default is the limit of the embedding model.
-				MaxTextTokens: env.count("REJEA_COHERE_MAX_TEXT_TOKENS", 8192),
-			},
-			Anthropic: anthropic.Config{
-				BaseURL: env.text("REJEA_ANTHROPIC_API_URL", "https://api.anthropic.com"),
-			},
-			Bedrock: bedrock.Config{
-				// The address has the AWS Region of the model.
-				BaseURL:        env.text("REJEA_BEDROCK_API_URL", "https://bedrock-runtime.us-east-1.amazonaws.com"),
-				MaxAnswerBytes: maxAnswerBytes,
-			},
+			MaxAttempts:    env.count("REJEA_MODEL_MAX_ATTEMPTS", 3),
+			RetryWaitMin:   env.duration("REJEA_MODEL_RETRY_WAIT_MIN", time.Second),
+			RetryWaitMax:   env.duration("REJEA_MODEL_RETRY_WAIT_MAX", 30*time.Second),
+			MaxAnswerBytes: maxAnswerBytes,
 		},
 		Server: server.Config{
 			ReadHeaderTimeout: env.duration("REJEA_HTTP_READ_HEADER_TIMEOUT", 10*time.Second),

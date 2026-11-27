@@ -223,7 +223,7 @@ func (s *Service) queryVector(ctx context.Context, query string) ([]float32, err
 	if s.embedder == nil {
 		return nil, &Unavailable{
 			Detail: "The search is not ready: the service has no embedding model.",
-			Cause:  fmt.Errorf(`%w: set REJEA_EMBED_API_KEY and CLOUDFLARE_ACCOUNT_ID in .env and start the service again (see "Embeddings" in the README)`, embed.ErrNotSet),
+			Cause:  fmt.Errorf(`%w: set REJEA_EMBED_API_KEY and REJEA_EMBED_API_URL in .env and start the service again (see "Embeddings" in the README)`, embed.ErrNotSet),
 		}
 	}
 	vector, err := s.embedder.Query(ctx, query)

@@ -52,7 +52,7 @@ func (w *indexWorker) Work(ctx context.Context, job *river.Job[queue.IndexArgs])
 	if w.embedder == nil {
 		// A new attempt succeeds after a person gives the credentials and
 		// starts the service again.
-		return fmt.Errorf("%w: set REJEA_EMBED_API_KEY and CLOUDFLARE_ACCOUNT_ID in .env and start the service again", embed.ErrNotSet)
+		return fmt.Errorf("%w: set REJEA_EMBED_API_KEY and REJEA_EMBED_API_URL in .env and start the service again", embed.ErrNotSet)
 	}
 
 	blocks, err := w.docs.Blocks(ctx, id)

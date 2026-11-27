@@ -93,6 +93,8 @@ type Config struct {
 	Model string
 	// APIKey is the API key of the account at the provider.
 	APIKey string
+	// APIURL is the address of the API of the provider.
+	APIURL string
 	// Dimensions is the number of numbers in one vector. The column
 	// chunks.embedding has the same number.
 	Dimensions int

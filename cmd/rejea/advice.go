@@ -70,15 +70,15 @@ func advice(err error) string {
 	case errors.Is(err, errDimensions):
 		return `Give REJEA_EMBED_DIMENSIONS and REJEA_EMBED_MODEL in .env a model with the dimensions of the column. For a model with a different number, change the column chunks.embedding with a migration first.`
 	case errors.Is(err, embed.ErrRefused):
-		return `Give REJEA_EMBED_API_KEY and CLOUDFLARE_ACCOUNT_ID in .env the API token and the account ID of your Cloudflare account: see "Embeddings" in the README. The token needs the permissions "Workers AI Read" and "Workers AI Edit".`
+		return `Give REJEA_EMBED_API_KEY and REJEA_EMBED_API_URL in .env the API key and the address of your account at the provider: see "Embeddings" in the README. For the provider cloudflare, the address has the account ID, and the token needs the permissions "Workers AI Read" and "Workers AI Edit".`
 	case errors.Is(err, embed.ErrNoModel):
-		return `Give REJEA_EMBED_MODEL in .env the name of an embedding model of the provider. The default is @cf/qwen/qwen3-embedding-0.6b.`
+		return `Give REJEA_EMBED_MODEL in .env the name of an embedding model of the provider in REJEA_EMBED_PROVIDER, or remove the value: each provider has a default model. For the provider cloudflare, the address in REJEA_EMBED_API_URL must also end with /accounts/<account ID>/ai/run. See "Embeddings" in the README.`
 	case errors.Is(err, embed.ErrAnswer):
 		return `Give REJEA_EMBED_DIMENSIONS in .env the number of dimensions of the model in REJEA_EMBED_MODEL. The column chunks.embedding has 1,024 dimensions: a model with a different number also needs a migration.`
 	case errors.Is(err, rerank.ErrRefused):
-		return `Give REJEA_RERANK_API_KEY in .env an API key of the provider in REJEA_RERANK_PROVIDER. A key of a different provider does not work. The provider cloudflare needs CLOUDFLARE_ACCOUNT_ID also. The provider bedrock needs an Amazon Bedrock API key that is not expired, and REJEA_BEDROCK_API_URL with the AWS Region of the model. See "Reranker" in the README.`
+		return `Give REJEA_RERANK_API_KEY in .env an API key of the provider in REJEA_RERANK_PROVIDER. A key of a different provider does not work. The provider cloudflare needs its address with the account ID in REJEA_RERANK_API_URL. The provider bedrock needs an Amazon Bedrock API key that is not expired, and the AWS Region of the model in REJEA_RERANK_API_URL. See "Reranker" in the README.`
 	case errors.Is(err, rerank.ErrNoModel):
-		return `Give REJEA_RERANK_MODEL in .env the name of a reranker model of the provider in REJEA_RERANK_PROVIDER, or remove the setting: each provider has a default model. For the provider bedrock, the model must also be available in the AWS Region of the address in REJEA_BEDROCK_API_URL. See "Reranker" in the README.`
+		return `Give REJEA_RERANK_MODEL in .env the name of a reranker model of the provider in REJEA_RERANK_PROVIDER, or remove the setting: each provider has a default model. For the provider bedrock, the model must also be available in the AWS Region of the address in REJEA_RERANK_API_URL. For the provider cloudflare, that address must end with /accounts/<account ID>/ai/run. See "Reranker" in the README.`
 	case errors.Is(err, rerank.ErrInput), errors.Is(err, rerank.ErrAnswer):
 		return `Give REJEA_RERANK_MODEL in .env the name of a reranker model of the provider in REJEA_RERANK_PROVIDER, or remove the setting: a model of a different type does not give scores. See "Reranker" in the README.`
 	case errors.Is(err, chat.ErrRefused):

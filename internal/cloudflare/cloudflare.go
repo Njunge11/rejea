@@ -17,11 +17,11 @@ import (
 
 // Config is the settings of the Cloudflare account.
 type Config struct {
-	// AccountID is the ID of the Cloudflare account.
-	AccountID string
 	// APIToken is an API token with the permission to run Workers AI.
 	APIToken string
-	// BaseURL is the address of the Cloudflare API.
+	// BaseURL is the address of Workers AI of the account. It has the
+	// account ID:
+	// https://api.cloudflare.com/client/v4/accounts/<account ID>/ai/run
 	BaseURL string
 	// MaxAnswerBytes is the largest answer that the adapter reads. The
 	// answer is in memory as a whole.
@@ -36,24 +36,24 @@ type client struct {
 	http *http.Client
 }
 
-// errNotSet tells that the settings have no account ID or no API token.
+// errNotSet tells that the settings have no address or no API token.
 // Each adapter gives the reason of its port in its place.
 var errNotSet = errors.New("the Cloudflare account has no credentials")
 
 // newClient makes a client. It sends no request. The HTTP client makes the
 // new attempts of a request that failed.
 func newClient(cfg Config, httpClient *http.Client) (*client, error) {
-	if strings.TrimSpace(cfg.AccountID) == "" || strings.TrimSpace(cfg.APIToken) == "" {
+	if strings.TrimSpace(cfg.BaseURL) == "" || strings.TrimSpace(cfg.APIToken) == "" {
 		return nil, errNotSet
 	}
 	base, err := url.Parse(cfg.BaseURL)
 	if err != nil || (base.Scheme != "http" && base.Scheme != "https") || base.Host == "" {
-		return nil, fmt.Errorf("the URL of the Cloudflare API is %q: it must be an http or https URL with a host", cfg.BaseURL)
+		return nil, fmt.Errorf("the URL of Workers AI of Cloudflare is %q: it must be an http or https URL with a host", cfg.BaseURL)
 	}
 	if cfg.MaxAnswerBytes < 1 {
 		return nil, fmt.Errorf("the answer limit of a model is %d bytes: it must be 1 or more", cfg.MaxAnswerBytes)
 	}
-	return &client{cfg: cfg, run: base.JoinPath("accounts", cfg.AccountID, "ai", "run"), http: httpClient}, nil
+	return &client{cfg: cfg, run: base, http: httpClient}, nil
 }
 
 // envelope is the form of each answer of the Cloudflare API.
@@ -79,7 +79,7 @@ const (
 // reason is a *provider.Fault.
 func (c *client) send(ctx context.Context, model string, body, result any) error {
 	// The name of a model has "/" characters, which are parts of the path.
-	address := c.run.String() + "/" + strings.TrimPrefix(model, "/")
+	address := strings.TrimSuffix(c.run.String(), "/") + "/" + strings.TrimPrefix(model, "/")
 	status, raw, err := provider.Post(ctx, c.http, address, c.cfg.APIToken, body, c.cfg.MaxAnswerBytes)
 	if err != nil {
 		return err

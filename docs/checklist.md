@@ -233,6 +233,12 @@ These points are not in the plan. Each one is settled before its item starts.
     - A zip with 2 Markdown files, a hidden file, a `__MACOSX` file and a `.txt` file, and a tar.gz with 2 Markdown files: only the Markdown files became documents. A file with the hash of an earlier upload is `duplicate`.
     - The 4 files with a fault are `failed` at attempt 1, each with its reason. A wrong value of the setting stops the service at its start with the name of the setting.
     - The same reader in 64 goroutines with the race detector of Go: no fault.
+- [x] **44. Settings with no provider name** (added 2026-11-27, not in the ten steps of the plan)
+  - Each model (embedding, reranker, chat) has four settings of the same form: `REJEA_<MODEL>_PROVIDER`, `REJEA_<MODEL>_MODEL`, `REJEA_<MODEL>_API_KEY` and `REJEA_<MODEL>_API_URL`. With no value, the model and the address are those of the provider.
+  - Removed: `CLOUDFLARE_ACCOUNT_ID` (the account ID is in the address of Cloudflare) and the four addresses with a provider name. `REJEA_COHERE_MAX_TEXT_TOKENS` is now `REJEA_RERANK_MAX_TEXT_TOKENS`. A settings file with an old name stops the start with the correction for each line.
+  - `REJEA_PARSER_URL` selects the parser with `make up` also: no value is the parser of the machine, an address is a parser on another machine.
+  - `.env.example`: 21 lines with a value to set or to select, in sections by purpose. Each other setting is a comment that shows its default (80 defaults).
+  - Proof by runs on 2026-11-27: each default in a comment is the default of the code (the two sets of values load the same settings). The three models answer at the start of the service with the new settings (Cloudflare, Cohere, Anthropic), and the reranker of Cloudflare also. Old names, no address, an address with no account and a wrong account ID each give their correction.
 
 ## Chunk and index (plan step 4)
 

@@ -96,6 +96,8 @@ type Config struct {
 	Model string
 	// APIKey is the API key of the account at the provider.
 	APIKey string
+	// APIURL is the address of the API of the provider.
+	APIURL string
 	// MaxAnswerTokens is the largest number of tokens of one answer.
 	MaxAnswerTokens int
 	// Timeout is the longest time for one request, with its new attempts.

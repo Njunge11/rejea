@@ -25,9 +25,9 @@ import (
 )
 
 // Config is the settings of the models. Each model has the name of its
-// provider, the name of the model and the API key: a change of provider
-// changes these three values, and no name of a setting. The settings of an
-// account that are not a key are with the provider.
+// provider, the name of the model, the API key and the address of the API:
+// a change of provider changes these four values, and no name of a
+// setting.
 type Config struct {
 	// Embed is the embedding model.
 	Embed embed.Config
@@ -43,32 +43,19 @@ type Config struct {
 	// new attempt. The wait is two times as long after each attempt.
 	RetryWaitMin time.Duration
 	RetryWaitMax time.Duration
-	// Cloudflare is the Cloudflare account. Its API token is the key of
-	// the model that uses it.
-	Cloudflare cloudflare.Config
-	// Cohere is the Cohere API. Its API key is the key of the model that
-	// uses it.
-	Cohere cohere.Config
-	// Anthropic is the Anthropic API. Its API key is the key of the model
-	// that uses it.
-	Anthropic anthropic.Config
-	// Bedrock is the Bedrock Runtime API of AWS. Its API key is the key of
-	// the model that uses it.
-	Bedrock bedrock.Config
-}
-
-// cloudflareWith gives the settings of the Cloudflare account with the key
-// of one model.
-func (c Config) cloudflareWith(key string) cloudflare.Config {
-	account := c.Cloudflare
-	account.APIToken = key
-	return account
+	// MaxAnswerBytes is the largest answer of the embedding model or the
+	// reranker model that an adapter reads. The answer is in memory as a
+	// whole.
+	MaxAnswerBytes int64
 }
 
 // entry is one provider of a port. P is the adapter type of the port.
 type entry[P any] struct {
 	// model is the name of the model when the settings give none.
 	model string
+	// url is the address of the API when the settings give none. A
+	// provider whose address has the ID of the account has no default.
+	url string
 	// open makes the adapter.
 	open func(cfg Config, client *http.Client) (P, error)
 }
@@ -97,7 +84,9 @@ var embedders = map[string]entry[embed.Provider]{
 	"cloudflare": {
 		model: "@cf/qwen/qwen3-embedding-0.6b",
 		open: func(cfg Config, client *http.Client) (embed.Provider, error) {
-			return cloudflare.NewEmbedder(cfg.cloudflareWith(cfg.Embed.APIKey), client)
+			return cloudflare.NewEmbedder(cloudflare.Config{
+				APIToken: cfg.Embed.APIKey, BaseURL: cfg.Embed.APIURL, MaxAnswerBytes: cfg.MaxAnswerBytes,
+			}, client)
 		},
 	},
 }
@@ -110,6 +99,11 @@ func EmbedProviders() []string {
 // EmbedModel gives the default model of a provider of the embed port.
 func EmbedModel(provider string) string {
 	return embedders[provider].model
+}
+
+// EmbedURL gives the default address of a provider of the embed port.
+func EmbedURL(provider string) string {
+	return embedders[provider].url
 }
 
 // Embedder makes the embedding client that the settings name. It sends no
@@ -129,24 +123,30 @@ func Embedder(cfg Config, counter embed.Counter, logger *slog.Logger) (*embed.Cl
 var rerankers = map[string]entry[rerank.Provider]{
 	"bedrock": {
 		model: "cohere.rerank-v3-5:0",
+		// The address has the AWS Region of the model.
+		url: "https://bedrock-runtime.us-east-1.amazonaws.com",
 		open: func(cfg Config, client *http.Client) (rerank.Provider, error) {
-			account := cfg.Bedrock
-			account.APIKey = cfg.Rerank.APIKey
-			return bedrock.NewReranker(account, client)
+			return bedrock.NewReranker(bedrock.Config{
+				APIKey: cfg.Rerank.APIKey, BaseURL: cfg.Rerank.APIURL, MaxAnswerBytes: cfg.MaxAnswerBytes,
+			}, client)
 		},
 	},
 	"cloudflare": {
 		model: "@cf/baai/bge-reranker-base",
 		open: func(cfg Config, client *http.Client) (rerank.Provider, error) {
-			return cloudflare.NewReranker(cfg.cloudflareWith(cfg.Rerank.APIKey), client)
+			return cloudflare.NewReranker(cloudflare.Config{
+				APIToken: cfg.Rerank.APIKey, BaseURL: cfg.Rerank.APIURL, MaxAnswerBytes: cfg.MaxAnswerBytes,
+			}, client)
 		},
 	},
 	"cohere": {
 		model: "rerank-v5.0-fast",
+		url:   "https://api.cohere.com",
 		open: func(cfg Config, client *http.Client) (rerank.Provider, error) {
-			account := cfg.Cohere
-			account.APIKey = cfg.Rerank.APIKey
-			return cohere.NewReranker(account, client)
+			return cohere.NewReranker(cohere.Config{
+				APIKey: cfg.Rerank.APIKey, BaseURL: cfg.Rerank.APIURL, MaxAnswerBytes: cfg.MaxAnswerBytes,
+				MaxTextTokens: cfg.Rerank.MaxTextTokens,
+			}, client)
 		},
 	},
 }
@@ -159,6 +159,11 @@ func RerankProviders() []string {
 // RerankModel gives the default model of a provider of the rerank port.
 func RerankModel(provider string) string {
 	return rerankers[provider].model
+}
+
+// RerankURL gives the default address of a provider of the rerank port.
+func RerankURL(provider string) string {
+	return rerankers[provider].url
 }
 
 // Reranker makes the reranker client that the settings name. It sends no
@@ -178,10 +183,9 @@ func Reranker(cfg Config, logger *slog.Logger) (*rerank.Client, error) {
 var chats = map[string]entry[chat.Provider]{
 	"anthropic": {
 		model: "claude-sonnet-5-5",
+		url:   "https://api.anthropic.com",
 		open: func(cfg Config, client *http.Client) (chat.Provider, error) {
-			account := cfg.Anthropic
-			account.APIKey = cfg.Chat.APIKey
-			return anthropic.NewChat(account, client)
+			return anthropic.NewChat(anthropic.Config{APIKey: cfg.Chat.APIKey, BaseURL: cfg.Chat.APIURL}, client)
 		},
 	},
 }
@@ -194,6 +198,11 @@ func ChatProviders() []string {
 // ChatModel gives the default model of a provider of the chat port.
 func ChatModel(provider string) string {
 	return chats[provider].model
+}
+
+// ChatURL gives the default address of a provider of the chat port.
+func ChatURL(provider string) string {
+	return chats[provider].url
 }
 
 // Chat makes the chat client that the settings name. It sends no request.

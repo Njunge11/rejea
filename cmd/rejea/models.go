@@ -29,7 +29,7 @@ func startEmbedder(ctx context.Context, logger *slog.Logger, cfg config.Config, 
 	embedder, err := models.Embedder(cfg.Models, counter, logger)
 	if errors.Is(err, embed.ErrNotSet) {
 		logger.WarnContext(ctx, "no embedding provider is set: a document is parsed, and its index job fails until one is set",
-			"to_correct", `set REJEA_EMBED_API_KEY and CLOUDFLARE_ACCOUNT_ID in .env: see "Embeddings" in the README`)
+			"to_correct", `set REJEA_EMBED_API_KEY and REJEA_EMBED_API_URL in .env: see "Embeddings" in the README`)
 		return nil, nil //nolint:nilnil // No client and no error: the service starts with no embeddings.
 	}
 	if err != nil {
@@ -64,7 +64,7 @@ func startReranker(ctx context.Context, logger *slog.Logger, cfg config.Config) 
 	if errors.Is(err, rerank.ErrNotSet) {
 		logger.WarnContext(ctx, "no reranker provider is set: a search that asks for the reranker fails until one is set",
 			"provider", cfg.Models.Rerank.Provider,
-			"to_correct", `set REJEA_RERANK_API_KEY in .env to the API key of the provider (the provider cloudflare needs CLOUDFLARE_ACCOUNT_ID also): see "Reranker" in the README`)
+			"to_correct", `set REJEA_RERANK_API_KEY in .env to the API key of the provider (the provider cloudflare needs REJEA_RERANK_API_URL also): see "Reranker" in the README`)
 		return nil, nil //nolint:nilnil // No client and no error: the service starts with no reranker.
 	}
 	if err != nil {

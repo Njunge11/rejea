@@ -223,9 +223,10 @@ fi
 ui_step 4 4 "Service"
 docker compose up --detach --wait || report
 ui_step_done "migrations" "service"
-if [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ] || [ -z "${REJEA_EMBED_API_KEY:-}" ]; then
+# The address of the provider cloudflare has the account ID: it has no default.
+if [ -z "${REJEA_EMBED_API_KEY:-}" ] || { [ "${REJEA_EMBED_PROVIDER:-cloudflare}" = cloudflare ] && [ -z "${REJEA_EMBED_API_URL:-}" ]; }; then
 	ui_warn "No embedding model is set: a document is parsed, and its index work fails until one is set."
-	ui_note "To correct: set REJEA_EMBED_API_KEY and CLOUDFLARE_ACCOUNT_ID in .env (see \"Embeddings\" in the README), then run this command again."
+	ui_note "To correct: set REJEA_EMBED_API_KEY and REJEA_EMBED_API_URL in .env (see \"Embeddings\" in the README), then run this command again."
 fi
 
 echo

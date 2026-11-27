@@ -125,14 +125,14 @@ The embedding model turns each chunk and each search question into a vector of 1
 1. Make an account at [dash.cloudflare.com](https://dash.cloudflare.com/sign-up).
 2. In the dashboard, open **AI**, then **Workers AI**, then **REST API**.
 3. Make a Workers AI API token there, and copy the token and the account ID.
-4. Put the two values in `.env`, then run `make up`:
+4. Put the token and the address in `.env`, then run `make up`. The address has the account ID:
 
 ```sh
-REJEA_EMBED_API_KEY=...     # the token
-CLOUDFLARE_ACCOUNT_ID=...
+REJEA_EMBED_API_KEY=<the token>
+REJEA_EMBED_API_URL=https://api.cloudflare.com/client/v4/accounts/<the account ID>/ai/run
 ```
 
-Each model of the service (the embedding model, the reranker, the chat model) has three settings of the same form: `REJEA_EMBED_PROVIDER`, `REJEA_EMBED_MODEL` and `REJEA_EMBED_API_KEY` for this one. To change the provider of a model, change these three values.
+Each model of the service (the embedding model, the reranker, the chat model) has four settings of the same form: `REJEA_EMBED_PROVIDER`, `REJEA_EMBED_MODEL`, `REJEA_EMBED_API_KEY` and `REJEA_EMBED_API_URL` for this one. To change the provider of a model, change these four values. With no value, the model and the address are those of the provider.
 
 When the service starts, it sends one small request to the model. With no values, it starts and warns: a document is parsed, and its index work fails with the correction as its reason. With a wrong value (the token, the account ID, the name of the model, the number of dimensions), it stops and names the setting to correct.
 
@@ -233,7 +233,7 @@ REJEA_RERANK_API_KEY=...
 REJEA_RERANK=true
 ```
 
-The model is `cohere.rerank-v3-5:0` in the AWS Region `us-east-1`. For a different Region, change the address: `REJEA_BEDROCK_API_URL=https://bedrock-runtime.us-west-2.amazonaws.com`. The model reads 4,096 tokens of the question and one chunk together, so keep `REJEA_CHUNK_MAX_TOKENS` below that. AWS bills for each search (0.002 US dollars for a search with 100 chunks or fewer), and the log has no number of tokens.
+The model is `cohere.rerank-v3-5:0` in the AWS Region `us-east-1`. For a different Region, change the address: `REJEA_RERANK_API_URL=https://bedrock-runtime.us-west-2.amazonaws.com`. The model reads 4,096 tokens of the question and one chunk together, so keep `REJEA_CHUNK_MAX_TOKENS` below that. AWS bills for each search (0.002 US dollars for a search with 100 chunks or fewer), and the log has no number of tokens.
 
 Measured on 2026-11-26 with the 42 questions and chunks of 1,024 tokens (13 documents, 662 chunks):
 
@@ -245,7 +245,7 @@ Measured on 2026-11-26 with the 42 questions and chunks of 1,024 tokens (13 docu
 
 One search with the Bedrock model is about 1 second slower. But a trial key of Cohere permits 10 searches each minute, and the AWS account of the measurement permits 250: 42 searches, 8 at the same time, were complete in 11 seconds.
 
-To use the model of Cloudflare, give `REJEA_RERANK_API_KEY` the token of `REJEA_EMBED_API_KEY`: the provider `cloudflare` uses `CLOUDFLARE_ACCOUNT_ID` also.
+To use the model of Cloudflare, give `REJEA_RERANK_API_KEY` and `REJEA_RERANK_API_URL` the values of `REJEA_EMBED_API_KEY` and `REJEA_EMBED_API_URL`.
 
 The code for a provider is an adapter behind one interface ([internal/rerank](internal/rerank/rerank.go)), as for the embedding model. `REJEA_RERANK_PROVIDER` selects the provider.
 
