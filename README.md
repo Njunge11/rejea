@@ -201,13 +201,13 @@ Use the `make` commands, not the bare `go` commands. Commit messages follow [Con
 
 ## To do
 
-- **Parser on Linux and Windows.** The PDF parser runs only on a Mac with Apple Silicon, or on a GPU machine that you give in `REJEA_PARSER_URL`.
-- **Authentication.** The API has none: put it behind your own gateway.
-- **Delete a document.** The API has no endpoint for it.
-- **Deployment.** Make Rejea easy to deploy on a server.
-- **Automated tests.** Add regression tests as the code grows. Today, each change is proved by a run through the service. Formal verification is an option to examine.
-- **Larger measurements.** Measure the search with more documents and more questions.
-- **Performance.** Make the ingestion and the search faster.
+- [ ] **Parser on Linux and Windows.** The PDF parser runs only on a Mac with Apple Silicon, or on a GPU machine that you give in `REJEA_PARSER_URL`.
+- [ ] **Authentication.** The API has none: put it behind your own gateway.
+- [ ] **Delete a document.** The API has no endpoint for it.
+- [ ] **Deployment.** Make Rejea easy to deploy on a server.
+- [ ] **Automated tests.** Add regression tests as the code grows. Today, each change is proved by a run through the service. Formal verification is an option to examine.
+- [ ] **Larger measurements.** Measure the search with more documents and more questions.
+- [ ] **Performance.** Make the ingestion and the search faster.
 
 ## License
 
