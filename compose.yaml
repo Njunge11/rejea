@@ -33,8 +33,9 @@ x-rejea: &rejea
     REJEA_CLOUDFRONT_DOMAIN: ""
     REJEA_CLOUDFRONT_KEY_PAIR_ID: ""
     REJEA_CLOUDFRONT_PRIVATE_KEY_FILE: ""
-    # The parser runs on the machine itself.
-    REJEA_PARSER_URL: http://host.docker.internal:${REJEA_PARSER_PORT:-8112}
+    # The parser at the address of .env. With no value there, it is the
+    # parser that runs on the machine itself.
+    REJEA_PARSER_URL: ${REJEA_PARSER_URL:-http://host.docker.internal:${REJEA_PARSER_PORT:-8112}}
     REJEA_WORD_READER_PATH: /usr/local/bin/office-oxide
     REJEA_TOKENIZER_PATH: /usr/local/share/rejea/tokenizer.json
     REJEA_TEMP_DIR: ""

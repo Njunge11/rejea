@@ -57,6 +57,8 @@ On an M2 Pro with 16 GB, a page takes 3 to 40 seconds and the parser uses 3 GB o
 
 The service sends each page of a PDF to the parser. While the parser does not run, a PDF waits and the service tries again.
 
+For a parser on another machine, such as a GPU machine in the cloud, set `REJEA_PARSER_URL` in `.env` to its address. `make up` then starts no parser on this machine. With no value, the service uses the parser of this machine. The experiment [parse speed](docs/experiments/parse-speed.md) used a GPU machine in AWS in this way.
+
 ## Word reader
 
 The service reads `.docx` and `.doc` files with the command line program of [office_oxide](https://github.com/yfedoseev/office_oxide), one process for each file. The image of the service has the program.

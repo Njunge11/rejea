@@ -1,6 +1,8 @@
 #!/bin/sh
 # Starts all of Rejea on this machine: the database, the file store and the
-# service in Docker, and the parser on the machine itself.
+# service in Docker, and the parser on the machine itself. With an address
+# in REJEA_PARSER_URL, the parser is on another machine, and this one starts
+# none.
 #
 # Before it starts a thing, it examines the machine and names each thing
 # that is missing or wrong, with its correction.
@@ -18,6 +20,12 @@ parser_installed=false
 if scripts/parser has packages; then
 	parser_installed=true
 fi
+# own_parser tells that this machine runs the parser itself.
+parser_url="${REJEA_PARSER_URL:-}"
+own_parser=false
+if [ "$mac_with_gpu" = true ] && [ -z "$parser_url" ]; then
+	own_parser=true
+fi
 
 ui_banner
 
@@ -29,7 +37,7 @@ for image in $(docker compose config --images 2>/dev/null || echo none); do
     $ui_dot container images     ${ui_dim}0.8 GB to download${ui_reset}"
 	fi
 done
-if [ "$mac_with_gpu" = true ]; then
+if [ "$own_parser" = true ]; then
 	if [ "$parser_installed" = false ]; then
 		installs="$installs
     $ui_dot parser packages      ${ui_dim}2.2 GB on the disk${ui_reset}"
@@ -104,7 +112,16 @@ if [ "$docker_ready" = true ]; then
 	case "$running" in *storage*) ;; *) port_free "${REJEA_STORAGE_PORT:-8333}" REJEA_STORAGE_PORT "The file store" ;; esac
 fi
 
-if [ "$mac_with_gpu" = true ]; then
+# The service is in a container: there, an address of the machine itself
+# is the container, where no parser runs.
+case "$parser_url" in
+*://127.* | *://0.0.0.0* | *://localhost[:/]* | *://localhost | *://\[::1\]*)
+	fault "REJEA_PARSER_URL is \"$parser_url\". The service runs in a container, and it cannot get to this machine with that address." \
+		"remove the value of ${ui_cyan}REJEA_PARSER_URL${ui_reset} in .env to use the parser of this machine, or give the address of a parser on another machine."
+	;;
+esac
+
+if [ "$own_parser" = true ]; then
 	if ! scripts/parser status; then
 		port_free "${REJEA_PARSER_PORT:-8112}" REJEA_PARSER_PORT "The parser"
 		port_free "${REJEA_PARSER_VLM_PORT:-8111}" REJEA_PARSER_VLM_PORT "The vision model of the parser"
@@ -128,7 +145,7 @@ fi
 # The first run downloads the images, and on a Mac the parser and its
 # models.
 needed_gb=3
-if [ "$mac_with_gpu" = true ] && [ "$parser_installed" = false ]; then
+if [ "$own_parser" = true ] && [ "$parser_installed" = false ]; then
 	needed_gb=8
 fi
 free_gb=$(($(df -Pk . | awk 'NR == 2 { print $4 }') / 1024 / 1024))
@@ -186,9 +203,17 @@ ui_step_done "images" "database" "file store"
 
 # ---------------------------------------------------------------- step 3
 ui_step 3 4 "Parser"
-if [ "$mac_with_gpu" = true ]; then
+if [ "$own_parser" = true ]; then
 	scripts/parser start
 	ui_step_done "parser"
+elif [ -n "$parser_url" ]; then
+	# The parser is on another machine: this machine starts none.
+	if curl --silent --fail --max-time 5 --output /dev/null "${parser_url%/}/health"; then
+		ui_step_done "parser at $parser_url"
+	else
+		ui_warn "The parser at $parser_url does not answer. A PDF waits until it does."
+		ui_note "To correct: start that parser, or correct REJEA_PARSER_URL in .env, then run this command again."
+	fi
 else
 	ui_warn "This machine gets no parser: the parser runs on a Mac with Apple Silicon only."
 	ui_note "A Word file needs no parser. A PDF waits until a parser answers at REJEA_PARSER_URL."
