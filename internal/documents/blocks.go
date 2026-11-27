@@ -39,13 +39,13 @@ func (s *Service) SaveBlocks(ctx context.Context, id uuid.UUID, page int, blocks
 	})
 }
 
-// SaveWordBlocks records the blocks of a Word file, in their reading
-// order, and the name of the reader that gave them. Both are one
-// transaction: a document that has a parser has its blocks. The blocks
-// have no page and no box.
+// SaveFileBlocks records the blocks of a document with no pages, a Word
+// file or a Markdown file, in their reading order, and the name of the
+// reader that gave them. Both are one transaction: a document that has a
+// parser has its blocks. The blocks have no page and no box.
 //
 // A second call puts the new blocks in the place of the old ones.
-func (s *Service) SaveWordBlocks(ctx context.Context, id uuid.UUID, blocks []parse.Block, reader string) error {
+func (s *Service) SaveFileBlocks(ctx context.Context, id uuid.UUID, blocks []parse.Block, reader string) error {
 	rows, err := blockRows(blocks, false)
 	if err != nil {
 		return err
@@ -58,7 +58,8 @@ func (s *Service) SaveWordBlocks(ctx context.Context, id uuid.UUID, blocks []par
 	})
 }
 
-// blockRows makes the rows of the blocks of one page, or of one Word file.
+// blockRows makes the rows of the blocks of one page, or of one document
+// with no pages.
 // Each block gets its ID and its place in the reading order.
 func blockRows(blocks []parse.Block, withBox bool) ([]database.Block, error) {
 	rows := make([]database.Block, len(blocks))

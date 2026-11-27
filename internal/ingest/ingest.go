@@ -26,7 +26,7 @@ type Config struct {
 	UploadCheckInterval time.Duration
 	// MaxFileBytes is the largest size of one file.
 	MaxFileBytes int64
-	// MaxArchiveFiles is the largest number of PDF and Word files in one
+	// MaxArchiveFiles is the largest number of document files in one
 	// archive.
 	MaxArchiveFiles int
 	// MaxUnpackedBytes is the largest size of the content of one archive
@@ -44,13 +44,16 @@ type Config struct {
 // embedder is nil when the service has no embedding provider: an index job
 // then fails with the correction, and River runs it again later.
 func Workers(
-	docs *documents.Service, store *storage.Store, pdfs *pdf.Reader, parser parse.Parser, words *parse.Word,
+	docs *documents.Service, store *storage.Store, pdfs *pdf.Reader, parser parse.Parser,
+	words *parse.Word, markdown *parse.Markdown,
 	chunker *chunk.Chunker, embedder embed.Embedder,
 	logger *slog.Logger, cfg Config,
 ) *river.Workers {
 	workers := river.NewWorkers()
 	river.AddWorker(workers, &fileWorker{docs: docs, store: store, logger: logger, cfg: cfg})
-	river.AddWorker(workers, &parseWorker{docs: docs, store: store, pdfs: pdfs, parser: parser, words: words, logger: logger})
+	river.AddWorker(workers, &parseWorker{
+		docs: docs, store: store, pdfs: pdfs, parser: parser, words: words, markdown: markdown, logger: logger,
+	})
 	river.AddWorker(workers, &indexWorker{docs: docs, chunker: chunker, embedder: embedder, logger: logger})
 	river.AddWorker(workers, &expireWorker{docs: docs, logger: logger})
 	return workers

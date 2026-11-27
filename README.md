@@ -13,7 +13,7 @@ A RAG (retrieval-augmented generation) engine for PDF and Word documents, with h
 
 ## Status
 
-Built: the schema, the migrations, the job queues, upload URLs, the confirm of an upload, the file hash, the duplicate check, the failure rule, the unpack of archives (zip, tar, tar.gz), the job that fails old uploads, the status of one document and of the list of documents, the retry of a failed document, the parser service, the page images of a PDF, the blocks of a PDF and of a Word file, the chunker, the embeddings, the index step that saves the chunks of a document with their vectors, the command that makes the chunks again, the question file of the test set, the search endpoint, the reranker, the search report, the chat model port, and the endpoint for the pages of a document. Not built: the rest of ingestion, generation.
+Built: the schema, the migrations, the job queues, upload URLs, the confirm of an upload, the file hash, the duplicate check, the failure rule, the unpack of archives (zip, tar, tar.gz), the job that fails old uploads, the status of one document and of the list of documents, the retry of a failed document, the parser service, the page images of a PDF, the blocks of a PDF, of a Word file and of a Markdown file, the chunker, the embeddings, the index step that saves the chunks of a document with their vectors, the command that makes the chunks again, the question file of the test set, the search endpoint, the reranker, the search report, the chat model port, and the endpoint for the pages of a document. Not built: the rest of ingestion, generation.
 
 ## Run
 
@@ -41,7 +41,7 @@ When a thing is missing or wrong, the message names it and gives the correction:
 - `make up` examines the machine before it starts a thing: Docker, the ports (with the program that uses one), Python, the disk space, the values of `.env`. If a container does not start, it shows the end of the log of that container.
 - The service stops when it starts, with the reason: a setting, the database, the schema, the file store, its keys, its bucket, the port. It only warns when the parser or the Word reader does not answer, or when the embedding model has no credentials: the file waits.
 
-Linux has no parser at this time: a Word file goes through, and a PDF waits. Windows is not supported.
+Linux has no parser at this time: a Word file and a Markdown file go through, and a PDF waits. Windows is not supported.
 
 ## Settings
 
@@ -60,6 +60,26 @@ The service sends each page of a PDF to the parser. While the parser does not ru
 ## Word reader
 
 The service reads `.docx` and `.doc` files with the command line program of [office_oxide](https://github.com/yfedoseev/office_oxide), one process for each file. The image of the service has the program.
+
+## Markdown reader
+
+The service reads `.md` and `.markdown` files with [goldmark](https://github.com/yuin/goldmark), the Markdown library of Hugo. It needs no parser and no other program: a Markdown file goes from the upload to the chunks in milliseconds.
+
+| In the file | Block |
+| --- | --- |
+| A heading (`#` to `######`, or a line with `===` or `---` below it) | A heading with its level, 1 to 6. The headings make the heading path of each chunk. |
+| A paragraph, a quote, a code block | A paragraph |
+| A list, also with tasks (`- [x]`) | One list, with one line for each item |
+| A table, in Markdown or in HTML | A table |
+| A picture | Its description (the alt text) |
+| A footnote | A footnote. Its number in the text is in brackets: `[1]`. |
+
+- The Markdown is [CommonMark](https://commonmark.org) with the additions of GitHub (tables, struck text, task lists) and footnotes.
+- The reader leaves out the metadata block at the start of a file (YAML between two lines of `---`), the address of a link, a comment, and a script.
+- The file must be text in UTF-8, with `REJEA_MARKDOWN_MAX_BYTES` bytes or less (16 MiB by default). A file with a fault fails at once with the reason.
+- A Markdown file has no pages: a search result gives its heading path, and `null` for its pages.
+
+The method is that of [Unstructured](https://github.com/Unstructured-IO/unstructured/blob/main/unstructured/partition/md.py), which [Docling](https://github.com/docling-project/docling/blob/main/docling/backend/md_backend.py) also uses for a file with HTML in it: the library turns the Markdown into HTML, and one HTML reader makes the blocks.
 
 ## Chunks
 
@@ -162,7 +182,7 @@ The request:
 | `filters.metadata` | Search in the documents whose metadata has each name and value of this object, for example `{"department": "finance"}`. |
 | `rerank` | `true` or `false`: use the reranker for this search. Default: the setting `REJEA_RERANK`. |
 
-A result has no pages (`null`) for a Word file. `keyword_rank` or `vector_rank` is `null` when that search did not find the chunk. `score` puts the results in order: it does not tell how good a result is. The vector search always gives its nearest chunks, so a question with no answer in the documents also gets results.
+A result has no pages (`null`) for a Word file and for a Markdown file. `keyword_rank` or `vector_rank` is `null` when that search did not find the chunk. `score` puts the results in order: it does not tell how good a result is. The vector search always gives its nearest chunks, so a question with no answer in the documents also gets results.
 
 The search reads the documents with the status `indexed`, and those in the index work again (`make reindex`), which keep their old chunks until the new chunks are saved. It needs the embedding model: with no model, the answer is 503 and the log gives the correction.
 

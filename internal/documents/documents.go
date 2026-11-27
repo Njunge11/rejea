@@ -34,8 +34,9 @@ const (
 	// StatusUnpacked is the status of an archive after each file in it
 	// became a document of its own. The work on the archive stops there.
 	StatusUnpacked = "unpacked"
-	// StatusParsing is the status of a PDF or a Word file from the end of
-	// the work on its file until its text is in the database.
+	// StatusParsing is the status of a PDF, a Word file or a Markdown file
+	// from the end of the work on its file until its text is in the
+	// database.
 	StatusParsing = "parsing"
 	// StatusIndexing is the status from the end of the parse until the
 	// chunks of the document and their embeddings are in the database.

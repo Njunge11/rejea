@@ -53,6 +53,7 @@ type Config struct {
 	PDF       pdf.Config
 	Parse     parse.Config
 	Word      parse.WordConfig
+	Markdown  parse.MarkdownConfig
 	Chunk     chunk.Config
 	Tokens    tokens.Config
 	Models    models.Config
@@ -171,6 +172,9 @@ func Load(getenv func(string) string) (Config, error) {
 			Path:    env.text("REJEA_WORD_READER_PATH", "bin/office-oxide"),
 			Timeout: env.duration("REJEA_WORD_READER_TIMEOUT", time.Minute),
 			TempDir: env.text("REJEA_TEMP_DIR", ""),
+		},
+		Markdown: parse.MarkdownConfig{
+			MaxBytes: env.size("REJEA_MARKDOWN_MAX_BYTES", 16<<20), // 16 MiB
 		},
 		Chunk: chunk.Config{
 			// Measured with the search report (testset/reports): with the

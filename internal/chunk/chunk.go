@@ -26,13 +26,13 @@ import (
 	"github.com/Njunge11/rejea/internal/parse"
 )
 
-// Block is one block of a document, as the parser or the Word reader gave
-// it. The blocks of a document are in the order in which a person reads
+// Block is one block of a document, as the parser, the Word reader or the
+// Markdown reader gave it. The blocks of a document are in the order in which a person reads
 // them.
 type Block struct {
 	ID uuid.UUID
-	// Page is the number of the page of the block. It is 0 for a Word file,
-	// which has no pages.
+	// Page is the number of the page of the block. It is 0 for a Word file
+	// and for a Markdown file, which have no pages.
 	Page int
 	Type parse.Type
 	// Level is the level of a heading: 1 is the top. With 0, the heading
@@ -53,7 +53,7 @@ type Chunk struct {
 	// no text below it, it is the block of that heading.
 	Blocks []uuid.UUID
 	// PageStart and PageEnd are the first and the last page of the blocks.
-	// They are 0 for a Word file.
+	// They are 0 for a Word file and for a Markdown file.
 	PageStart, PageEnd int
 }
 

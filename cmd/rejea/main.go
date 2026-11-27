@@ -126,6 +126,10 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdin i
 	if err != nil {
 		return err
 	}
+	markdown, err := parse.NewMarkdown(cfg.Markdown)
+	if err != nil {
+		return err
+	}
 	warnOfMissingReaders(ctx, logger, cfg, parser, words)
 	// The tokenizer of the embedding model: the chunker and the embedding
 	// client count tokens with it.
@@ -159,7 +163,7 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdin i
 	// The same is true for the reranker.
 	docs := documents.New(pool, store, inserter, embedder, reranker, cfg.Documents)
 	failureRule := []rivertype.Middleware{ingest.FailureRule(docs, logger, cfg.Ingest.FailureSaveTimeout)}
-	workers := ingest.Workers(docs, store, pdfs, parser, words, chunker, embedder, logger, cfg.Ingest)
+	workers := ingest.Workers(docs, store, pdfs, parser, words, markdown, chunker, embedder, logger, cfg.Ingest)
 	jobs, err := queue.NewClient(pool, logger, workers, failureRule, ingest.Schedule(cfg.Ingest), cfg.Queue)
 	if err != nil {
 		return err

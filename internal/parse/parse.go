@@ -6,8 +6,8 @@
 // only through it. An adapter makes one parser fit the port. PaddleOCR is
 // the adapter for the parser service of this repository (make parser).
 //
-// A Word file is read from the file itself, by Word. Its blocks have no
-// place on a page.
+// A Word file is read from the file itself, by Word, and a Markdown file
+// by Markdown. Their blocks have no place on a page.
 package parse
 
 import "context"
@@ -23,19 +23,19 @@ type Parser interface {
 	Name() string
 }
 
-// Block is one piece of a page, or of a Word file.
+// Block is one piece of a page, or of a Word file or a Markdown file.
 type Block struct {
 	Type Type
 	// Level is the level of a heading: 1 is the top. It is 0 when the
 	// block is not a heading, and when the parser gives no level.
 	Level int
-	// Text is the content. A table is HTML: table, tr and td elements, and
-	// br for a new line in a cell. A chart is the values that the parser
+	// Text is the content. A table is HTML: table, tr, td and th
+	// elements, and br for a new line in a cell. A chart is the values that the parser
 	// read from it, one line for each row, with " | " between the columns.
 	// A picture is the text that the parser read in it.
 	Text string
 	// Box is the place of the block on the page. A block of a Word file
-	// has no box.
+	// or of a Markdown file has no box.
 	Box Box
 }
 

@@ -23,18 +23,19 @@ import (
 type parseWorker struct {
 	river.WorkerDefaults[queue.ParseArgs]
 
-	docs   *documents.Service
-	store  *storage.Store
-	pdfs   *pdf.Reader
-	parser parse.Parser
-	words  *parse.Word
-	logger *slog.Logger
+	docs     *documents.Service
+	store    *storage.Store
+	pdfs     *pdf.Reader
+	parser   parse.Parser
+	words    *parse.Word
+	markdown *parse.Markdown
+	logger   *slog.Logger
 }
 
 // Work does two stages for a PDF: it makes an image of each page, then the
 // parser reads each image and gives the blocks of the page. A Word file
-// has one stage: the Word reader gives its blocks from the file itself,
-// with no page image.
+// and a Markdown file have one stage: the reader of that type gives the
+// blocks from the file itself, with no page image.
 //
 // When the parse is complete, the document goes to the index work.
 //
@@ -57,7 +58,7 @@ func (w *parseWorker) Work(ctx context.Context, job *river.Job[queue.ParseArgs])
 	}
 	if !documents.IsPDF(doc.StorageKey) {
 		if doc.Parser == "" {
-			err = w.readWord(ctx, doc)
+			err = w.readFile(ctx, doc)
 			if parse.IsContentError(err) {
 				// A new attempt reads the same file and finds the same fault.
 				return river.JobCancel(err)
@@ -210,28 +211,37 @@ func (w *parseWorker) pageImage(ctx context.Context, key string) ([]byte, error)
 	return image, nil
 }
 
-// readWord gives a Word file to the Word reader and records its blocks.
-// The name of the reader is recorded with the blocks: it tells that the
-// stage is complete.
-func (w *parseWorker) readWord(ctx context.Context, doc documents.Document) error {
+// readFile gives a Word file or a Markdown file to the reader of its type
+// and records its blocks. The name of the reader is recorded with the
+// blocks: it tells that the stage is complete.
+func (w *parseWorker) readFile(ctx context.Context, doc documents.Document) error {
 	start := time.Now()
-	reader, err := w.words.Name(ctx)
-	if err != nil {
-		return err
+	markdown := documents.IsMarkdown(doc.StorageKey)
+	reader := w.markdown.Name()
+	if !markdown {
+		var err error
+		if reader, err = w.words.Name(ctx); err != nil {
+			return err
+		}
 	}
 	file, err := w.store.Download(ctx, doc.StorageKey)
 	if err != nil {
 		return err
 	}
 	defer file.Close() //nolint:errcheck // The read found each error.
-	blocks, err := w.words.Read(ctx, file, documents.Ending(doc.StorageKey))
+	var blocks []parse.Block
+	if markdown {
+		blocks, err = w.markdown.Read(file)
+	} else {
+		blocks, err = w.words.Read(ctx, file, documents.Ending(doc.StorageKey))
+	}
 	if err != nil {
 		return err
 	}
-	if err := w.docs.SaveWordBlocks(ctx, doc.ID, blocks, reader); err != nil {
+	if err := w.docs.SaveFileBlocks(ctx, doc.ID, blocks, reader); err != nil {
 		return err
 	}
-	w.logger.InfoContext(ctx, "word file read",
+	w.logger.InfoContext(ctx, "file read",
 		"document", doc.ID,
 		"blocks", len(blocks),
 		"reader", reader,

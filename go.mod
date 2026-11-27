@@ -26,6 +26,8 @@ require (
 	github.com/riverqueue/river/rivertype v0.51.2
 	github.com/tetratelabs/wazero v1.12.0
 	github.com/tmc/langchaingo v0.1.15
+	github.com/yuin/goldmark v1.8.7
+	go.yaml.in/yaml/v4 v4.0.0-rc.2
 	golang.org/x/net v0.63.0
 )
 
@@ -78,7 +80,6 @@ require (
 	go.opentelemetry.io/otel/metric v1.47.0 // indirect
 	go.opentelemetry.io/otel/trace v1.47.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.yaml.in/yaml/v4 v4.0.0-rc.2 // indirect
 	golang.org/x/sync v0.25.0 // indirect
 	golang.org/x/sys v0.50.0 // indirect
 	golang.org/x/text v0.44.0 // indirect

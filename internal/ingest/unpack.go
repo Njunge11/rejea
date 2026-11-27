@@ -62,9 +62,10 @@ func permanent(err error) bool {
 	return false
 }
 
-// unpacker takes the PDF and Word files out of one archive and sends each
-// one to the file storage as a file of its own. It uses no disk: it reads
-// the archive from the file storage and sends each file as a stream.
+// unpacker takes the PDF, Word and Markdown files out of one archive and
+// sends each one to the file storage as a file of its own. It uses no
+// disk: it reads the archive from the file storage and sends each file as
+// a stream.
 //
 // It never uses a name from the archive as a path. A name is text for the
 // filename column only, and the service makes each storage key.
@@ -80,7 +81,7 @@ type unpacker struct {
 }
 
 func (u *unpacker) tooManyFiles() error {
-	return &contentFault{fmt.Sprintf("the archive has more than %d PDF and Word files", u.cfg.MaxArchiveFiles)}
+	return &contentFault{fmt.Sprintf("the archive has more than %d PDF, Word and Markdown files", u.cfg.MaxArchiveFiles)}
 }
 
 func (u *unpacker) tooManyBytes() error {
@@ -110,7 +111,7 @@ func (w *fileWorker) unpack(ctx context.Context, id uuid.UUID, key string) ([]do
 		return u.files, damaged("the service cannot read the archive", err)
 	}
 	if len(u.files) == 0 {
-		return nil, &contentFault{"the archive has no PDF or Word file"}
+		return nil, &contentFault{"the archive has no PDF, Word or Markdown file"}
 	}
 	return u.files, nil
 }
@@ -281,8 +282,8 @@ func cleanName(name string) string {
 	return strings.Trim(name, "/")
 }
 
-// wanted tells if the service keeps a file from an archive: a PDF or a
-// Word file that is not a hidden file. macOS adds a hidden file with the
+// wanted tells if the service keeps a file from an archive: a PDF, a Word
+// file or a Markdown file that is not a hidden file. macOS adds a hidden file with the
 // same ending for each file, and these are not documents. An archive in an
 // archive is not kept.
 func wanted(name string) bool {

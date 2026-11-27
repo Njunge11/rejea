@@ -217,6 +217,23 @@ These points are not in the plan. Each one is settled before its item starts.
     - The 2 Word files have the headings, the levels, the tables and the footnote of their XML.
     - Fix from this check: the parser did not read the text in pictures. One infographic report had only 86.4% of its words. The setting `REJEA_PARSER_READ_IMAGE_TEXT` (default true) raises it to 96.9%, and that report takes 37% more time.
 
+- [x] **43. Markdown files** (added 2026-11-27, not in the ten steps of the plan)
+  - Read `.md` and `.markdown` files with goldmark 1.8.7, the Markdown library of Hugo: CommonMark, with the additions of GitHub (tables, struck text, task lists) and footnotes. No parser and no other program. A Markdown file skips the render, as a Word file does.
+  - The method is that of Unstructured, which Docling also uses for a file with HTML in it: goldmark turns the Markdown into HTML, and one HTML reader makes the blocks. Thus a table, a list or a heading that a file has as HTML gives the same block as one in Markdown.
+  - Package `parse`: `Markdown` (the reader) and the HTML reader. Blocks: heading with its level 1 to 6, paragraph (also a quote and a code block), list (one line for each item, as the Word reader gives it), table (HTML with `th` for a header cell, which the chunker repeats in each part of a split table), figure (the alt text of a picture), caption, footnote. The number of a footnote in the text is in brackets, so that it is not read as a part of the number before it.
+  - Left out: the metadata block at the start of a file (a YAML mapping between two lines of `---`, the rule of Docling), the address of a link, a comment, a script.
+  - The parse worker selects the reader by the ending of the file. `documents.SaveFileBlocks` (before: `SaveWordBlocks`) saves the blocks and the name of the reader in one transaction, for a Word file and for a Markdown file.
+  - The upload check and the unpack of an archive accept the two endings. Setting: `REJEA_MARKDOWN_MAX_BYTES` (16 MiB), because the file is in memory as a whole.
+  - Failure: a file over the limit, a file in UTF-16, a file that is not UTF-8, and a file with a NUL character fail the document at attempt 1 with the reason and the correction. A file with no words fails in the index step, as each document with no text.
+  - Proof, 2026-11-27, through the API of a test service on an empty database, with 11 uploads:
+    - 4 real files (the README of goldmark, a page of the Hugo docs with the ending `.markdown`, this checklist with the ending `.MD`, and a sample judgment with each kind of element) are `indexed` with the reader `goldmark v1.8.7`. The reader took 3 to 11 ms for a file.
+    - Words of the source that are in the blocks, with no link addresses: 100.0% (this checklist), 99.4% and 98.3%. The words that are not in the blocks are the names of the languages of code blocks, the metadata block and the names of HTML entities.
+    - The sample judgment: 18 blocks of the 7 types, the heading path of each chunk is correct (for example "Mwangi v Republic > Background > Grounds of appeal"), a table in Markdown and a table in HTML give the same form, and the page of a result is `null`.
+    - Search: 6 questions, one for each file. The first result is from the correct file for 6 of 6.
+    - A zip with 2 Markdown files, a hidden file, a `__MACOSX` file and a `.txt` file, and a tar.gz with 2 Markdown files: only the Markdown files became documents. A file with the hash of an earlier upload is `duplicate`.
+    - The 4 files with a fault are `failed` at attempt 1, each with its reason. A wrong value of the setting stops the service at its start with the name of the setting.
+    - The same reader in 64 goroutines with the race detector of Go: no fault.
+
 ## Chunk and index (plan step 4)
 
 - [x] **20. Chunker**
@@ -439,4 +456,4 @@ These points are not in the plan. Each one is settled before its item starts.
 ## Named earlier, not in the ten steps
 
 - CloudFront logs and a custom domain (AWS only).
-- From the "Later" column of the plan: formats beyond PDF and Word, spreadsheets, audio, video, roles and permissions.
+- From the "Later" column of the plan: formats beyond PDF, Word and Markdown, spreadsheets, audio, video, roles and permissions.
