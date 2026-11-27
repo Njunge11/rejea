@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 856" width="960" height="856" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="Architecture of Rejea. Ingestion: the client gets an upload URL from the HTTP API and sends the file to the file store. Three workers, each with its own job queue, hash the file, turn it into blocks with the parser, and make chunks with vectors from the embedding model, saved in PostgreSQL. Search: the question becomes a vector, PostgreSQL runs a keyword search and a vector search, and an optional reranker orders the results."><defs><pattern id="dots" width="16" height="16" patternUnits="userSpaceOnUse"><circle cx="8" cy="8" r="0.75" fill="#dedee3"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M2,1.5 L8,5 L2,8.5" fill="none" stroke="#b4b4bb" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></marker><filter id="lift" x="-10%" y="-20%" width="120%" height="150%"><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#18181b" flood-opacity="0.05"/></filter></defs><rect y="0" width="960" height="856" fill="#ffffff"/>
 <rect x="16" y="16" width="928" height="404" rx="14" fill="#fafafa" stroke="#ededf0"/><rect x="16" y="16" width="928" height="404" rx="14" fill="url(#dots)"/>
 <text x="56" y="50" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5" font-weight="600" letter-spacing="1.4" fill="#71717a">INGESTION</text>
-<rect x="712" y="42" width="8" height="8" rx="2" fill="#4f46e5"/><rect x="768" y="42" width="8" height="8" rx="2" fill="#06b6d4"/><rect x="824" y="42" width="8" height="8" rx="2" fill="#059669"/>
+<rect x="712" y="42" width="8" height="8" rx="2" fill="#5040a0"/><rect x="768" y="42" width="8" height="8" rx="2" fill="#0058c8"/><rect x="824" y="42" width="8" height="8" rx="2" fill="#107810"/>
 <text x="725" y="50" text-anchor="start" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#71717a">Rejea</text>
 <text x="781" y="50" text-anchor="start" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#71717a">queue</text>
 <text x="837" y="50" text-anchor="start" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#71717a">dependency</text>
@@ -10,30 +10,30 @@
 <text x="106" y="104" font-size="13.5" font-weight="600" fill="#18181b">Client</text>
 <text x="106" y="120" font-size="11" fill="#71717a">app or AI agent</text>
 <rect x="276" y="76" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" filter="url(#lift)"/>
-<rect x="290" y="94" width="24" height="24" rx="6" fill="#eef2ff"/><rect x="298" y="102" width="8" height="8" rx="2" fill="#4f46e5"/>
+<rect x="290" y="94" width="24" height="24" rx="6" fill="#eceaf6"/><rect x="298" y="102" width="8" height="8" rx="2" fill="#5040a0"/>
 <text x="326" y="104" font-size="13.5" font-weight="600" fill="#18181b">HTTP API</text>
 <text x="326" y="120" font-size="11" fill="#71717a">upload URL, confirm</text>
 <path d="M244,106 L273,106" fill="none" stroke="#b4b4bb" stroke-width="1" stroke-linejoin="round" marker-end="url(#arrow)"/>
 <rect x="56" y="200" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" filter="url(#lift)"/>
-<rect x="70" y="218" width="24" height="24" rx="6" fill="#eef2ff"/><rect x="78" y="226" width="8" height="8" rx="2" fill="#4f46e5"/>
+<rect x="70" y="218" width="24" height="24" rx="6" fill="#eceaf6"/><rect x="78" y="226" width="8" height="8" rx="2" fill="#5040a0"/>
 <text x="106" y="228" font-size="13.5" font-weight="600" fill="#18181b">File worker</text>
 <text x="106" y="244" font-size="11" fill="#71717a">hash, dedupe, unpack</text>
-<rect x="146" y="190" width="86" height="20" rx="10" fill="#ecfeff" stroke="#67e8f9"/>
-<text x="189.0" y="204" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" font-weight="600" fill="#0e7490">file queue</text>
+<rect x="146" y="190" width="86" height="20" rx="10" fill="#e8f1fc" stroke="#b0d0f0"/>
+<text x="189.0" y="204" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" font-weight="600" fill="#0058c8">file queue</text>
 <rect x="276" y="200" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" filter="url(#lift)"/>
-<rect x="290" y="218" width="24" height="24" rx="6" fill="#eef2ff"/><rect x="298" y="226" width="8" height="8" rx="2" fill="#4f46e5"/>
+<rect x="290" y="218" width="24" height="24" rx="6" fill="#eceaf6"/><rect x="298" y="226" width="8" height="8" rx="2" fill="#5040a0"/>
 <text x="326" y="228" font-size="13.5" font-weight="600" fill="#18181b">Parse worker</text>
 <text x="326" y="244" font-size="11" fill="#71717a">file to blocks</text>
-<rect x="366" y="190" width="86" height="20" rx="10" fill="#ecfeff" stroke="#67e8f9"/>
-<text x="409.0" y="204" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" font-weight="600" fill="#0e7490">parse queue</text>
+<rect x="366" y="190" width="86" height="20" rx="10" fill="#e8f1fc" stroke="#b0d0f0"/>
+<text x="409.0" y="204" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" font-weight="600" fill="#0058c8">parse queue</text>
 <rect x="496" y="200" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" filter="url(#lift)"/>
-<rect x="510" y="218" width="24" height="24" rx="6" fill="#eef2ff"/><rect x="518" y="226" width="8" height="8" rx="2" fill="#4f46e5"/>
+<rect x="510" y="218" width="24" height="24" rx="6" fill="#eceaf6"/><rect x="518" y="226" width="8" height="8" rx="2" fill="#5040a0"/>
 <text x="546" y="228" font-size="13.5" font-weight="600" fill="#18181b">Index worker</text>
 <text x="546" y="244" font-size="11" fill="#71717a">chunks and vectors</text>
-<rect x="586" y="190" width="86" height="20" rx="10" fill="#ecfeff" stroke="#67e8f9"/>
-<text x="629.0" y="204" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" font-weight="600" fill="#0e7490">index queue</text>
+<rect x="586" y="190" width="86" height="20" rx="10" fill="#e8f1fc" stroke="#b0d0f0"/>
+<text x="629.0" y="204" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" font-weight="600" fill="#0058c8">index queue</text>
 <rect x="716" y="200" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" filter="url(#lift)"/>
-<rect x="730" y="218" width="24" height="24" rx="6" fill="#ecfdf5"/><rect x="738" y="226" width="8" height="8" rx="2" fill="#059669"/>
+<rect x="730" y="218" width="24" height="24" rx="6" fill="#d8f8e0"/><rect x="738" y="226" width="8" height="8" rx="2" fill="#107810"/>
 <text x="766" y="228" font-size="13.5" font-weight="600" fill="#18181b">PostgreSQL</text>
 <text x="766" y="244" font-size="11" fill="#71717a">chunks, vectors</text>
 <path d="M370,136 L370,162 L189,162 L189,187" fill="none" stroke="#b4b4bb" stroke-width="1" stroke-linejoin="round" marker-end="url(#arrow)"/>
@@ -42,15 +42,15 @@
 <path d="M464,230 L493,230" fill="none" stroke="#b4b4bb" stroke-width="1" stroke-linejoin="round" marker-end="url(#arrow)"/>
 <path d="M684,230 L713,230" fill="none" stroke="#b4b4bb" stroke-width="1" stroke-linejoin="round" marker-end="url(#arrow)"/>
 <rect x="56" y="324" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" filter="url(#lift)"/>
-<rect x="70" y="342" width="24" height="24" rx="6" fill="#ecfdf5"/><rect x="78" y="350" width="8" height="8" rx="2" fill="#059669"/>
+<rect x="70" y="342" width="24" height="24" rx="6" fill="#d8f8e0"/><rect x="78" y="350" width="8" height="8" rx="2" fill="#107810"/>
 <text x="106" y="352" font-size="13.5" font-weight="600" fill="#18181b">File store</text>
 <text x="106" y="368" font-size="11" fill="#71717a">S3 API</text>
 <rect x="276" y="324" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" filter="url(#lift)"/>
-<rect x="290" y="342" width="24" height="24" rx="6" fill="#ecfdf5"/><rect x="298" y="350" width="8" height="8" rx="2" fill="#059669"/>
+<rect x="290" y="342" width="24" height="24" rx="6" fill="#d8f8e0"/><rect x="298" y="350" width="8" height="8" rx="2" fill="#107810"/>
 <text x="326" y="352" font-size="13.5" font-weight="600" fill="#18181b">Parser</text>
 <text x="326" y="368" font-size="11" fill="#71717a">PaddleOCR-VL</text>
 <rect x="496" y="324" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" filter="url(#lift)"/>
-<rect x="510" y="342" width="24" height="24" rx="6" fill="#ecfdf5"/><rect x="518" y="350" width="8" height="8" rx="2" fill="#059669"/>
+<rect x="510" y="342" width="24" height="24" rx="6" fill="#d8f8e0"/><rect x="518" y="350" width="8" height="8" rx="2" fill="#107810"/>
 <text x="546" y="352" font-size="13.5" font-weight="600" fill="#18181b">Embedding model</text>
 <text x="546" y="368" font-size="11" fill="#71717a">Qwen3-Embedding</text>
 <path d="M150,260 L150,321" fill="none" stroke="#b4b4bb" stroke-width="1" stroke-linejoin="round" marker-end="url(#arrow)"/>
@@ -68,20 +68,20 @@
 <text x="106" y="524" font-size="13.5" font-weight="600" fill="#18181b">Client</text>
 <text x="106" y="540" font-size="11" fill="#71717a">app or AI agent</text>
 <rect x="276" y="496" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" filter="url(#lift)"/>
-<rect x="290" y="514" width="24" height="24" rx="6" fill="#eef2ff"/><rect x="298" y="522" width="8" height="8" rx="2" fill="#4f46e5"/>
+<rect x="290" y="514" width="24" height="24" rx="6" fill="#eceaf6"/><rect x="298" y="522" width="8" height="8" rx="2" fill="#5040a0"/>
 <text x="326" y="524" font-size="13.5" font-weight="600" fill="#18181b">HTTP API</text>
 <text x="326" y="540" font-size="11" fill="#71717a">POST /search</text>
 <path d="M244,526 L273,526" fill="none" stroke="#b4b4bb" stroke-width="1" stroke-linejoin="round" marker-end="url(#arrow)"/>
 <rect x="56" y="620" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" filter="url(#lift)"/>
-<rect x="70" y="638" width="24" height="24" rx="6" fill="#eef2ff"/><rect x="78" y="646" width="8" height="8" rx="2" fill="#4f46e5"/>
+<rect x="70" y="638" width="24" height="24" rx="6" fill="#eceaf6"/><rect x="78" y="646" width="8" height="8" rx="2" fill="#5040a0"/>
 <text x="106" y="648" font-size="13.5" font-weight="600" fill="#18181b">Embed</text>
 <text x="106" y="664" font-size="11" fill="#71717a">question to vector</text>
 <rect x="276" y="620" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" filter="url(#lift)"/>
-<rect x="290" y="638" width="24" height="24" rx="6" fill="#eef2ff"/><rect x="298" y="646" width="8" height="8" rx="2" fill="#4f46e5"/>
+<rect x="290" y="638" width="24" height="24" rx="6" fill="#eceaf6"/><rect x="298" y="646" width="8" height="8" rx="2" fill="#5040a0"/>
 <text x="326" y="648" font-size="13.5" font-weight="600" fill="#18181b">Search</text>
 <text x="326" y="664" font-size="11" fill="#71717a">keyword + vector</text>
 <rect x="496" y="620" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" stroke-dasharray="4 3"/>
-<rect x="510" y="638" width="24" height="24" rx="6" fill="#eef2ff"/><rect x="518" y="646" width="8" height="8" rx="2" fill="#4f46e5"/>
+<rect x="510" y="638" width="24" height="24" rx="6" fill="#eceaf6"/><rect x="518" y="646" width="8" height="8" rx="2" fill="#5040a0"/>
 <text x="546" y="648" font-size="13.5" font-weight="600" fill="#18181b">Rerank</text>
 <text x="546" y="664" font-size="11" fill="#71717a">optional</text>
 <path d="M370,556 L370,582 L150,582 L150,617" fill="none" stroke="#b4b4bb" stroke-width="1" stroke-linejoin="round" marker-end="url(#arrow)"/>
@@ -90,15 +90,15 @@
 <path d="M684,650 L810,650 L810,526 L467,526" fill="none" stroke="#b4b4bb" stroke-width="1" stroke-linejoin="round" marker-end="url(#arrow)"/>
 <text x="820" y="582" text-anchor="start" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#71717a">results</text>
 <rect x="56" y="744" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" filter="url(#lift)"/>
-<rect x="70" y="762" width="24" height="24" rx="6" fill="#ecfdf5"/><rect x="78" y="770" width="8" height="8" rx="2" fill="#059669"/>
+<rect x="70" y="762" width="24" height="24" rx="6" fill="#d8f8e0"/><rect x="78" y="770" width="8" height="8" rx="2" fill="#107810"/>
 <text x="106" y="772" font-size="13.5" font-weight="600" fill="#18181b">Embedding model</text>
 <text x="106" y="788" font-size="11" fill="#71717a">Qwen3-Embedding</text>
 <rect x="276" y="744" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" filter="url(#lift)"/>
-<rect x="290" y="762" width="24" height="24" rx="6" fill="#ecfdf5"/><rect x="298" y="770" width="8" height="8" rx="2" fill="#059669"/>
+<rect x="290" y="762" width="24" height="24" rx="6" fill="#d8f8e0"/><rect x="298" y="770" width="8" height="8" rx="2" fill="#107810"/>
 <text x="326" y="772" font-size="13.5" font-weight="600" fill="#18181b">PostgreSQL</text>
 <text x="326" y="788" font-size="11" fill="#71717a">BM25 + HNSW</text>
 <rect x="496" y="744" width="188" height="60" rx="9" fill="#ffffff" stroke="#e4e4e7" stroke-dasharray="4 3"/>
-<rect x="510" y="762" width="24" height="24" rx="6" fill="#ecfdf5"/><rect x="518" y="770" width="8" height="8" rx="2" fill="#059669"/>
+<rect x="510" y="762" width="24" height="24" rx="6" fill="#d8f8e0"/><rect x="518" y="770" width="8" height="8" rx="2" fill="#107810"/>
 <text x="546" y="772" font-size="13.5" font-weight="600" fill="#18181b">Reranker</text>
 <text x="546" y="788" font-size="11" fill="#71717a">Cohere Rerank</text>
 <path d="M150,680 L150,741" fill="none" stroke="#b4b4bb" stroke-width="1" stroke-linejoin="round" marker-end="url(#arrow)"/>
